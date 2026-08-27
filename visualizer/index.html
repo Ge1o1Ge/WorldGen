@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WorldGen — карта симуляции</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>WorldGen</h1>
+        <p id="scenario-name">Загрузка сценария…</p>
+      </div>
+      <div class="controls" aria-label="Управление временем">
+        <button id="reset" type="button">Сбросить</button>
+        <button id="step-1" type="button">+1 день</button>
+        <button id="step-5" type="button">+5 дней</button>
+        <button id="step-30" type="button">+30 дней</button>
+        <button id="play" class="primary" type="button" aria-pressed="false">Запустить</button>
+      </div>
+    </header>
+
+    <section class="statusbar" aria-live="polite">
+      <span><strong id="day">0</strong> день</span>
+      <span>операций: <strong id="operations">0</strong></span>
+      <span>население: <strong id="population">0</strong></span>
+      <span>детализировано: <strong id="active-nodes">0</strong></span>
+      <span>дефицит: <strong id="shortage-cities">0</strong></span>
+      <span>в пути: <strong id="shipments">0</strong></span>
+      <span>дороги: <strong id="roads">0%</strong></span>
+      <span>личности: <strong id="actors">0</strong></span>
+      <span>знания в пути: <strong id="knowledge-transfers">0</strong></span>
+      <span>вести в пути: <strong id="reports">0</strong></span>
+    </section>
+
+    <div class="workspace">
+      <section class="map-section" aria-labelledby="map-title">
+        <div class="map-heading">
+          <div class="map-title-row">
+            <h2 id="map-title">Изометрическая карта региона</h2>
+            <label class="scale-control">Масштаб
+              <select id="scale" aria-label="Масштаб карты">
+                <option value="zone">Зоны · 100 × 100</option>
+                <option value="macro">Ноды · 10 × 10</option>
+                <option value="region">Регион · 1 × 1</option>
+              </select>
+            </label>
+            <label class="scale-control">Слой
+              <select id="layer" aria-label="Слой карты">
+                <option value="topographic">Топографическая</option>
+                <option value="biome">Биомы</option>
+                <option value="political">Поселения</option>
+                <option value="elevation">Высота</option>
+                <option value="moisture">Влажность</option>
+                <option value="arable">Пашня</option>
+                <option value="timber">Лес</option>
+                <option value="fish">Рыба</option>
+                <option value="clay">Глина</option>
+                <option value="stone">Камень</option>
+                <option value="iron">Железо</option>
+              </select>
+            </label>
+            <div class="camera-controls" aria-label="Масштабирование карты">
+              <button id="zoom-out" type="button" aria-label="Уменьшить масштаб">−</button>
+              <output id="zoom-level" aria-live="polite">100%</output>
+              <button id="zoom-in" type="button" aria-label="Увеличить масштаб">+</button>
+              <button id="reset-view" type="button">По размеру</button>
+            </div>
+          </div>
+          <div class="legend" aria-label="Легенда карты">
+            <span><i class="legend-mark active-mark"></i>детальный LOD</span>
+            <span><i class="legend-mark shortage-mark"></i>дефицит</span>
+            <span><i class="legend-mark crisis-mark"></i>кризис</span>
+            <span><i class="legend-mark actor-mark"></i>личность</span>
+          </div>
+        </div>
+        <div id="layer-legend" class="layer-legend" aria-live="polite"></div>
+        <div class="map-wrap">
+          <canvas id="world-map" role="img" aria-label="Изометрическая карта из десяти тысяч зон, объединяемых в сто нод"></canvas>
+          <div id="map-tooltip" class="map-tooltip" role="tooltip" hidden></div>
+          <div class="map-hint">Колесо — масштаб · тянуть — перемещение</div>
+        </div>
+        <div id="selection" class="selection" aria-live="polite">Выберите зону на карте</div>
+      </section>
+
+      <aside class="events" aria-labelledby="events-title">
+        <h2 id="events-title">Значимые события</h2>
+        <p class="events-note">Стабильные дни продолжают рассчитываться, даже когда новых событий здесь нет.</p>
+        <ol id="event-list"></ol>
+      </aside>
+    </div>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

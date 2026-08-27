@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 2,
+  "id": "six_roads_early_iron",
+  "name": "Долина Шести Дорог · ранний железный век",
+  "mapFile": "regional-smoke.json",
+  "seed": 731942,
+  "calendar": { "daysPerYear": 365, "startYear": 1 },
+  "reserveDays": 18,
+  "demography": {
+    "birthRatePerYear": 0.027,
+    "deathRatePerYear": 0.021,
+    "shortageMortalityMultiplier": 3.5,
+    "monthlyMigrationShare": 0.006
+  },
+  "lodPolicy": {
+    "crisisCooldownDays": 14,
+    "shortageCooldownDays": 10
+  },
+  "cities": [
+    {
+      "id": "greenfield", "name": "Зелёные Поля", "anchor": { "x": 16, "y": 48 },
+      "workerShare": 0.42, "foodPerPersonPerDay": 0.001,
+      "stocks": { "grain": 120, "food": 70, "livestock": 8, "firewood": 8, "tools": 8 },
+      "industries": [
+        { "id": "greenfield_grain", "recipeId": "grow_grain", "capacity": 3.3, "zone": { "x": 8, "y": 44 } },
+        { "id": "greenfield_gardens", "recipeId": "grow_vegetables", "capacity": 1.2, "zone": { "x": 18, "y": 54 } },
+        { "id": "greenfield_herds", "recipeId": "raise_livestock", "capacity": 0.8, "zone": { "x": 5, "y": 40 } }
+      ],
+      "institutions": [
+        { "id": "greenfield_elder_council", "type": "council", "competence": 0.48, "learningRate": 0.34, "priorities": ["food_security", "agriculture"] }
+      ],
+      "technologySeeds": {
+        "oral_accounting": [0.58, 0.52, 0.45, 0.42], "seed_selection": [0.82, 0.78, 0.74, 0.7],
+        "crop_rotation": [0.34, 0.2, 0.14, 0.08], "animal_husbandry": [0.78, 0.74, 0.68, 0.64],
+        "woodworking": [0.48, 0.42, 0.36, 0.32], "food_preservation": [0.45, 0.4, 0.32, 0.28],
+        "herbal_medicine": [0.38, 0.32, 0.2, 0.16]
+      }
+    },
+    {
+      "id": "river_mill", "name": "Речная Мельница", "anchor": { "x": 36, "y": 52 },
+      "workerShare": 0.4, "foodPerPersonPerDay": 0.001,
+      "stocks": { "grain": 110, "flour": 55, "food": 65, "timber": 12, "firewood": 45, "clay": 20, "tools": 10 },
+      "industries": [
+        { "id": "river_watermill", "recipeId": "mill_flour", "capacity": 2.8, "zone": { "x": 36, "y": 52 } },
+        { "id": "river_bakers", "recipeId": "bake_food", "capacity": 2.5, "zone": { "x": 37, "y": 53 } },
+        { "id": "river_claypit", "recipeId": "dig_clay", "capacity": 0.15, "zone": { "x": 35, "y": 51 } }
+      ],
+      "institutions": [
+        { "id": "river_millers_guild", "type": "guild", "competence": 0.68, "learningRate": 0.52, "priorities": ["food_processing", "mechanics"] }
+      ],
+      "technologySeeds": {
+        "oral_accounting": [0.7, 0.62, 0.55, 0.5], "pottery": [0.72, 0.68, 0.62, 0.58],
+        "woodworking": [0.76, 0.72, 0.7, 0.66], "hand_tools": [0.58, 0.5, 0.44, 0.4],
+        "water_mill": [0.86, 0.82, 0.8, 0.76], "food_preservation": [0.68, 0.64, 0.58, 0.54],
+        "river_navigation": [0.62, 0.56, 0.5, 0.46]
+      }
+    },
+    {
+      "id": "crossroads", "name": "Перекрёсток", "anchor": { "x": 53, "y": 52 },
+      "workerShare": 0.39, "foodPerPersonPerDay": 0.001,
+      "stocks": { "flour": 18, "food": 82, "livestock": 14, "firewood": 30, "charcoal": 12, "iron": 8, "tools": 14 },
+      "industries": [
+        { "id": "crossroads_butchers", "recipeId": "butcher_livestock", "capacity": 1, "zone": { "x": 53, "y": 52 } },
+        { "id": "crossroads_bakers", "recipeId": "bake_food", "capacity": 1, "zone": { "x": 54, "y": 52 } },
+        { "id": "crossroads_smithy", "recipeId": "forge_tools", "capacity": 0.35, "zone": { "x": 52, "y": 53 } }
+      ],
+      "institutions": [
+        { "id": "crossroads_market_court", "type": "market_court", "competence": 0.72, "learningRate": 0.46, "priorities": ["trade", "tools"] }
+      ],
+      "technologySeeds": {
+        "oral_accounting": [0.9, 0.82, 0.72, 0.68], "food_preservation": [0.62, 0.58, 0.5, 0.46],
+        "woodworking": [0.62, 0.58, 0.52, 0.48], "charcoal_burning": [0.5, 0.45, 0.38, 0.34],
+        "bloomery_smelting": [0.48, 0.4, 0.36, 0.3], "iron_forging": [0.7, 0.66, 0.62, 0.58],
+        "hand_tools": [0.76, 0.72, 0.68, 0.64], "river_navigation": [0.58, 0.5, 0.46, 0.4]
+      }
+    },
+    {
+      "id": "northwatch", "name": "Северный Дозор", "anchor": { "x": 57, "y": 18 },
+      "workerShare": 0.38, "foodPerPersonPerDay": 0.001,
+      "stocks": { "food": 62, "timber": 90, "firewood": 120, "charcoal": 30, "tools": 9 },
+      "industries": [
+        { "id": "northwatch_logging", "recipeId": "fell_timber", "capacity": 1.4, "zone": { "x": 57, "y": 35 } },
+        { "id": "northwatch_firewood", "recipeId": "gather_firewood", "capacity": 0.75, "zone": { "x": 56, "y": 34 } },
+        { "id": "northwatch_charcoal", "recipeId": "burn_charcoal", "capacity": 0.9, "zone": { "x": 57, "y": 18 } }
+      ],
+      "institutions": [
+        { "id": "northwatch_woodcutters", "type": "guild", "competence": 0.6, "learningRate": 0.32, "priorities": ["forestry", "fuel"] }
+      ],
+      "technologySeeds": {
+        "oral_accounting": [0.48, 0.42, 0.34, 0.3], "woodworking": [0.86, 0.82, 0.78, 0.74],
+        "charcoal_burning": [0.8, 0.76, 0.7, 0.66], "hand_tools": [0.58, 0.54, 0.46, 0.42],
+        "herbal_medicine": [0.48, 0.42, 0.3, 0.26]
+      }
+    },
+    {
+      "id": "harbor", "name": "Тихая Гавань", "anchor": { "x": 84, "y": 48 },
+      "workerShare": 0.41, "foodPerPersonPerDay": 0.001,
+      "stocks": { "food": 78, "timber": 42, "firewood": 25, "clay": 35, "tools": 8 },
+      "industries": [
+        { "id": "harbor_fishers", "recipeId": "catch_fish", "capacity": 3, "zone": { "x": 65, "y": 49 } },
+        { "id": "harbor_claypit", "recipeId": "dig_clay", "capacity": 0.08, "zone": { "x": 99, "y": 59 } }
+      ],
+      "institutions": [
+        { "id": "harbor_boatmen", "type": "guild", "competence": 0.66, "learningRate": 0.44, "priorities": ["fishing", "trade"] }
+      ],
+      "technologySeeds": {
+        "oral_accounting": [0.68, 0.58, 0.5, 0.46], "pottery": [0.62, 0.58, 0.52, 0.48],
+        "woodworking": [0.74, 0.7, 0.66, 0.62], "food_preservation": [0.72, 0.68, 0.6, 0.56],
+        "river_navigation": [0.88, 0.84, 0.8, 0.76], "herbal_medicine": [0.42, 0.36, 0.26, 0.22]
+      }
+    },
+    {
+      "id": "stonebridge", "name": "Каменный Мост", "anchor": { "x": 68, "y": 78 },
+      "workerShare": 0.4, "foodPerPersonPerDay": 0.001,
+      "stocks": { "food": 62, "timber": 24, "firewood": 22, "stone": 100, "iron_ore": 60, "charcoal": 50, "iron": 18, "tools": 18 },
+      "industries": [
+        { "id": "stonebridge_quarry", "recipeId": "quarry_stone", "capacity": 0.35, "zone": { "x": 46, "y": 84 } },
+        { "id": "stonebridge_mine", "recipeId": "mine_iron", "capacity": 0.45, "zone": { "x": 46, "y": 83 } },
+        { "id": "stonebridge_bloomery", "recipeId": "smelt_iron", "capacity": 0.4, "zone": { "x": 68, "y": 78 } }
+      ],
+      "institutions": [
+        { "id": "stonebridge_smelters", "type": "guild", "competence": 0.7, "learningRate": 0.5, "priorities": ["mining", "metallurgy"] }
+      ],
+      "technologySeeds": {
+        "oral_accounting": [0.58, 0.5, 0.42, 0.38], "masonry": [0.84, 0.8, 0.76, 0.72],
+        "woodworking": [0.6, 0.54, 0.48, 0.44], "charcoal_burning": [0.72, 0.68, 0.62, 0.58],
+        "bloomery_smelting": [0.78, 0.74, 0.68, 0.64], "iron_forging": [0.62, 0.56, 0.5, 0.44],
+        "hand_tools": [0.74, 0.7, 0.64, 0.6]
+      }
+    }
+  ],
+  "importantActors": [
+    { "id": "doctor_anna_lebedeva", "name": "Анна Лебедева", "role": "physician", "zone": { "x": 16, "y": 48 }, "importance": 0.82, "reasons": ["редкий медицинский специалист"] },
+    { "id": "miller_ivan_borodin", "name": "Иван Бородин", "role": "mill_guild_master", "zone": { "x": 36, "y": 52 }, "importance": 0.76, "reasons": ["руководитель ключевой производственной организации"] }
+  ],
+  "routes": [
+    { "id": "greenfield_river", "a": "greenfield", "b": "river_mill", "travelDays": 2, "dailyCapacity": 42 },
+    { "id": "river_crossroads", "a": "river_mill", "b": "crossroads", "travelDays": 2, "dailyCapacity": 34 },
+    { "id": "crossroads_north", "a": "crossroads", "b": "northwatch", "travelDays": 3, "dailyCapacity": 18 },
+    { "id": "crossroads_harbor", "a": "crossroads", "b": "harbor", "travelDays": 2, "dailyCapacity": 28 },
+    { "id": "crossroads_stone", "a": "crossroads", "b": "stonebridge", "travelDays": 1, "dailyCapacity": 22 },
+    { "id": "stone_harbor", "a": "stonebridge", "b": "harbor", "travelDays": 2, "dailyCapacity": 15 },
+    { "id": "greenfield_north", "a": "greenfield", "b": "northwatch", "travelDays": 5, "dailyCapacity": 9 }
+  ],
+  "scheduledEvents": []
+}

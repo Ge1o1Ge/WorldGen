@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "recipes": [
+    {
+      "id": "grow_grain", "name": "Полевое зерноводство", "category": "agriculture",
+      "inputs": { "tools": 0.02 }, "outputs": { "grain": 12 }, "laborPerBatch": 100,
+      "sitePotential": "arable", "requiredTechnologyIds": ["seed_selection"],
+      "seasonality": { "minimum": 0.32, "peakDay": 230 }
+    },
+    {
+      "id": "grow_vegetables", "name": "Огородничество", "category": "agriculture",
+      "inputs": { "tools": 0.015 }, "outputs": { "food": 6.5 }, "laborPerBatch": 115,
+      "sitePotential": "arable", "requiredTechnologyIds": ["seed_selection"],
+      "seasonality": { "minimum": 0.42, "peakDay": 205 }
+    },
+    {
+      "id": "raise_livestock", "name": "Скотоводство", "category": "pastoral",
+      "inputs": { "grain": 1.5 }, "outputs": { "livestock": 1 }, "laborPerBatch": 90,
+      "sitePotential": "pasture", "requiredTechnologyIds": ["animal_husbandry"]
+    },
+    {
+      "id": "butcher_livestock", "name": "Забой и разделка скота", "category": "food_processing",
+      "inputs": { "livestock": 1, "firewood": 0.2 }, "outputs": { "food": 5.5 }, "laborPerBatch": 75,
+      "requiredTechnologyIds": ["food_preservation"]
+    },
+    {
+      "id": "catch_fish", "name": "Речное рыболовство", "category": "fishing",
+      "inputs": { "timber": 0.01 }, "outputs": { "food": 4 }, "laborPerBatch": 70,
+      "sitePotential": "fish", "requiredTechnologyIds": ["river_navigation"]
+    },
+    {
+      "id": "mill_flour", "name": "Помол зерна", "category": "food_processing",
+      "inputs": { "grain": 8, "tools": 0.01 }, "outputs": { "flour": 7.5 }, "laborPerBatch": 60,
+      "requiredTechnologyIds": ["water_mill"]
+    },
+    {
+      "id": "bake_food", "name": "Выпечка хлеба", "category": "food_processing",
+      "inputs": { "flour": 6, "firewood": 0.5 }, "outputs": { "food": 5.5 }, "laborPerBatch": 55,
+      "requiredTechnologyIds": ["food_preservation"]
+    },
+    {
+      "id": "fell_timber", "name": "Заготовка строевого леса", "category": "forestry",
+      "inputs": { "tools": 0.025 }, "outputs": { "timber": 5, "firewood": 1.5 }, "laborPerBatch": 105,
+      "sitePotential": "timber", "requiredTechnologyIds": ["woodworking"]
+    },
+    {
+      "id": "gather_firewood", "name": "Сбор и колка дров", "category": "forestry",
+      "inputs": { "tools": 0.012 }, "outputs": { "firewood": 5 }, "laborPerBatch": 72,
+      "sitePotential": "timber", "requiredTechnologyIds": ["woodworking"]
+    },
+    {
+      "id": "dig_clay", "name": "Добыча глины", "category": "extraction",
+      "inputs": { "tools": 0.012 }, "outputs": { "clay": 5 }, "laborPerBatch": 88,
+      "sitePotential": "clay", "requiredTechnologyIds": []
+    },
+    {
+      "id": "quarry_stone", "name": "Каменоломня", "category": "extraction",
+      "inputs": { "tools": 0.03 }, "outputs": { "stone": 4 }, "laborPerBatch": 125,
+      "sitePotential": "stone", "requiredTechnologyIds": ["masonry"]
+    },
+    {
+      "id": "mine_iron", "name": "Добыча болотной и жильной руды", "category": "extraction",
+      "inputs": { "tools": 0.035 }, "outputs": { "iron_ore": 2.5 }, "laborPerBatch": 145,
+      "sitePotential": "iron_ore", "requiredTechnologyIds": ["hand_tools"]
+    },
+    {
+      "id": "burn_charcoal", "name": "Углежжение", "category": "fuel_processing",
+      "inputs": { "timber": 4 }, "outputs": { "charcoal": 2.5 }, "laborPerBatch": 78,
+      "requiredTechnologyIds": ["charcoal_burning"]
+    },
+    {
+      "id": "smelt_iron", "name": "Сыродутная плавка", "category": "metallurgy",
+      "inputs": { "iron_ore": 3, "charcoal": 2 }, "outputs": { "iron": 1.5 }, "laborPerBatch": 125,
+      "requiredTechnologyIds": ["bloomery_smelting"]
+    },
+    {
+      "id": "forge_tools", "name": "Кузнечное производство инструментов", "category": "craft",
+      "inputs": { "iron": 1, "charcoal": 0.5 }, "outputs": { "tools": 1 }, "laborPerBatch": 155,
+      "requiredTechnologyIds": ["iron_forging"]
+    }
+  ]
+}

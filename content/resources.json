@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "resources": [
+    { "id": "grain", "name": "Зерно", "unit": "условная тонна", "category": "food_raw", "baseValue": 1, "decayPerDay": 0.0004 },
+    { "id": "flour", "name": "Мука", "unit": "условная тонна", "category": "food_intermediate", "baseValue": 1.3, "decayPerDay": 0.0012 },
+    { "id": "food", "name": "Готовое продовольствие", "unit": "условная тонна", "category": "essential", "baseValue": 1.7, "decayPerDay": 0.0018, "householdNeed": { "perPersonPerDay": 0.001 } },
+    { "id": "livestock", "name": "Скот", "unit": "условное стадо", "category": "food_raw", "baseValue": 5, "decayPerDay": 0.0002 },
+    { "id": "timber", "name": "Строевая древесина", "unit": "условная тонна", "category": "material", "baseValue": 1.1, "decayPerDay": 0.00005 },
+    { "id": "firewood", "name": "Дрова", "unit": "условная тонна", "category": "fuel", "baseValue": 0.5, "decayPerDay": 0.0001, "householdNeed": { "perPersonPerDay": 0.00022, "seasonality": { "minimum": 0.2, "peakDay": 20 } } },
+    { "id": "clay", "name": "Глина", "unit": "условная тонна", "category": "material", "baseValue": 0.4, "decayPerDay": 0 },
+    { "id": "stone", "name": "Камень", "unit": "условная тонна", "category": "material", "baseValue": 0.8, "decayPerDay": 0 },
+    { "id": "iron_ore", "name": "Железная руда", "unit": "условная тонна", "category": "ore", "baseValue": 1.2, "decayPerDay": 0 },
+    { "id": "charcoal", "name": "Древесный уголь", "unit": "условная тонна", "category": "fuel", "baseValue": 1.1, "decayPerDay": 0.0001 },
+    { "id": "iron", "name": "Кричное железо", "unit": "условная тонна", "category": "material", "baseValue": 4, "decayPerDay": 0 },
+    { "id": "tools", "name": "Железные инструменты", "unit": "условный комплект", "category": "equipment", "baseValue": 8, "decayPerDay": 0.0003 }
+  ]
+}

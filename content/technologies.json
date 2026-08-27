@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "technologies": [
+    { "id": "oral_accounting", "name": "Устный счёт и меры", "domain": "administration", "complexity": 0.18, "diffusion": 0.8 },
+    { "id": "seed_selection", "name": "Отбор семян", "domain": "agriculture", "complexity": 0.22, "diffusion": 0.72 },
+    { "id": "crop_rotation", "name": "Севооборот", "domain": "agriculture", "complexity": 0.48, "diffusion": 0.42 },
+    { "id": "animal_husbandry", "name": "Системное скотоводство", "domain": "agriculture", "complexity": 0.3, "diffusion": 0.66 },
+    { "id": "pottery", "name": "Обжиг керамики", "domain": "craft", "complexity": 0.25, "diffusion": 0.7 },
+    { "id": "masonry", "name": "Каменная кладка", "domain": "construction", "complexity": 0.34, "diffusion": 0.56 },
+    { "id": "woodworking", "name": "Плотницкое ремесло", "domain": "craft", "complexity": 0.3, "diffusion": 0.7 },
+    { "id": "charcoal_burning", "name": "Углежжение", "domain": "fuel", "complexity": 0.32, "diffusion": 0.52 },
+    { "id": "bloomery_smelting", "name": "Сыродутная металлургия", "domain": "metallurgy", "complexity": 0.62, "diffusion": 0.26 },
+    { "id": "iron_forging", "name": "Ковка железа", "domain": "metallurgy", "complexity": 0.58, "diffusion": 0.3 },
+    { "id": "hand_tools", "name": "Составные ручные инструменты", "domain": "manufacturing", "complexity": 0.44, "diffusion": 0.5 },
+    { "id": "water_mill", "name": "Водяная мельница", "domain": "mechanics", "complexity": 0.66, "diffusion": 0.24 },
+    { "id": "food_preservation", "name": "Сушка, соление и закваска", "domain": "domestic", "complexity": 0.33, "diffusion": 0.68 },
+    { "id": "river_navigation", "name": "Речная навигация", "domain": "transport", "complexity": 0.45, "diffusion": 0.44 },
+    { "id": "herbal_medicine", "name": "Травничество и уход", "domain": "medicine", "complexity": 0.52, "diffusion": 0.38 }
+  ],
+  "relations": [
+    { "from": "seed_selection", "to": "crop_rotation", "type": "required" },
+    { "from": "oral_accounting", "to": "crop_rotation", "type": "supports" },
+    { "from": "pottery", "to": "food_preservation", "type": "helps" },
+    { "from": "woodworking", "to": "hand_tools", "type": "required" },
+    { "from": "charcoal_burning", "to": "bloomery_smelting", "type": "required" },
+    { "from": "hand_tools", "to": "bloomery_smelting", "type": "supports" },
+    { "from": "bloomery_smelting", "to": "iron_forging", "type": "required" },
+    { "from": "iron_forging", "to": "hand_tools", "type": "enables" },
+    { "from": "woodworking", "to": "water_mill", "type": "required" },
+    { "from": "hand_tools", "to": "water_mill", "type": "supports" },
+    { "from": "oral_accounting", "to": "river_navigation", "type": "helps" },
+    { "from": "river_navigation", "to": "water_mill", "type": "supports" },
+    { "from": "herbal_medicine", "to": "food_preservation", "type": "supports" },
+    { "from": "masonry", "to": "bloomery_smelting", "type": "industrial" }
+  ]
+}
