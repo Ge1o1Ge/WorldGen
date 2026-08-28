@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "primordial-v1",
+  "name": "Начальная эпоха",
+  "stage": "foragers",
+  "cities": [
+    {
+      "settlementId": "river_hearth",
+      "sourceCities": [
+        "greenfield"
+      ],
+      "population": 90,
+      "initialTechnologies": [
+        "gardening"
+      ]
+    },
+    {
+      "settlementId": "stone_watch",
+      "sourceCities": [
+        "northwatch"
+      ],
+      "population": 80,
+      "initialTechnologies": [
+        "archery"
+      ]
+    },
+    {
+      "settlementId": "grass_camp",
+      "sourceCities": [
+        "stonebridge"
+      ],
+      "population": 85,
+      "initialTechnologies": [
+        "taming"
+      ]
+    },
+    {
+      "settlementId": "elder_camp",
+      "sourceCities": [
+        "crossroads"
+      ],
+      "population": 95,
+      "initialTechnologies": [
+        "chieftains"
+      ]
+    },
+    {
+      "settlementId": "wood_camp",
+      "sourceCities": [
+        "river_mill"
+      ],
+      "population": 75,
+      "initialTechnologies": [
+        "woodworking"
+      ]
+    },
+    {
+      "settlementId": "reed_camp",
+      "sourceCities": [
+        "harbor"
+      ],
+      "population": 85,
+      "initialTechnologies": [
+        "weaving"
+      ]
+    }
+  ],
+  "routes": []
+}

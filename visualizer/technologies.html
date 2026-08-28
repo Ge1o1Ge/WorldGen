@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WorldGen — сеть технологий</title>
+  <link rel="stylesheet" href="/technologies.css">
+</head>
+<body>
+  <header class="app-header">
+    <a href="/sphere.html" class="brand" title="Вернуться к миру"><span class="brand-mark">W</span> WORLDGEN <span class="slash">/</span> <strong>Технологии</strong></a>
+    <span class="workspace-label">МАСТЕРСКАЯ МИРА</span>
+    <div class="header-actions"><span id="save-state" role="status">Подключение…</span><button id="reload">Обновить</button><button id="create" class="primary" disabled>＋ Новая нода</button></div>
+  </header>
+  <div class="workspace">
+    <aside class="library">
+      <div class="section-title">БИБЛИОТЕКА <span id="node-count">—</span></div>
+      <label class="search"><span>⌕</span><input id="search" type="search" placeholder="Найти технологию…" aria-label="Поиск технологий"></label>
+      <label class="field">Слой сети<select id="layer"><option value="primitive">Начальная эпоха + черновики</option><option value="all">Вся сеть</option><option value="draft">Только черновики</option><option value="catalog">Поздний каталог</option></select></label>
+      <button id="manual-filter" class="queue-toggle" aria-pressed="false"><span class="manual-dot"></span> На адаптацию <b id="pending-count">0</b></button>
+      <div id="search-results" class="node-list" aria-label="Список технологий"></div>
+      <div class="library-bottom"><span class="eyebrow">ИТЕРАТИВНЫЙ ПРОЦЕСС</span><p>Твоя мысль → <em>manual</em> → адаптация → журнал ноды.</p><p>Черновики не меняют работающий мир.</p><a href="/api/technology-editor/pending" target="_blank">Очередь для адаптации ↗</a><button id="export" class="text-button">Экспорт сети в JSON ↓</button></div>
+    </aside>
+    <main class="graph-area">
+      <div class="graph-toolbar"><div><span class="eyebrow">СЕТЬ ЗНАНИЙ</span><h1 id="graph-title">Начальная эпоха</h1></div><label>Тип связи <select id="link-type" aria-label="Тип связи"></select></label></div>
+      <div id="canvas" tabindex="0" aria-label="Сеть технологий: перетащите фон для перемещения, колесо для масштаба">
+        <div id="world"><svg id="wires" aria-label="Связи технологий"></svg><div id="nodes"></div></div>
+        <div id="empty" hidden>В этом слое пока нет нод. Добавь свою первую мысль.</div>
+      </div>
+      <div id="notice" role="status" hidden></div>
+      <div class="graph-bottom"><div class="legend"><span style="--swatch:#7cc9ec">Необходимо</span><span style="--swatch:#9bcf94">Открывает</span><span style="--swatch:#c4a1eb">Усиливает</span><span class="manual-legend">Пунктир — manual</span></div><div class="zoom-tools"><button id="zoom-out" aria-label="Уменьшить">−</button><output id="zoom">100%</output><button id="zoom-in" aria-label="Увеличить">＋</button><button id="fit">Вся сеть</button><button id="layout" title="Переразложить видимые ноды; сохранённые позиции изменятся">Раскладка</button></div></div>
+      <div class="gesture-hint">Фон — перемещение · колесо — масштаб · заголовок — перенос ноды · выход → вход — связь · Esc — отмена</div>
+    </main>
+    <aside id="inspector" class="inspector"><div class="inspector-intro"><span class="eyebrow">ИНСПЕКТОР НОДЫ</span><h2>От мысли<br>к механике.</h2><p>Нажми на технологию, чтобы увидеть условия, эффекты и обсуждение.</p><div class="intro-diagram"><span>Идея</span><i>→</i><span>Связь</span><i>→</i><span>Мир</span></div><p>Стрелка в заголовке раскрывает карточку прямо на схеме.</p></div></aside>
+  </div>
+  <dialog id="node-dialog">
+    <form id="node-form"><div class="dialog-heading"><div><span class="eyebrow">РУЧНОЙ ЧЕРНОВИК</span><h2 id="dialog-title">Новая технология</h2></div><button type="button" id="close-dialog" aria-label="Закрыть">×</button></div>
+      <label class="field">Название<input name="title" required maxlength="160" placeholder="Например, общественная хлебная печь"></label>
+      <div class="form-row"><label class="field">Область<select name="domain"><option value="craft">Ремёсла</option><option value="food">Пища и природа</option><option value="construction">Строительство</option><option value="water">Вода</option><option value="knowledge">Знания</option><option value="organization">Общество</option></select></label><label class="field">Знак на карте<select name="symbol" id="symbol-select"><option value="">Без знака</option></select></label></div>
+      <label class="field">Описание / идея<textarea name="description" maxlength="16000" rows="3" placeholder="Что это и зачем нужно поселению?"></textarea></label>
+      <label class="field">Условия возникновения<textarea name="conditions" maxlength="16000" rows="2" placeholder="Какие знания, ресурсы или обстоятельства нужны?"></textarea></label>
+      <label class="field">Предполагаемые эффекты<textarea name="effects" maxlength="16000" rows="2" placeholder="Что изменится после внедрения?"></textarea></label>
+      <p class="form-note">Нода получит флаг manual. Параметры симуляции не изменятся до адаптации.</p><p id="form-error" role="alert"></p><button type="submit" class="primary" id="submit-node">Добавить в сеть</button>
+    </form>
+  </dialog>
+  <script type="module" src="/technologies.js"></script>
+</body>
+</html>

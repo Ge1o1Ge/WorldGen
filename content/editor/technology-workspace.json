@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "revision": 42,
+  "nodes": [],
+  "edges": [],
+  "comments": [],
+  "journal": [],
+  "positions": {
+    "primitive:grow_raspberry": {
+      "x": 1119.9543304992005,
+      "y": 249.2749745879645
+    },
+    "primitive:stone_axes": {
+      "x": -5.535219478200597,
+      "y": 1200.5931640461174
+    },
+    "primitive:spears": {
+      "x": 326.5779492138352,
+      "y": 1109.6351165120955
+    },
+    "primitive:fire": {
+      "x": -23.985951072202624,
+      "y": 2336.0593047898155
+    },
+    "primitive:stone_vessels": {
+      "x": -14.943529529030643,
+      "y": 1603.4035358418469
+    },
+    "primitive:gathering": {
+      "x": -18.45073159400199,
+      "y": 1989.931698535154
+    },
+    "primitive:hunting": {
+      "x": 691.8173639386337,
+      "y": 1111.4801896714957
+    },
+    "primitive:building": {
+      "x": -14.943529529030643,
+      "y": 1514.277658941772
+    },
+    "primitive:hide_clothing": {
+      "x": 760,
+      "y": 0
+    },
+    "primitive:calendar": {
+      "x": -20.295804753402187,
+      "y": 1900.8187241605324
+    },
+    "primitive:fishing": {
+      "x": -23.98595107220258,
+      "y": 2248.7914035745944
+    },
+    "primitive:gardening": {
+      "x": 350.47882944959684,
+      "y": 2088.819501430189
+    },
+    "primitive:archery": {
+      "x": 691.7322931021928,
+      "y": 1202.4382372055177
+    },
+    "primitive:taming": {
+      "x": 760,
+      "y": 224
+    },
+    "primitive:chieftains": {
+      "x": 362.56588221613094,
+      "y": 1516.462361325691
+    },
+    "primitive:woodworking": {
+      "x": 328.33795153679444,
+      "y": 1201.1426267695294
+    },
+    "primitive:weaving": {
+      "x": 348.63375629019663,
+      "y": 1992.1295494288026
+    },
+    "primitive:well": {
+      "x": 362.56588221613094,
+      "y": 1603.5564787773067
+    },
+    "primitive:grow_wheat": {
+      "x": 1140,
+      "y": 672
+    },
+    "primitive:grow_barley": {
+      "x": 1520,
+      "y": 560
+    },
+    "primitive:grow_buckwheat": {
+      "x": 688.0421467833922,
+      "y": 2307.4809669411525
+    },
+    "primitive:grow_rice": {
+      "x": 1140,
+      "y": 896
+    },
+    "primitive:grow_cabbage": {
+      "x": 689.8872199427923,
+      "y": 2234.42418827772
+    },
+    "primitive:grow_carrot": {
+      "x": 800,
+      "y": 436
+    },
+    "primitive:grow_turnip": {
+      "x": 1140,
+      "y": 784
+    },
+    "primitive:grow_beet": {
+      "x": 1140,
+      "y": 1008
+    },
+    "primitive:grow_peas": {
+      "x": 684.3520004645918,
+      "y": 2454.340671980592
+    },
+    "primitive:grow_beans": {
+      "x": 760,
+      "y": 348
+    },
+    "primitive:grow_cucumber": {
+      "x": 1140,
+      "y": 448
+    },
+    "primitive:grow_pumpkin": {
+      "x": 1520,
+      "y": 112
+    },
+    "primitive:grow_onion": {
+      "x": 1140,
+      "y": 112
+    },
+    "primitive:grow_garlic": {
+      "x": 1520,
+      "y": 336
+    },
+    "primitive:grow_pepper": {
+      "x": 1140,
+      "y": 560
+    },
+    "primitive:grow_apple": {
+      "x": 1520,
+      "y": 448
+    },
+    "primitive:grow_pear": {
+      "x": 686.1970736239921,
+      "y": 2087.3677982491163
+    },
+    "primitive:grow_plum": {
+      "x": 689.8021491063514,
+      "y": 2160.621261901712
+    },
+    "primitive:grow_cherry": {
+      "x": 684.3520004645919,
+      "y": 2530.5381342394126
+    },
+    "primitive:grow_hazel": {
+      "x": 1140,
+      "y": 0
+    },
+    "primitive:grow_walnut": {
+      "x": 686.1970736239921,
+      "y": 2381.833356040572
+    },
+    "primitive:grow_currant": {
+      "x": 1520,
+      "y": 0
+    },
+    "primitive:grow_blueberry": {
+      "x": 1520,
+      "y": 224
+    },
+    "primitive:herd_chicken": {
+      "x": 1900,
+      "y": 336
+    },
+    "primitive:herd_pig": {
+      "x": 1900,
+      "y": 784
+    },
+    "primitive:herd_cow": {
+      "x": 1900,
+      "y": 112
+    },
+    "primitive:herd_deer": {
+      "x": 1900,
+      "y": 672
+    },
+    "primitive:herd_horse": {
+      "x": 1900,
+      "y": 448
+    },
+    "primitive:herd_rabbit": {
+      "x": 1900,
+      "y": 224
+    },
+    "primitive:herd_goat": {
+      "x": 1900,
+      "y": 0
+    },
+    "primitive:herd_sheep": {
+      "x": 1900,
+      "y": 560
+    },
+    "primitive:crop_rotation": {
+      "x": 814.6541287482344,
+      "y": -186.0388244870836
+    },
+    "catalog:oral_accounting": {
+      "x": 0,
+      "y": 1400
+    },
+    "catalog:seed_selection": {
+      "x": 0,
+      "y": 1512
+    },
+    "catalog:crop_rotation": {
+      "x": 380,
+      "y": 1400
+    },
+    "catalog:animal_husbandry": {
+      "x": 0,
+      "y": 1624
+    },
+    "catalog:pottery": {
+      "x": 0,
+      "y": 1848
+    },
+    "catalog:masonry": {
+      "x": 0,
+      "y": 1736
+    },
+    "catalog:woodworking": {
+      "x": 0,
+      "y": 1960
+    },
+    "catalog:charcoal_burning": {
+      "x": 0,
+      "y": 2184
+    },
+    "catalog:bloomery_smelting": {
+      "x": 380,
+      "y": 1736
+    },
+    "catalog:iron_forging": {
+      "x": 760,
+      "y": 1400
+    },
+    "catalog:hand_tools": {
+      "x": 380,
+      "y": 1512
+    },
+    "catalog:water_mill": {
+      "x": 380,
+      "y": 1624
+    },
+    "catalog:food_preservation": {
+      "x": 0,
+      "y": 2072
+    },
+    "catalog:river_navigation": {
+      "x": 0,
+      "y": 2408
+    },
+    "catalog:herbal_medicine": {
+      "x": 0,
+      "y": 2296
+    }
+  }
+}

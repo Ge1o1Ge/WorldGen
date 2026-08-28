@@ -1,0 +1,19 @@
+# .NET
+**/bin/
+**/obj/
+TestResults/
+.vs/
+*.user
+*.suo
+
+# Editors
+.idea/
+.vscode/
+
+# Node (the current project has no external dependencies, but keep future installs out)
+node_modules/
+
+# Runtime artifacts
+*.log
+*.tmp
+content/editor/technology-workspace.json.bak

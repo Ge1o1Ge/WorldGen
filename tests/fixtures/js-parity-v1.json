@@ -1,0 +1,908 @@
+{
+  "schemaVersion": 3,
+  "scenarioId": "six_roads_early_iron",
+  "seed": 731942,
+  "contentHash": "a9eb5da0746292cc28ae4fb9952aa39d7962a6586b7a68a8372570574d269ff5",
+  "randomStreams": {
+    "economy": {
+      "values": [
+        0.11430506873875856,
+        0.4670622409321368,
+        0.8600701747927815,
+        0.12021402618847787,
+        0.5183464665897191,
+        0.7289912570267916,
+        0.2930798321031034,
+        0.06499943160451949,
+        0.6259665077086538,
+        0.7483659856952727,
+        0.9822857156395912,
+        0.6653573573566973
+      ],
+      "finalState": 3038074174
+    },
+    "events": {
+      "values": [
+        0.6997664701193571,
+        0.5650521623902023,
+        0.8277711207047105,
+        0.2701323174405843,
+        0.4140945482067764,
+        0.4716442234348506,
+        0.23488519270904362,
+        0.7520959977991879,
+        0.5524854073300958,
+        0.9256084391381592,
+        0.3896649722009897,
+        0.08200320415198803
+      ],
+      "finalState": 4043123727
+    },
+    "institutions": {
+      "values": [
+        0.1371247977949679,
+        0.9184730337001383,
+        0.37268131761811674,
+        0.67916040844284,
+        0.24479091819375753,
+        0.7672433145344257,
+        0.31352137704379857,
+        0.5713659420143813,
+        0.7405346645973623,
+        0.2675753403455019,
+        0.9013449617195874,
+        0.8847746206447482
+      ],
+      "finalState": 1121321753
+    },
+    "technology": {
+      "values": [
+        0.9395868612919003,
+        0.6381888627074659,
+        0.3252157988026738,
+        0.4742186975199729,
+        0.17643143981695175,
+        0.2256154571659863,
+        0.4029359631240368,
+        0.030743175419047475,
+        0.7176418621093035,
+        0.6833925161045045,
+        0.028724328381940722,
+        0.9164883685298264
+      ],
+      "finalState": 3913719736
+    }
+  },
+  "checkpoints": [
+    {
+      "day": 0,
+      "hash": "2456c394fd89d01903ea4758fc0eaee48d27b095d0f57aea784b941d50156603"
+    },
+    {
+      "day": 1,
+      "hash": "d38b2e1c7ca7d9fc79c23d40a0c481dd59268690224c092fd900db3c404dc882"
+    },
+    {
+      "day": 30,
+      "hash": "3d9e17441868cbd85f8c00959598b0c68befc132367e92d724e5150757a4df39"
+    },
+    {
+      "day": 60,
+      "hash": "3e4fbd9a49f091e3d064cc90077dce27a084f73f0b960fbc7db6ef62bf0c8864"
+    },
+    {
+      "day": 90,
+      "hash": "b42d37f5da109a19b4f0f45c76ad686b7fee006ec9bce6d602fb4ce972cadc4d"
+    },
+    {
+      "day": 120,
+      "hash": "de23709dcdf18486bfcdc206bb9c55be515522cadd278db3d760b0d5fd52d662"
+    },
+    {
+      "day": 150,
+      "hash": "23021ee69be537fa7aa74ff4a8217fa02bfcaf77a3495097fa3c973ee924a96c"
+    },
+    {
+      "day": 180,
+      "hash": "ffeb1a43551ed34c93691c561f4168bad6ba89d04a8fdb258c43d35140804271"
+    },
+    {
+      "day": 210,
+      "hash": "037cd791d0af8b2a98ef8047c0197da83ac6fac0c520881b81e3736737bc7950"
+    },
+    {
+      "day": 240,
+      "hash": "4b3a15a37f8451b26e89b64dd395e6b97c07427dc767436ae28beca674f11bc8"
+    },
+    {
+      "day": 270,
+      "hash": "e2192c407d9a4d7659275f9a76b3af34984d9bc6f997b984d36b0c133e6328c0"
+    },
+    {
+      "day": 300,
+      "hash": "d756b6de7cdd635129fd365958794c6e625ee5a56efaff39236208ec894ff8cc"
+    },
+    {
+      "day": 330,
+      "hash": "a1922bf31e50b1acaf990bcdf47f2991612331500c6eabc5a7f021580b9e3ba2"
+    },
+    {
+      "day": 360,
+      "hash": "07b4114df37c7bd4d4a80fbd63969ea4784b754c0ee7ca8ba7f5a226bcf10f67"
+    },
+    {
+      "day": 365,
+      "hash": "689c9de423cfbfc66a5766bda238fba5d8cd8db1d6f6f08b859c827a161f35a9"
+    },
+    {
+      "day": 390,
+      "hash": "7c4f4f634ee284117bfbabe2354985303c2b390ae2515f611bd3f1910724e24f"
+    },
+    {
+      "day": 420,
+      "hash": "90d99903158d3699ce21386cecc708e135ce64daa18ef536027ab277dcee8b1d"
+    },
+    {
+      "day": 450,
+      "hash": "13c17df59bd2adc902838e1748e8f49303966335eeb0a1a7039ab2ad1ffc41ca"
+    },
+    {
+      "day": 480,
+      "hash": "947b4a1815bc3f83562ab492619ff0d3c0292c20da5fe5a2d61d13d1a5c8f092"
+    },
+    {
+      "day": 510,
+      "hash": "c2539c43d8529fb5d2c93448f34d80f2580898df8cd13099a3ea057d9fc6d749"
+    },
+    {
+      "day": 540,
+      "hash": "6c46038a780073c86caa4d6e72a2f4568006635219696ee9633fda07a6243790"
+    },
+    {
+      "day": 570,
+      "hash": "9c3ec90242657ae38c8ac808aaedb4ec92a854641542e6d31f5a2e0a9378a9fe"
+    },
+    {
+      "day": 600,
+      "hash": "2f64f4cded96498758b3a57898735032848c9982a1263c7327ecce8a767e2891"
+    },
+    {
+      "day": 630,
+      "hash": "0deafdc129a035abce8801fe0249e69e7b24ab08e221bea7db247c2302ebefea"
+    },
+    {
+      "day": 660,
+      "hash": "c91f2587b8d7d176325b86cbc38144dabf20e2356ab317b1897d89a96dfac5da"
+    },
+    {
+      "day": 690,
+      "hash": "60c899bf8a40a763d6969162d7e5004f05b4b49d583af74858bb4bc4233388fa"
+    },
+    {
+      "day": 720,
+      "hash": "b1cae2516719f9e7f16812ed2ced2ce56e0e127c58f1d84af97a1a505440b019"
+    },
+    {
+      "day": 750,
+      "hash": "ada2ae28703c1d3cc2600d5f10aaab9a21af780fc86145fa5c75baa2d083c7d1"
+    },
+    {
+      "day": 780,
+      "hash": "b2c5cf9ed9013e83f1cf89e711dda34d2a5b9f134cb738b31e8b746ea31d5c7f"
+    },
+    {
+      "day": 810,
+      "hash": "34f43ec0beb85c283877dc87dea3150b2ab69fbf8fe31ae9bb7bce572f04fb56"
+    },
+    {
+      "day": 840,
+      "hash": "e7d34351a5e689e76bc8a653702f7bb48f93e51870a67529bc1ff46ee99178ab"
+    },
+    {
+      "day": 870,
+      "hash": "678c1eb43cfa1c4c90ce241b939ecd210ef1903dec3b76ff32dcd1be8a4adac1"
+    },
+    {
+      "day": 900,
+      "hash": "63141e95450074d34cc8e39e1c62087285e35154c2e839227137e484bd44b55d"
+    },
+    {
+      "day": 930,
+      "hash": "5951ad21a8fbb91856cb81551454b35a583f44e939630dbdec4186dd5cb0017c"
+    },
+    {
+      "day": 960,
+      "hash": "b09e7778b90a299736a8e3cb5da24d11b70e0242c7bd414d8f182e71b0209778"
+    },
+    {
+      "day": 990,
+      "hash": "436496f185cb5903470f9c37f4851560a631af560bcd431854fb91be861b20d6"
+    },
+    {
+      "day": 991,
+      "hash": "89875cf0a92d812ea6d92eb200d879edd4c00148505fc68c75f5ea501556e270"
+    },
+    {
+      "day": 992,
+      "hash": "b910b200def04b9f9ac51f3bf4d39b513f070b159957ce51cfbb21cb39a7d028"
+    },
+    {
+      "day": 993,
+      "hash": "c6d725905cc43df771c1e75810220f73d9b4943144fe6cbcb88b93e116ba2ca6"
+    },
+    {
+      "day": 994,
+      "hash": "48f4547182855ec2db11faf565cfd8524e6da764fdf6f2027b8305522eefc797"
+    },
+    {
+      "day": 995,
+      "hash": "dafd3f4f1904b0ff6b650fbf078da0ff7e90e7d573111fb430942b28c4358628"
+    },
+    {
+      "day": 996,
+      "hash": "6279cebf5ec13b4e9bb481e7f1b9fe0cf67fc4d57fc7316fb3df0abd77277c40"
+    },
+    {
+      "day": 997,
+      "hash": "d662c11316076e1c6394eda9fcb4733d31c2558958d86d9a1f30b42d7d070923"
+    },
+    {
+      "day": 998,
+      "hash": "53478b3661be9893b84eb3ff3669491bc2bedab2f6751105dadac603078e1b34"
+    },
+    {
+      "day": 999,
+      "hash": "6fcd0c7dca0151e70b1e2bf6dd7a727d0ff03f03c5aef4d7acbd98e222ad417a"
+    },
+    {
+      "day": 1000,
+      "hash": "3aeb02c411a93502027e69c7e458b8a3af51d7ddccdb672ba09d0ec6ed14f63a"
+    },
+    {
+      "day": 1001,
+      "hash": "385d9035e095c6baed08be750ce1baf5cf72b7e87eb118f1d9f91036cf964dd9"
+    },
+    {
+      "day": 1002,
+      "hash": "3bb79eda0ba34c018f81f6bbca1a7402c07259b34acbef84dcc7a663bc4ce433"
+    },
+    {
+      "day": 1003,
+      "hash": "048e697b7bfdb945b16f9916cccf507ffbca1180a0be7be8a903c76afbf676e0"
+    },
+    {
+      "day": 1004,
+      "hash": "aaeb416c6f073af9372acbf966c730efcda345469bab0b60742fc3b0c9a69020"
+    },
+    {
+      "day": 1005,
+      "hash": "0bd2c865e87e98bdaba2939739ae27f840a236302db20192f55b76d39d8b3c7a"
+    },
+    {
+      "day": 1006,
+      "hash": "28053752f09a82f426f9658ec2a37c720fe8e3fab6c45bc839f2918d974112a0"
+    },
+    {
+      "day": 1007,
+      "hash": "58120fdf5c3d0e2cab146acd56ec93a37558d68423436d6b3848509152ab0937"
+    },
+    {
+      "day": 1008,
+      "hash": "c32db58ebbda29de986eccc83fb8772a59623a9809d20e203dd3ae004a79e195"
+    },
+    {
+      "day": 1009,
+      "hash": "ccedca0f2d1ac6b387f88f38678b740856b98822f3aabe09cd1fee636be87823"
+    },
+    {
+      "day": 1010,
+      "hash": "ebd194daa2a8617c20be41c61d4d0e5a05d0770dcde2fffd0c612f043863d4fb"
+    },
+    {
+      "day": 1011,
+      "hash": "fa8b8e787ba749b3c68632449844415315d9df523c2eca153029a13ed0fd5cf9"
+    },
+    {
+      "day": 1012,
+      "hash": "9ca11c71d30c643a1b79a2536cd41ccd63e09fa7adf7062979a81b4e65cf3983"
+    },
+    {
+      "day": 1013,
+      "hash": "a346ea834c59139479db03c33514b82809286a02e09b345b00b534ff691651d3"
+    },
+    {
+      "day": 1014,
+      "hash": "04cdff7e69648e8c4c7a9ab34212a41b8ff47a640ebaad2a4a8f6e78a479d311"
+    },
+    {
+      "day": 1015,
+      "hash": "48d607671112711ec07dea5320e46df9346a31a31da89b050c60370b43b1e760"
+    },
+    {
+      "day": 1016,
+      "hash": "3dafc4520b547d1b67b0fe68c2877dd6dee033ef4e8f5dd3ddcd0aa6bc424a05"
+    },
+    {
+      "day": 1017,
+      "hash": "faad73ca6cc8752c709b99c21aa4baeddab38c8c41efd557b2b7f79fdf14147a"
+    },
+    {
+      "day": 1018,
+      "hash": "0e53dab292c7e305ca47a3603db3a1647ec0b6bf894f2ee243f13eda76707a4b"
+    },
+    {
+      "day": 1019,
+      "hash": "3374c8fbbecf691cf210672a0779221aee0e7d2145d1f4d4d225f2324f30a734"
+    },
+    {
+      "day": 1020,
+      "hash": "fd3b0fca5286430e941ce8237773519e02120bfbb52e58939f0b3c69c35ca0f0"
+    },
+    {
+      "day": 1050,
+      "hash": "31eb1c6408ff2e56c22e263077b1f563eab2f8f66cf5e6bbaaad9bd110d049c2"
+    },
+    {
+      "day": 1080,
+      "hash": "ceaf954b51056127d686753235593451bc8493ba4da7bbbc17578c2801c25c96"
+    },
+    {
+      "day": 1110,
+      "hash": "0467fa3cfd69a20459cff59256d7fc2cd36070599f0ff80e5bf440f9e2a8b2ab"
+    },
+    {
+      "day": 1140,
+      "hash": "72efc66472eb6b0b184e30c579d33120f92d86302d0ed147607a9f3835d1f168"
+    },
+    {
+      "day": 1170,
+      "hash": "35bd770d0c874bef2a7229dca73af7fa15f91c6907fda6a33869d37468c6ce79"
+    },
+    {
+      "day": 1200,
+      "hash": "0b6b9ccc8ee9badccda6a40122c51014d0234aa0e24eea4934947b504d06fc9c"
+    },
+    {
+      "day": 1230,
+      "hash": "43b0c19205222efb44592aaea4fac7f1c72322d28b15d4eef92dfd8f71026b7a"
+    },
+    {
+      "day": 1260,
+      "hash": "42981e52db644bc2bfee1cb393aec1e806fd1e986f884d07a1d568094ff8d296"
+    },
+    {
+      "day": 1290,
+      "hash": "eaf5f902f71ddb5de6dd246c9efad1ee2ed6fc5acad1920bee2b323aed5ff1cc"
+    },
+    {
+      "day": 1320,
+      "hash": "eb0c2da23c694f4278079cb3fc1676f2d9c832e3acdf3c286ff05cc6d643df25"
+    },
+    {
+      "day": 1350,
+      "hash": "3492224587f9aa6fb414c7251e6d42a9280518163168375ab3af528abc5f6c33"
+    },
+    {
+      "day": 1380,
+      "hash": "d3014b18001e10ba65a25948e04d4990e703b46f5f85d26feea80840309c5bd6"
+    },
+    {
+      "day": 1410,
+      "hash": "85ea267c7dcbbc83a8213e7b67c3de2c69dc9d20639dc41c90c988bd065b8ef2"
+    },
+    {
+      "day": 1440,
+      "hash": "81de3eb6bd77f190ea6e3e89f008171ce727373f5ef463983e6b4ec953e4133e"
+    },
+    {
+      "day": 1470,
+      "hash": "64b62a640af359914a2d429154cdc5efbbe26209ece4be38df7f5cb4af5a93cc"
+    },
+    {
+      "day": 1500,
+      "hash": "c8dd1286f72a9860fb31068b29a23df59317ab4f667ab1017a67712d2df297b8"
+    },
+    {
+      "day": 1530,
+      "hash": "4e88f6a6cf656064010adcff2478d99336a45eac4c7d887d1d7ae1aa1d42212e"
+    },
+    {
+      "day": 1560,
+      "hash": "accf51ee2f5994c791c43164be4814b12751e2390d7ebe02f7e39f34b349cf32"
+    },
+    {
+      "day": 1590,
+      "hash": "1ebb496e3ffa35e311abf29cfc24549b93cf2f7b536d6a9753a1209a7fcafba6"
+    },
+    {
+      "day": 1620,
+      "hash": "b601ab840fa572e28951fda301c99abfb35711013bdd6b9526d74d9b55b6db77"
+    },
+    {
+      "day": 1650,
+      "hash": "fd8c0d6d23e0ba76345859f3f864297ed41f125d90966784734ce7ec96566b84"
+    },
+    {
+      "day": 1680,
+      "hash": "ddb72ee98a8b54f6d5f22d91bc9bde776ee5fb37724fb6ed85971f04be708ef4"
+    },
+    {
+      "day": 1710,
+      "hash": "293719f0683acc782e0a27386f19a6c699ed3fe643949e9daccb31a7ddf837e3"
+    },
+    {
+      "day": 1740,
+      "hash": "a97022cb37a28ac02fd0e7f1715692aff716d8380edba2f77fd41d19f7e8c1dd"
+    },
+    {
+      "day": 1770,
+      "hash": "2dce55037e3bd09874d8160bd194b7accb40fe7cd347414189c30928a53e88bc"
+    },
+    {
+      "day": 1800,
+      "hash": "cc68322b4fd4b7039c26cfeeab105437bac180a7b26d5c99bfe0c7294921bcfe"
+    },
+    {
+      "day": 1825,
+      "hash": "d5cd1db9416a2234b0d39f603e5780e324b9d93c0ba7a08e1e36c68c489e75ea"
+    },
+    {
+      "day": 1830,
+      "hash": "7c50fc15cb14643a200fd91f730b174cd0c2427cf2d7331f135f84a9059ed04e"
+    },
+    {
+      "day": 1860,
+      "hash": "561f8beff4711b9e1c6d60dc799d984312b58274cd38ab838846a7d0c8910857"
+    },
+    {
+      "day": 1890,
+      "hash": "06a9be244b27c45d8293fad5ef9a080f5fcbd98369bc2663fcc144707b0be083"
+    },
+    {
+      "day": 1920,
+      "hash": "3978db9aca297f38c354189ed7fc417cb56a5ae280d488892a0ad2d8d2bb55f9"
+    },
+    {
+      "day": 1950,
+      "hash": "eff4b39d083165dde83af0892505784531bd441a8e6658d55aeaaaca4d148b13"
+    },
+    {
+      "day": 1980,
+      "hash": "281f6ebd1bf4f62a0e754bb6be4b73ba0653459339c905f93b1e011b40fe18a5"
+    },
+    {
+      "day": 2010,
+      "hash": "b78f2fed41a980266396a4f2a3f5a8db8e6c593f4d937f9aa7f82c96ea375cf5"
+    },
+    {
+      "day": 2040,
+      "hash": "43993118245f13b25ef160f9aeaa287687fda57026560e40c097c5ee9afc3a8f"
+    },
+    {
+      "day": 2070,
+      "hash": "2f79fe296978c333f927aa18eaad1b8fe0e1169ed80e1908c2de3ad28b680ba4"
+    },
+    {
+      "day": 2100,
+      "hash": "9f3fce531498ed29608dcc98e9fbbe7cbc8069321dd9af4650272ab42244524f"
+    },
+    {
+      "day": 2130,
+      "hash": "2fc6c72c527fc8a2e78780d190bd3e8cbafa0c35046e1e7aff66d66a5a1197af"
+    },
+    {
+      "day": 2160,
+      "hash": "52986f7ebcf4aef1acd0736ecaeee122e25ff889ff4f39eedc500cff15d927db"
+    },
+    {
+      "day": 2190,
+      "hash": "914523ccbf9d8a8d4e88bcb6397b18f92ed0be5768b7c3d49f46136bc340b7f0"
+    },
+    {
+      "day": 2220,
+      "hash": "259e17a903a91e158aedb71e4f1a14ba1bbaa9c0ac8af3fd49fe259e52f35050"
+    },
+    {
+      "day": 2250,
+      "hash": "9c7c2c6562f922c1dd9d196a68083250ecfabf2e3c6c2d3c807632c8a03fbc36"
+    },
+    {
+      "day": 2280,
+      "hash": "dbcb4f2670ae5f781255fa1b273f797484fa9276320e7ea84b60265e0a60e3e9"
+    },
+    {
+      "day": 2310,
+      "hash": "dfafb335b908ff1bd5ba82b52c689e4bdc290ea647a33163246f6fdaed01a261"
+    },
+    {
+      "day": 2340,
+      "hash": "71acc6d398194818afca1c70cd19dd9aa853970bce362766110bf3a5c4ca2193"
+    },
+    {
+      "day": 2370,
+      "hash": "a5c41fda81a60d20e9916a115f968cc388c87a2b3dbfcdbb46d5f4afa1d4dec6"
+    },
+    {
+      "day": 2400,
+      "hash": "d36eb1b11d3aaf0d324c0a96aafd107d0375e119195167a79f3d10dc583fc988"
+    },
+    {
+      "day": 2430,
+      "hash": "d7f64dc2a561d71534a132d538ade89675ec91de86a036b4ad818091df370632"
+    },
+    {
+      "day": 2460,
+      "hash": "49b8e834ff63f8f31242834536ace75661677338a66728fb4a6f7868ad4916fc"
+    },
+    {
+      "day": 2490,
+      "hash": "f02df5049065b854f030001cdf264f235807e6b6adf2efaebcf32c01261c168c"
+    },
+    {
+      "day": 2520,
+      "hash": "17b7c8f53193bb0ffe340b68f190c25cd44056f4d9580b7311ee887b42f11eec"
+    },
+    {
+      "day": 2550,
+      "hash": "0c31e22c7e8a8eee1f1d52f51a924ad8bf69df1e4ab635d94f279f904f838048"
+    },
+    {
+      "day": 2580,
+      "hash": "79603b69d71aa70259098d0dbcf6af742f9b03d95153f60892701231ef3d6812"
+    },
+    {
+      "day": 2610,
+      "hash": "4e12cbfa3ed466df7116ecd29e7e6fa41ff2cadae9050fd8a6e93a7ff0f665f4"
+    },
+    {
+      "day": 2640,
+      "hash": "89645a06cb52e07e07dd04e23972bf188a351302af0a7aad941e20e69a07ca21"
+    },
+    {
+      "day": 2670,
+      "hash": "05f28af5db0dcd7ad8964e2ccc8f92cfdda06ca1c1c8cdff1e28d974f18ef190"
+    },
+    {
+      "day": 2700,
+      "hash": "70a26839dc44d67ff676af7cd1a3b223e3a08bbaa4025ecbdfc3e4b902bba00c"
+    },
+    {
+      "day": 2730,
+      "hash": "a1dab8127d9e32cd0de1080e676cb0c730586dded3c4132ad5dc52fa4210382d"
+    },
+    {
+      "day": 2760,
+      "hash": "bcbb71aaba4ff4d7ff2e872365526a0c4f4b35adb0d6682f381c1583f5e03e2d"
+    },
+    {
+      "day": 2790,
+      "hash": "ab133e3399b43842d5ee90e81a23c6d53f6fd36cde498106d8dab5e03e1e86e2"
+    },
+    {
+      "day": 2820,
+      "hash": "aabb590aedf895b146cd64a630678d6d11503d05e304cc420fe389100fba65d0"
+    },
+    {
+      "day": 2850,
+      "hash": "ada4e0526d8a6c88fae66e12548f021ea95c15856f533a5c3b8fad3388251796"
+    },
+    {
+      "day": 2880,
+      "hash": "408cff585a426aa54a938fbf2f1c6864b5cf68d9b475b28018c7f0be2efe07b0"
+    },
+    {
+      "day": 2910,
+      "hash": "3e5a2eb3ea2a24466fecd2a90b4d2f43304e7b241ff65c5ebe69617501b1bcee"
+    },
+    {
+      "day": 2940,
+      "hash": "43f2f2a593e57294d7924c88178f852bfb0e4819053a97a19adf4fd5d8c78dc6"
+    },
+    {
+      "day": 2970,
+      "hash": "31e28ffc6c0cab92673167d6dcf63f82a262cbd0f5daca85132aa6c753c999bc"
+    },
+    {
+      "day": 3000,
+      "hash": "5fbeeaf576cfed804d0a0248cab2e7fb7d5a54a6e89f116dc321b520dc284755"
+    },
+    {
+      "day": 3030,
+      "hash": "38c0d4a624e21485990f14f2ccc29287376116e1b88a7c7547bc29530a0b86bb"
+    },
+    {
+      "day": 3060,
+      "hash": "b828b91509ee801fffd9b197ab811787657ee0ea9613677e41d0468915e3a81e"
+    },
+    {
+      "day": 3090,
+      "hash": "0b8b937977b94b670b2214f785c35499511546b0bfd22c0a468c1c6233e989ab"
+    },
+    {
+      "day": 3120,
+      "hash": "165990f2dfa8365542a977ca179903dbbab9d9d4e7eb7100685f488bcbb2e26d"
+    },
+    {
+      "day": 3150,
+      "hash": "d97eb4cd56de159624f44d73d280561096eac62dd3ecb104e8efd1e4b2ec3f49"
+    },
+    {
+      "day": 3180,
+      "hash": "8073433e33b8ce00004c4516afcf5bf9670eb0fcdd0796f0d154fc716799c4ba"
+    },
+    {
+      "day": 3210,
+      "hash": "d0b6a0a97955ffcbd7dd094342cc121ec4e1fe652e6ab90ab5b762f67123e0a6"
+    },
+    {
+      "day": 3240,
+      "hash": "8baca23a98cf57e9044e0ac169280995c079c153a765d694e50d35c3b0536e2b"
+    },
+    {
+      "day": 3270,
+      "hash": "73a0273b58154e0f16903b20562b984f06a7f7638cdf50f27d0f99776de144c8"
+    },
+    {
+      "day": 3300,
+      "hash": "1fad56804a63d2a040002fd2605570302bb54612bba94b52b4045a7e9867f7a3"
+    },
+    {
+      "day": 3330,
+      "hash": "76bee664ea70dbcea8e63e2c553a1b5a8fa0dc4eaa2813d0a162040fb9ba01ef"
+    },
+    {
+      "day": 3360,
+      "hash": "dc3c05422a523ab707b3be0ee7968ebe523b5c957a76c3ac2bc0e81669b2a94e"
+    },
+    {
+      "day": 3390,
+      "hash": "cece6f3ea31fe1b274d4d92d33269a847e937eb111386438f3451ee3307f77bb"
+    },
+    {
+      "day": 3420,
+      "hash": "8b29e2a58c24a98051de3e4a62b0001a48ac814fc57ea4f8b6f28927e15a855d"
+    },
+    {
+      "day": 3450,
+      "hash": "e17ee6ca5069521585cd853644671d38800c84885aa75e0603a2b56ab78445b7"
+    },
+    {
+      "day": 3480,
+      "hash": "69a1c89b8193f7e87099fcdb0fe3f3ae55eb192cbf91fc069914618da903fe82"
+    },
+    {
+      "day": 3510,
+      "hash": "5b1c40d9bb66b79c074074fe282322c5208a1af2a13786f2e717bcda60fd280d"
+    },
+    {
+      "day": 3540,
+      "hash": "fcdb2b6e18f573b272057071f6c061ab72ef80fe0894b6359858aa100d21f261"
+    },
+    {
+      "day": 3570,
+      "hash": "bf7099ef4d8542ad0b0c4f4eb1032356e883b36d6a21eef4c3f980b8f6c74541"
+    },
+    {
+      "day": 3600,
+      "hash": "316393b580d0691c8b9f21a7ae5bad6f2d87584dd805879e521b175f90595832"
+    },
+    {
+      "day": 3630,
+      "hash": "7fca1af305280c5bed8d9b61f0334394de994356b9f8bde9e48a1259f9631791"
+    },
+    {
+      "day": 3650,
+      "hash": "11348d9c4623e27c24787a8c8f18b66567e5ff51b996b376f45a4e0bc0d55571"
+    }
+  ],
+  "initialTerritories": {
+    "zone:0:0": {
+      "assignedCityId": "greenfield",
+      "population": 0,
+      "elevationMeters": 150.1,
+      "moisture": 0.585,
+      "fertility": 0.548,
+      "biome": "meadow",
+      "resourcePotential": {
+        "arable": 0.387,
+        "pasture": 0.337,
+        "timber": 0.513,
+        "fish": 0,
+        "clay": 0.218,
+        "stone": 0.127,
+        "iron_ore": 0.101
+      }
+    },
+    "zone:50:50": {
+      "assignedCityId": "crossroads",
+      "population": 5,
+      "elevationMeters": 142.3,
+      "moisture": 0.951,
+      "fertility": 0.779,
+      "biome": "wetland",
+      "resourcePotential": {
+        "arable": 0,
+        "pasture": 0,
+        "timber": 0.45,
+        "fish": 0.179,
+        "clay": 0.704,
+        "stone": 0.333,
+        "iron_ore": 0.215
+      }
+    },
+    "zone:90:80": {
+      "assignedCityId": "stonebridge",
+      "population": 1,
+      "elevationMeters": 171.5,
+      "moisture": 0.535,
+      "fertility": 0.607,
+      "biome": "meadow",
+      "resourcePotential": {
+        "arable": 0.463,
+        "pasture": 0.44,
+        "timber": 0.379,
+        "fish": 0,
+        "clay": 0.195,
+        "stone": 0.197,
+        "iron_ore": 0.478
+      }
+    },
+    "zone:99:99": {
+      "assignedCityId": "stonebridge",
+      "population": 1,
+      "elevationMeters": 184.9,
+      "moisture": 0.539,
+      "fertility": 0.44,
+      "biome": "meadow",
+      "resourcePotential": {
+        "arable": 0.303,
+        "pasture": 0.316,
+        "timber": 0.498,
+        "fish": 0,
+        "clay": 0.188,
+        "stone": 0.245,
+        "iron_ore": 0.326
+      }
+    }
+  },
+  "day365Territories": {
+    "zone:0:0": {
+      "assignedCityId": "greenfield",
+      "population": 0,
+      "elevationMeters": 150.1,
+      "moisture": 0.585,
+      "fertility": 0.548,
+      "biome": "meadow",
+      "resourcePotential": {
+        "arable": 0.387,
+        "pasture": 0.337,
+        "timber": 0.513,
+        "fish": 0,
+        "clay": 0.218,
+        "stone": 0.127,
+        "iron_ore": 0.101
+      }
+    },
+    "zone:50:50": {
+      "assignedCityId": "crossroads",
+      "population": 3,
+      "elevationMeters": 142.3,
+      "moisture": 0.951,
+      "fertility": 0.779,
+      "biome": "wetland",
+      "resourcePotential": {
+        "arable": 0,
+        "pasture": 0,
+        "timber": 0.45,
+        "fish": 0.179,
+        "clay": 0.704,
+        "stone": 0.333,
+        "iron_ore": 0.215
+      }
+    },
+    "zone:90:80": {
+      "assignedCityId": "stonebridge",
+      "population": 1,
+      "elevationMeters": 171.5,
+      "moisture": 0.535,
+      "fertility": 0.607,
+      "biome": "meadow",
+      "resourcePotential": {
+        "arable": 0.463,
+        "pasture": 0.44,
+        "timber": 0.379,
+        "fish": 0,
+        "clay": 0.195,
+        "stone": 0.197,
+        "iron_ore": 0.478
+      }
+    },
+    "zone:99:99": {
+      "assignedCityId": "stonebridge",
+      "population": 1,
+      "elevationMeters": 184.9,
+      "moisture": 0.539,
+      "fertility": 0.44,
+      "biome": "meadow",
+      "resourcePotential": {
+        "arable": 0.303,
+        "pasture": 0.316,
+        "timber": 0.498,
+        "fish": 0,
+        "clay": 0.188,
+        "stone": 0.245,
+        "iron_ore": 0.326
+      }
+    }
+  },
+  "finalTerritories": {
+    "zone:0:0": {
+      "assignedCityId": "greenfield",
+      "population": 1,
+      "elevationMeters": 150.1,
+      "moisture": 0.585,
+      "fertility": 0.548,
+      "biome": "meadow",
+      "resourcePotential": {
+        "arable": 0.387,
+        "pasture": 0.337,
+        "timber": 0.513,
+        "fish": 0,
+        "clay": 0.218,
+        "stone": 0.127,
+        "iron_ore": 0.101
+      }
+    },
+    "zone:50:50": {
+      "assignedCityId": "crossroads",
+      "population": 1,
+      "elevationMeters": 142.3,
+      "moisture": 0.951,
+      "fertility": 0.779,
+      "biome": "wetland",
+      "resourcePotential": {
+        "arable": 0,
+        "pasture": 0,
+        "timber": 0.45,
+        "fish": 0.179,
+        "clay": 0.704,
+        "stone": 0.333,
+        "iron_ore": 0.215
+      }
+    },
+    "zone:90:80": {
+      "assignedCityId": "stonebridge",
+      "population": 1,
+      "elevationMeters": 171.5,
+      "moisture": 0.535,
+      "fertility": 0.607,
+      "biome": "meadow",
+      "resourcePotential": {
+        "arable": 0.463,
+        "pasture": 0.44,
+        "timber": 0.379,
+        "fish": 0,
+        "clay": 0.195,
+        "stone": 0.197,
+        "iron_ore": 0.478
+      }
+    },
+    "zone:99:99": {
+      "assignedCityId": "stonebridge",
+      "population": 0,
+      "elevationMeters": 184.9,
+      "moisture": 0.539,
+      "fertility": 0.44,
+      "biome": "meadow",
+      "resourcePotential": {
+        "arable": 0.303,
+        "pasture": 0.316,
+        "timber": 0.498,
+        "fish": 0,
+        "clay": 0.188,
+        "stone": 0.245,
+        "iron_ore": 0.326
+      }
+    }
+  }
+}

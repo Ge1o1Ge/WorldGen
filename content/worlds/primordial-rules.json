@@ -1,0 +1,293 @@
+{
+  "winter": { "overviewStride": 16, "freezeCoefficient": 0.00035, "meltMetersPerDegree": 0.012, "safeIceMeters": 0.18 },
+  "technologies": [
+    {
+      "id": "stone_axes",
+      "name": "Каменные топоры",
+      "domain": "construction",
+      "baseline": true,
+      "prerequisites": [],
+      "practice": "wood",
+      "practiceHours": 10000
+    },
+    {
+      "id": "spears",
+      "name": "Копья",
+      "domain": "food",
+      "baseline": true,
+      "prerequisites": [],
+      "practice": "hunt",
+      "practiceHours": 12000
+    },
+    {
+      "id": "fire",
+      "name": "Огонь и простая сушка пищи",
+      "domain": "food",
+      "baseline": true,
+      "prerequisites": [],
+      "practice": "fuel",
+      "practiceHours": 12000
+    },
+    {
+      "id": "stone_vessels",
+      "name": "Каменная посуда",
+      "domain": "water",
+      "baseline": true,
+      "prerequisites": [],
+      "practice": "water",
+      "practiceHours": 12000
+    },
+    {
+      "id": "gathering",
+      "name": "Собирательство и съедобные растения",
+      "domain": "food",
+      "baseline": true,
+      "prerequisites": [],
+      "practice": "gather",
+      "practiceHours": 12000
+    },
+    {
+      "id": "hunting",
+      "name": "Охота",
+      "domain": "food",
+      "baseline": true,
+      "prerequisites": [
+        "spears"
+      ],
+      "practice": "hunt",
+      "practiceHours": 12000
+    },
+    {
+      "id": "building",
+      "name": "Глина, солома, палки и необработанный камень",
+      "domain": "construction",
+      "baseline": true,
+      "prerequisites": [],
+      "practice": "construction",
+      "practiceHours": 12000
+    },
+    {
+      "id": "hide_clothing",
+      "name": "Одежда из шкур",
+      "domain": "craft",
+      "baseline": true,
+      "prerequisites": [
+        "hunting"
+      ],
+      "practice": "hunt",
+      "practiceHours": 12000
+    },
+    {
+      "id": "calendar",
+      "name": "Сезонный календарь и зимние запасы",
+      "domain": "knowledge",
+      "baseline": true,
+      "prerequisites": [],
+      "practice": "gather",
+      "practiceHours": 12000
+    },
+    {
+      "id": "fishing",
+      "name": "Простой прибрежный лов",
+      "domain": "food",
+      "baseline": true,
+      "prerequisites": [],
+      "practice": "fish",
+      "practiceHours": 12000
+    },
+    {
+      "id": "gardening",
+      "name": "Раннее земледелие",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": [
+        "gathering",
+        "calendar"
+      ],
+      "practice": "gather",
+      "practiceHours": 16000
+    },
+    {
+      "id": "archery",
+      "name": "Лук и деревянные стрелы",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": [
+        "spears",
+        "woodworking"
+      ],
+      "practice": "hunt",
+      "practiceHours": 18000
+    },
+    {
+      "id": "taming",
+      "name": "Примитивное приручение",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": [
+        "hunting"
+      ],
+      "practice": "hunt",
+      "practiceHours": 22000
+    },
+    {
+      "id": "chieftains",
+      "name": "Вожди: делегирование решений",
+      "domain": "organization",
+      "baseline": false,
+      "prerequisites": [
+        "building"
+      ],
+      "practice": "construction",
+      "practiceHours": 10000
+    },
+    {
+      "id": "woodworking",
+      "name": "Обработка древесины",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": [
+        "stone_axes"
+      ],
+      "practice": "wood",
+      "practiceHours": 5000
+    },
+    {
+      "id": "weaving",
+      "name": "Плетение и ткачество",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": [
+        "gathering"
+      ],
+      "practice": "fiber",
+      "practiceHours": 1600
+    },
+    {
+      "id": "well",
+      "name": "Копаный колодец",
+      "domain": "water",
+      "baseline": false,
+      "prerequisites": [
+        "building",
+        "stone_vessels"
+      ],
+      "practice": "water",
+      "practiceHours": 12000
+    }
+  ],
+  "resources": [
+    {
+      "id": "stone_kit",
+      "name": "Каменный бытовой комплект",
+      "unit": "комплект",
+      "category": "household_equipment",
+      "baseValue": 1,
+      "decayPerDay": 0.001
+    },
+    {
+      "id": "primitive_bow",
+      "name": "Лук со стрелами",
+      "unit": "комплект",
+      "category": "household_equipment",
+      "baseValue": 1,
+      "decayPerDay": 0.0015
+    },
+    {
+      "id": "hides",
+      "name": "Шкуры",
+      "unit": "условная тонна",
+      "category": "household_equipment",
+      "baseValue": 1,
+      "decayPerDay": 0.005
+    },
+    {
+      "id": "garments",
+      "name": "Одежда",
+      "unit": "комплект",
+      "category": "household_equipment",
+      "baseValue": 1,
+      "decayPerDay": 0.0007
+    },
+    {
+      "id": "winter_food",
+      "name": "Сушёная и копчёная пища",
+      "unit": "тонна пищевого эквивалента",
+      "category": "household_equipment",
+      "baseValue": 1,
+      "decayPerDay": 0.001
+    }
+  ],
+  "activities": [
+    {
+      "id": "knap",
+      "name": "Изготовление топоров, копий и посуды",
+      "output": "stone_kit",
+      "outputPerHour": 0.08,
+      "maximumLaborShare": 0.15,
+      "pool": null,
+      "discovery": "stone_axes",
+      "inputs": {
+        "stone": 0.002,
+        "timber": 0.003,
+        "fiber": 0.0005
+      }
+    },
+    {
+      "id": "make_bow",
+      "name": "Лук и пополнение деревянных стрел",
+      "output": "primitive_bow",
+      "outputPerHour": 0.04,
+      "maximumLaborShare": 0.1,
+      "pool": null,
+      "discovery": "archery",
+      "inputs": {
+        "timber": 0.002,
+        "fiber": 0.0005
+      }
+    },
+    {
+      "id": "sew_hides",
+      "name": "Шитьё одежды из шкур",
+      "output": "garments",
+      "outputPerHour": 0.15,
+      "maximumLaborShare": 0.1,
+      "pool": null,
+      "discovery": "hide_clothing",
+      "inputs": {
+        "hides": 0.002
+      }
+    },
+    {
+      "id": "sew_cloth",
+      "name": "Шитьё тканевой одежды",
+      "output": "garments",
+      "outputPerHour": 0.25,
+      "maximumLaborShare": 0.1,
+      "pool": null,
+      "discovery": "weaving",
+      "inputs": {
+        "cloth": 0.0015
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "rubble", "name": "Необработанный камень и глина", "graceDays": 365,
+      "serviceLifeDays": 2920, "annualWear": 0.25, "permanentShare": 0.4, "laborMultiplier": 3,
+      "materials": { "stone": 0.4, "clay": 0.06, "timber": 0.015 },
+      "repairLaborPerWear": 140, "demolitionHours": 80
+    }
+  ],
+  "freshFoodDecay": 0.025,
+  "winterReserveDays": 60,
+  "preparationDays": 100,
+  "storageFoodPerResident": 0.06,
+  "preserveFoodPerHour": 0.003,
+  "preserveFuelPerFood": 0.12,
+  "chiefDelegationShare": 0.25,
+  "seasonalAmplitudeC": 9,
+  "atmosphericSystems": 12,
+  "weatherSpeedRadians": 0.022,
+  "lightningIgnitionChance": 0.015
+}

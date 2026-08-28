@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WorldGen — атлас обозначений</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .atlas-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin:24px 0; }
+    .atlas-card { display:flex; align-items:center; gap:16px; padding:18px; background:#f4f0df; color:#39443a; border:1px solid #d6d0bc; border-radius:8px; }
+    .atlas-card svg { width:56px; height:56px; flex-shrink:0; }
+    .atlas-card small { display:block; opacity:.65; margin-top:6px; }
+  </style>
+</head>
+<body><main class="app-shell">
+  <header class="topbar"><div><h1>Атлас топографических обозначений</h1><p>Один векторный набор для карты, легенды и будущих объектов мира</p></div><a class="nav-link" href="/sphere.html">К карте</a></header>
+  <p>Синий — вода, коричневый — рельеф, зелёный — растительность, тёмный — сооружения. Это авторская адаптация, не точное соответствие ГОСТ.</p>
+  <div id="atlas-grid" class="atlas-grid"></div>
+  <p>Знаки леса показывают характер растительности, а не отдельные деревья. Постройка обозначает реальный объект модели; её контур площадки показывается отдельно.</p>
+  <p>Дороги, тропы и мосты подготовлены в наборе, но не нанесены на сферу до появления соответствующих объектов в симуляции.</p>
+  <p>Набор: <a href="/assets/topographic-symbols.json">редактируемые SVG-контуры и палитра</a>. Ориентир: <a href="https://www.usgs.gov/educational-resources/topographic-map-symbols">принципы топографических обозначений USGS</a>.</p>
+  <script type="module" src="/topographic-atlas.js"></script>
+</main></body>
+</html>

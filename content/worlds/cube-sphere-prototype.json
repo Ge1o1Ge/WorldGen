@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "id": "cube-sphere-prototype",
+  "name": "Сферический прототип",
+  "topology": "cube_sphere",
+  "faceSize": 416,
+  "chunkSize": 32,
+  "zoneSizeMeters": 100,
+  "seed": 271828,
+  "terrain": {
+    "seaLevelMeters": 62,
+    "elevationBaseMeters": 75,
+    "elevationRangeMeters": 720,
+    "roughness": 0.62,
+    "forestThreshold": 0.47
+  },
+  "climate": {
+    "equatorTemperatureC": 24,
+    "poleTemperatureC": -14,
+    "moistureBase": 0.55
+  },
+  "settlements": [
+    {
+      "id": "river_hearth",
+      "name": "Речной Очаг",
+      "buildings": [
+        {
+          "id": "river_hall",
+          "buildingTypeId": "meeting_hall",
+          "influenceStrength": 1.15,
+          "footprint": [
+            { "face": "PositiveZ", "x": 160, "y": 120, "capacityUnits": 3 }
+          ]
+        },
+        {
+          "id": "river_mill",
+          "buildingTypeId": "water_mill",
+          "influenceStrength": 0.85,
+          "footprint": [
+            { "face": "PositiveZ", "x": 164, "y": 124, "capacityUnits": 2 }
+          ]
+        }
+      ],
+      "usedLands": [
+        { "id": "river_fields_w", "face": "PositiveZ", "x": 146, "y": 126, "kind": "cultivated_field", "usage": 0.92, "influenceStrength": 0.72 },
+        { "id": "river_fields_e", "face": "PositiveZ", "x": 176, "y": 118, "kind": "cultivated_field", "usage": 0.78, "influenceStrength": 0.66 },
+        { "id": "river_pasture", "face": "PositiveZ", "x": 162, "y": 140, "kind": "pasture", "usage": 0.68, "influenceStrength": 0.58 }
+      ]
+    },
+    {
+      "id": "stone_watch",
+      "name": "Каменный Дозор",
+      "buildings": [
+        {
+          "id": "stone_keep",
+          "buildingTypeId": "hill_fort",
+          "influenceStrength": 1.2,
+          "footprint": [
+            { "face": "PositiveZ", "x": 260, "y": 105, "capacityUnits": 4 },
+            { "face": "PositiveZ", "x": 261, "y": 105, "capacityUnits": 2 }
+          ]
+        }
+      ],
+      "usedLands": [
+        { "id": "stone_grazing", "face": "PositiveZ", "x": 245, "y": 118, "kind": "pasture", "usage": 0.8, "influenceStrength": 0.7 },
+        { "id": "stone_orchard", "face": "PositiveZ", "x": 270, "y": 100, "kind": "orchard", "usage": 0.62, "influenceStrength": 0.58 }
+      ]
+    },
+    {
+      "id": "seam_market",
+      "name": "Рубежный Торг",
+      "buildings": [
+        {
+          "id": "seam_market_hall",
+          "buildingTypeId": "market_hall",
+          "influenceStrength": 1.1,
+          "footprint": [
+            { "face": "PositiveX", "x": 4, "y": 248, "capacityUnits": 3 }
+          ]
+        }
+      ],
+      "usedLands": [
+        { "id": "seam_fields", "face": "PositiveX", "x": 15, "y": 252, "kind": "cultivated_field", "usage": 0.85, "influenceStrength": 0.7 }
+      ]
+    }
+  ]
+}

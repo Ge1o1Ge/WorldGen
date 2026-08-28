@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "residentsPerHouse": 25,
+  "workHoursPerDay": 8,
+  "walkingMetersPerHour": 4000,
+  "carryWaterTonnes": 0.015,
+  "reserveDays": 5,
+  "abandonAfterDays": 45,
+  "relocationCooldownDays": 60,
+  "wellbeing": {
+    "foods": [
+      { "id": "wild_plants", "name": "Дикорастительная пища", "activities": ["gather"] },
+      { "id": "meat", "name": "Мясо", "activities": ["hunt"] },
+      { "id": "fish", "name": "Рыба", "activities": ["fish"] },
+      { "id": "crops", "name": "Выращенная пища", "activities": ["cultivate", "garden"] }
+    ],
+    "tastingMinimumShare": 0.02, "familiarityPerMeal": 0.04,
+    "expectationRisePerDay": 0.015, "expectationFallPerDay": 0.002,
+    "maximumFoodExpectation": 0.2, "preferenceReserveShare": 0.2, "safetyFoodDays": 2,
+    "varietyPriorityBonus": 2, "initialHousingExpectation": 0.7,
+    "initialRestExpectation": 0.25, "maximumRestExpectation": 0.5,
+    "waterTravelHoursPerPerson": 0.5, "satisfactionSmoothing": 0.08,
+    "projectPriorityBonus": 3, "housingImprovementThreshold": 0.15
+  },
+  "lifecycle": {
+    "repairTrigger": 0.03, "maintenanceLaborShare": 0.15,
+    "replacementAgeShare": 0.8, "replacementEfficiency": 0.6, "unsafeEfficiency": 0.1,
+    "wellCapacity": 1.2, "wellRechargePerDay": 0.9,
+    "soilLossPerTonne": 0.025, "fallowRecoveryPerDay": 0.001,
+    "minimumFieldOutputPerHour": 0.0008, "poorHarvestDays": 14, "meadowRecoveryDays": 365,
+    "masonryPracticeHours": 2000,
+    "materials": [
+      { "id": "clay_straw", "name": "Глина и растительное волокно", "graceDays": 365, "serviceLifeDays": 1460,
+        "annualWear": 0.4, "permanentShare": 0.5, "laborMultiplier": 0.5,
+        "materials": { "timber": 0.02, "clay": 0.1, "fiber": 0.02 }, "repairLaborPerWear": 80, "demolitionHours": 16 },
+      { "id": "wood", "name": "Дерево", "graceDays": 730, "serviceLifeDays": 3650,
+        "annualWear": 0.2, "permanentShare": 0.25, "laborMultiplier": 1,
+        "materials": { "timber": 0.12 }, "repairLaborPerWear": 120, "demolitionHours": 24 },
+      { "id": "stone", "name": "Камень", "graceDays": 730, "serviceLifeDays": 18250,
+        "annualWear": 0.04, "permanentShare": 0.15, "laborMultiplier": 5, "discovery": "masonry",
+        "materials": { "timber": 0.02, "stone": 0.5 }, "repairLaborPerWear": 200, "demolitionHours": 120 }
+    ]
+  },
+  "subsistence": {
+    "recoveryMultipliers": { "forage": 0.5, "game": 0.5, "fish": 0.25 },
+    "primitiveEfficiency": { "forage": 0.75, "game": 0.4, "fish": 0.25 },
+    "easyCatchTonnes": { "forage": 0.08, "game": 0.04, "fish": 1 },
+    "pressureHalfLifeDays": { "forage": 90, "game": 180, "fish": 365 },
+    "encounterExponent": 0.7,
+    "gardenLaborHours": 160, "gardenTimber": 0.08, "gardenGrowingDays": 30, "clearingTonnesPerHour": 0.08,
+    "gardenOutputPerHour": 0.004, "gardenDailyYield": 0.03, "gardenMaximumFoodShare": 0.9,
+    "foodLaborPressure": 0.28, "moversPerDay": 3, "movingHoursPerPerson": 2,
+    "wildlife": { "seedPatchSize": 8, "rangeRadiusCells": 3, "quietMoveIntervalDays": 14, "alertHalfLifeDays": 7, "fleeThreshold": 0.05 }
+  },
+  "decisions": {
+    "dailyPointsPerPerson": 1, "decayPerDay": 0.01, "expertiseBonus": 1,
+    "reputationMinimum": 0.5, "reputationMaximum": 1.5, "reputationStep": 0.04,
+    "minimumEvidenceConfidence": 0.7, "learningHoursPerPerson": 40,
+    "approvalDays": 1.5, "siteDays": 0.35, "quorum": 0.5,
+    "siteMajority": 0.6, "siteMargin": 0.1,
+    "minimumDiscussionDays": 2, "siteStableDays": 2, "expiryDays": 90,
+    "evaluationDays": 30, "maximumEvaluationDays": 120, "retainedResults": 12,
+    "complexity": { "house": 1, "well": 1.5, "relocation": 1 }
+  },
+  "exploration": {
+    "windowDays": 14, "pressureDays": 7, "supplyRadiusCost": 12,
+    "laborPressureShare": 0.65, "minimumRenewalCoverage": 1.15,
+    "cooldownDays": 90, "partySize": 2, "maximumLaborShare": 0.1,
+    "homeReserveDays": 2, "outboundDays": 2, "provisionDays": 6,
+    "stepsPerDay": 24, "surveyHoursPerCell": 0.15, "maximumReports": 6
+  },
+  "trails": {
+    "weakHalfLifeDays": 45,
+    "strongHalfLifeDays": 240,
+    "trafficForStrongTrail": 240,
+    "forgetBelow": 0.003,
+    "maximumCostReduction": 0.55
+  },
+  "resources": [
+    { "id": "water", "name": "Питьевая вода", "unit": "условная тонна", "category": "essential", "baseValue": 0.2, "decayPerDay": 0.02, "householdNeed": { "perPersonPerDay": 0.005 } },
+    { "id": "fiber", "name": "Растительное волокно", "unit": "условная тонна", "category": "material", "baseValue": 1, "decayPerDay": 0.0002 },
+    { "id": "cloth", "name": "Грубая ткань", "unit": "условная тонна", "category": "essential", "baseValue": 3, "decayPerDay": 0.0001, "householdNeed": { "perPersonPerDay": 0.000005 } }
+  ],
+  "naturalPools": [
+    { "id": "forage", "renewable": true, "capacity": 0.8, "recoveryPerDay": 0.004 },
+    { "id": "game", "renewable": true, "capacity": 0.5, "recoveryPerDay": 0.0008 },
+    { "id": "fiber", "renewable": true, "capacity": 0.4, "recoveryPerDay": 0.003 },
+    { "id": "timber", "renewable": true, "capacity": 100, "recoveryPerDay": 0.0003 },
+    { "id": "fish", "renewable": true, "capacity": 12, "recoveryPerDay": 0.004 },
+    { "id": "clay", "renewable": false, "capacity": 400, "recoveryPerDay": 0 },
+    { "id": "stone", "renewable": false, "capacity": 1500, "recoveryPerDay": 0 },
+    { "id": "iron_ore", "renewable": false, "capacity": 120, "recoveryPerDay": 0 }
+  ],
+  "activities": [
+    { "id": "gather", "name": "Собирательство", "output": "food", "outputPerHour": 0.0014, "maximumLaborShare": 0.6, "pool": "forage", "discovery": null, "inputs": {} },
+    { "id": "hunt", "name": "Охота", "output": "food", "outputPerHour": 0.002, "maximumLaborShare": 0.2, "pool": "game", "discovery": null, "inputs": {} },
+    { "id": "fish", "name": "Прибрежный лов", "output": "food", "outputPerHour": 0.0024, "maximumLaborShare": 0.2, "pool": "fish", "discovery": null, "inputs": {} },
+    { "id": "fuel", "name": "Сбор топлива", "output": "firewood", "outputPerHour": 0.003, "maximumLaborShare": 0.15, "pool": "timber", "discovery": null, "inputs": {} },
+    { "id": "wood", "name": "Малая заготовка древесины", "output": "timber", "outputPerHour": 0.0012, "maximumLaborShare": 0.15, "pool": "timber", "discovery": null, "inputs": {} },
+    { "id": "fiber", "name": "Сбор волокна", "output": "fiber", "outputPerHour": 0.0015, "maximumLaborShare": 0.08, "pool": "fiber", "discovery": null, "inputs": {} },
+    { "id": "weave", "name": "Домашнее ткачество", "output": "cloth", "outputPerHour": 0.0004, "maximumLaborShare": 0.12, "pool": null, "discovery": "weaving", "inputs": { "fiber": 1.2 } },
+    { "id": "garden", "name": "Домашний огород", "output": "food", "outputPerHour": 0.0022, "maximumLaborShare": 0.25, "pool": null, "discovery": "gardening", "inputs": {} }
+  ],
+  "buildings": [
+    { "id": "house", "laborHours": 80, "materials": { "timber": 0.12 } },
+    { "id": "well", "laborHours": 240, "materials": { "timber": 0.2 } }
+  ],
+  "discoveries": [
+    { "id": "weaving", "name": "Плетение и грубое ткачество", "practice": "fiber", "practiceHours": 80 },
+    { "id": "gardening", "name": "Выращивание съедобных растений", "practice": "gather", "practiceHours": 6000 },
+    { "id": "well", "name": "Копаный колодец", "practice": "water", "practiceHours": 1200 }
+  ]
+}

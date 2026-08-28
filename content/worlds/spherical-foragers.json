@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "sphere_foragers_v1",
+  "name": "Первые стоянки · охота и собирательство",
+  "stage": "foragers",
+  "cities": [
+    { "settlementId": "river_hearth", "sourceCities": ["greenfield", "river_mill"], "population": 180 },
+    { "settlementId": "stone_watch", "sourceCities": ["northwatch", "stonebridge"], "population": 150 },
+    { "settlementId": "seam_market", "sourceCities": ["crossroads", "harbor"], "population": 160 }
+  ],
+  "routes": []
+}

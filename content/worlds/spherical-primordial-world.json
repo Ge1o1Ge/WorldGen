@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "id": "primordial-planet-v1",
+  "name": "Первый мир: шесть очагов",
+  "topology": "cube_sphere",
+  "faceSize": 416,
+  "chunkSize": 32,
+  "zoneSizeMeters": 100,
+  "seed": 271828,
+  "terrain": {
+    "seaLevelMeters": 62,
+    "elevationBaseMeters": 75,
+    "elevationRangeMeters": 720,
+    "roughness": 0.62,
+    "forestThreshold": 0.47
+  },
+  "climate": {
+    "equatorTemperatureC": 18,
+    "poleTemperatureC": 5,
+    "moistureBase": 0.55,
+    "lapseRatePerMeter": 0.004
+  },
+  "settlements": [
+    {
+      "id": "river_hearth",
+      "name": "Речной Очаг",
+      "buildings": [
+        {
+          "id": "camp:river_hearth",
+          "buildingTypeId": "house",
+          "influenceStrength": 1,
+          "footprint": [
+            {
+              "face": "PositiveZ",
+              "x": 160,
+              "y": 120,
+              "capacityUnits": 1
+            }
+          ]
+        }
+      ],
+      "usedLands": []
+    },
+    {
+      "id": "stone_watch",
+      "name": "Каменный Склон",
+      "buildings": [
+        {
+          "id": "camp:stone_watch",
+          "buildingTypeId": "house",
+          "influenceStrength": 1,
+          "footprint": [
+            {
+              "face": "PositiveX",
+              "x": 300,
+              "y": 270,
+              "capacityUnits": 1
+            }
+          ]
+        }
+      ],
+      "usedLands": []
+    },
+    {
+      "id": "grass_camp",
+      "name": "Луговая Стоянка",
+      "buildings": [
+        {
+          "id": "camp:grass_camp",
+          "buildingTypeId": "house",
+          "influenceStrength": 1,
+          "footprint": [
+            {
+              "face": "NegativeZ",
+              "x": 240,
+              "y": 220,
+              "capacityUnits": 1
+            }
+          ]
+        }
+      ],
+      "usedLands": []
+    },
+    {
+      "id": "elder_camp",
+      "name": "Старый Очаг",
+      "buildings": [
+        {
+          "id": "camp:elder_camp",
+          "buildingTypeId": "house",
+          "influenceStrength": 1,
+          "footprint": [
+            {
+              "face": "NegativeX",
+              "x": 190,
+              "y": 125,
+              "capacityUnits": 1
+            }
+          ]
+        }
+      ],
+      "usedLands": []
+    },
+    {
+      "id": "wood_camp",
+      "name": "Лесной Ручей",
+      "buildings": [
+        {
+          "id": "camp:wood_camp",
+          "buildingTypeId": "house",
+          "influenceStrength": 1,
+          "footprint": [
+            {
+              "face": "PositiveY",
+              "x": 140,
+              "y": 300,
+              "capacityUnits": 1
+            }
+          ]
+        }
+      ],
+      "usedLands": []
+    },
+    {
+      "id": "reed_camp",
+      "name": "Камышовый Берег",
+      "buildings": [
+        {
+          "id": "camp:reed_camp",
+          "buildingTypeId": "house",
+          "influenceStrength": 1,
+          "footprint": [
+            {
+              "face": "NegativeY",
+              "x": 300,
+              "y": 140,
+              "capacityUnits": 1
+            }
+          ]
+        }
+      ],
+      "usedLands": []
+    }
+  ]
+}

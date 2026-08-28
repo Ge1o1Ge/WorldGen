@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "sphere_early_iron_v1",
+  "name": "Три поселения · первый сферический сценарий",
+  "cities": [
+    { "settlementId": "river_hearth", "sourceCities": ["greenfield", "river_mill"], "population": 2200 },
+    { "settlementId": "stone_watch", "sourceCities": ["northwatch", "stonebridge"], "population": 1800 },
+    { "settlementId": "seam_market", "sourceCities": ["crossroads", "harbor"], "population": 2000 }
+  ],
+  "routes": [
+    { "id": "sphere_hearth_watch", "a": "river_hearth", "b": "stone_watch", "travelDays": 2, "dailyCapacity": 34 },
+    { "id": "sphere_hearth_market", "a": "river_hearth", "b": "seam_market", "travelDays": 5, "dailyCapacity": 28 },
+    { "id": "sphere_watch_market", "a": "stone_watch", "b": "seam_market", "travelDays": 4, "dailyCapacity": 22 }
+  ]
+}

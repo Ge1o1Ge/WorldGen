@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node src/cli.js",
+    "start": "dotnet run --project src/WorldGen.Cli -- --sphere-scenario=primordial --days=365",
     "test": "node --test",
-    "visualize": "node src/visualizer/server.js"
+    "test:csharp": "dotnet test WorldGen.slnx --no-restore",
+    "start:csharp": "dotnet run --project src/WorldGen.Cli -- --sphere-scenario=primordial --days=365",
+    "visualize": "dotnet run --project src/WorldGen.Server --urls http://127.0.0.1:4175 --sphere-scenario primordial"
   },
   "engines": {
     "node": ">=24"
