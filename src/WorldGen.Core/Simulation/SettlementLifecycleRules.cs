@@ -6,6 +6,7 @@ public sealed record SettlementLifecycleRules
     public required IReadOnlyList<BuildingMaterialRule> Materials { get; init; }
     public double RepairTrigger { get; init; } = .03;
     public double MaintenanceLaborShare { get; init; } = .15;
+    public double UnusedWearMultiplier { get; init; } = 1.5;
     public double ReplacementAgeShare { get; init; } = .8;
     public double ReplacementEfficiency { get; init; } = .6;
     public double UnsafeEfficiency { get; init; } = .1;
@@ -23,6 +24,7 @@ public sealed record SettlementLifecycleRules
         static bool Fraction(double n) => Positive(n) && n < 1;
         if (Materials.Count == 0 || Materials.Select(m => m.Id).Distinct().Count() != Materials.Count ||
             !Materials.Any(m => m.Id == "wood") || !Fraction(RepairTrigger) || !Fraction(MaintenanceLaborShare) ||
+            !Positive(UnusedWearMultiplier) || UnusedWearMultiplier < 1 ||
             !Fraction(ReplacementAgeShare) || !Fraction(ReplacementEfficiency) || !Fraction(UnsafeEfficiency) ||
             UnsafeEfficiency >= ReplacementEfficiency || !Positive(WellCapacity) || !Positive(WellRechargePerDay) ||
             !Fraction(SoilLossPerTonne) || !Fraction(FallowRecoveryPerDay) || !Positive(MinimumFieldOutputPerHour) ||
@@ -69,7 +71,7 @@ public sealed class BuildingLifecycleState
     public double DemolitionDone { get; set; }
     public Dictionary<string, double> InvestedMaterials { get; set; } = new(StringComparer.Ordinal);
 
-    public void Age(BuildingMaterialRule rule, int day)
+    public void Age(BuildingMaterialRule rule, int day, double repairableWearMultiplier = 1)
     {
         var elapsed = Math.Max(0, day - LastAgedDay);
         var wearingDays = Math.Max(0, AgeDays + elapsed - rule.GraceDays) - Math.Max(0, AgeDays - rule.GraceDays);
@@ -78,7 +80,7 @@ public sealed class BuildingLifecycleState
         // Near the maximum service age, structural damage dominates regardless of repairs.
         var ageFloor = Math.Clamp((AgeDays / (double)rule.ServiceLifeDays - .9) / .1, 0, 1);
         PermanentWear = AgeDays >= rule.ServiceLifeDays ? 1 : Math.Max(PermanentWear, ageFloor);
-        RepairableWear = Math.Clamp(RepairableWear + wearingDays * rule.AnnualWear * (1 - rule.PermanentShare) / 365, 0, 1 - PermanentWear);
+        RepairableWear = Math.Clamp(RepairableWear + wearingDays * rule.AnnualWear * (1 - rule.PermanentShare) * repairableWearMultiplier / 365, 0, 1 - PermanentWear);
     }
 }
 

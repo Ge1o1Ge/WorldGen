@@ -16,19 +16,18 @@
     <aside class="library">
       <div class="section-title">БИБЛИОТЕКА <span id="node-count">—</span></div>
       <label class="search"><span>⌕</span><input id="search" type="search" placeholder="Найти технологию…" aria-label="Поиск технологий"></label>
-      <label class="field">Слой сети<select id="layer"><option value="primitive">Начальная эпоха + черновики</option><option value="all">Вся сеть</option><option value="draft">Только черновики</option><option value="catalog">Поздний каталог</option></select></label>
       <button id="manual-filter" class="queue-toggle" aria-pressed="false"><span class="manual-dot"></span> На адаптацию <b id="pending-count">0</b></button>
       <div id="search-results" class="node-list" aria-label="Список технологий"></div>
       <div class="library-bottom"><span class="eyebrow">ИТЕРАТИВНЫЙ ПРОЦЕСС</span><p>Твоя мысль → <em>manual</em> → адаптация → журнал ноды.</p><p>Черновики не меняют работающий мир.</p><a href="/api/technology-editor/pending" target="_blank">Очередь для адаптации ↗</a><button id="export" class="text-button">Экспорт сети в JSON ↓</button></div>
     </aside>
     <main class="graph-area">
-      <div class="graph-toolbar"><div><span class="eyebrow">СЕТЬ ЗНАНИЙ</span><h1 id="graph-title">Начальная эпоха</h1></div><label>Тип связи <select id="link-type" aria-label="Тип связи"></select></label></div>
+      <div class="graph-toolbar"><div><span class="eyebrow">СЕТЬ ЗНАНИЙ</span><h1 id="graph-title">Единое дерево</h1></div><label>Тип связи <select id="link-type" aria-label="Тип связи"></select></label></div>
       <div id="canvas" tabindex="0" aria-label="Сеть технологий: перетащите фон для перемещения, колесо для масштаба">
         <div id="world"><svg id="wires" aria-label="Связи технологий"></svg><div id="nodes"></div></div>
         <div id="empty" hidden>В этом слое пока нет нод. Добавь свою первую мысль.</div>
       </div>
       <div id="notice" role="status" hidden></div>
-      <div class="graph-bottom"><div class="legend"><span style="--swatch:#7cc9ec">Необходимо</span><span style="--swatch:#9bcf94">Открывает</span><span style="--swatch:#c4a1eb">Усиливает</span><span class="manual-legend">Пунктир — manual</span></div><div class="zoom-tools"><button id="zoom-out" aria-label="Уменьшить">−</button><output id="zoom">100%</output><button id="zoom-in" aria-label="Увеличить">＋</button><button id="fit">Вся сеть</button><button id="layout" title="Переразложить видимые ноды; сохранённые позиции изменятся">Раскладка</button></div></div>
+      <div class="graph-bottom"><div class="legend"><span style="--swatch:#7cc9ec">Необходимо</span><span style="--swatch:#9bcf94">Открывает</span><span style="--swatch:#c4a1eb">Усиливает</span><span class="manual-legend">Пунктир — manual</span></div><div class="zoom-tools"><button id="zoom-out" aria-label="Уменьшить">−</button><output id="zoom">100%</output><button id="zoom-in" aria-label="Увеличить">＋</button><button id="fit">Вся сеть</button></div></div>
       <div class="gesture-hint">Фон — перемещение · колесо — масштаб · заголовок — перенос ноды · выход → вход — связь · Esc — отмена</div>
     </main>
     <aside id="inspector" class="inspector"><div class="inspector-intro"><span class="eyebrow">ИНСПЕКТОР НОДЫ</span><h2>От мысли<br>к механике.</h2><p>Нажми на технологию, чтобы увидеть условия, эффекты и обсуждение.</p><div class="intro-diagram"><span>Идея</span><i>→</i><span>Связь</span><i>→</i><span>Мир</span></div><p>Стрелка в заголовке раскрывает карточку прямо на схеме.</p></div></aside>

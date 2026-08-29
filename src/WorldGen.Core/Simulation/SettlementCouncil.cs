@@ -83,6 +83,8 @@ public sealed partial class SettlementSimulation
             double Preference(CollectiveProposal p) => WellbeingProjectPreference(city, group.Id, p) + (p.Key.StartsWith("replace-worn:", StringComparison.Ordinal) ? 3.5 :
                 p.Kind == "garden" ? 1.5 + (life.Food?.LaborHours ?? 0) / Math.Max(1, life.LaborAvailableHours) * 3 :
                 p.Kind == "well" ? Math.Min(3, WaterDistance(group.Cell, city.Id) / 3) :
+                p.Kind == "granary" ? 1.5 + Math.Min(4, FoodStorageNeedVolume(city)) :
+                p.Kind == "warehouse" ? 1.2 + Math.Min(4, OutdoorStorageVolume(city, false) * .5) :
                 p.Replaces is not null ? (HouseholdIdentity(p.Replaces) == group.Id ? 3 : .35) : life.Unhoused > 0 ? 4 : 1.2);
             var preferred = pending.OrderByDescending(Preference).ThenBy(p => p.CreatedDay).ThenBy(p => p.Id, StringComparer.Ordinal).FirstOrDefault();
             if (preferred is null || Preference(preferred) <= 0) continue;
@@ -144,14 +146,14 @@ public sealed partial class SettlementSimulation
     {
         var ideas = new List<BuildingIdea>();
         var life = State.Cities[city.Id]; var anchor = homes.FirstOrDefault()?.Cell ?? addresses[world.Spatial.Nodes[city.SpatialNodeId].AnchorTerritoryId!];
-        CellAddress[] Sites(bool well) => Routes(anchor).Cost.Keys.Where(c => ValidCouncilSite(city, well ? "well" : "house", c))
+        CellAddress[] Sites(string kind) => Routes(anchor).Cost.Keys.Where(c => ValidCouncilSite(city, kind, c))
             .OrderBy(c => Routes(anchor).Cost[c] + terrain[c].ForestCover * .1).ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal).Take(3).ToArray();
-        var ordinary = Sites(false);
+        var ordinary = Sites("house");
         if (Rules.Lifecycle is not null)
             foreach (var old in State.Buildings.Where(b => b.CityId == city.Id && (NeedsReplacement(b) || WantsHousingImprovement(b)) && (b.Kind != "house" || b.Residents > 0))
                 .Where(b => !State.Buildings.Any(next => next.Replaces == b.Id && Standing(next))).OrderBy(b => b.Id, StringComparer.Ordinal))
             {
-                var sites = Sites(old.Kind == "well");
+                var sites = Sites(old.Kind);
                 if (sites.Length > 0) ideas.Add(new($"replace-worn:{old.Id}", old.Kind, old.Kind == "well" ? "water" : "construction",
                     old.Kind == "house" ? NeedsReplacement(old) ? "Заменить ветхий дом до потери жилья" : "Качество жилья ниже привычного; ремонт уже не восстановит удобство" : "Заменить изношенный колодец", Rules.Decisions!.Complexity[old.Kind], sites, old.Id));
             }
@@ -170,11 +172,23 @@ public sealed partial class SettlementSimulation
         }
         if (ordinary.Length > 0 && life.HousingCapacity - Population(city) < Math.Ceiling(Population(city) * .05))
             ideas.Add(new("housing-reserve", "house", "construction", "Нехватка жилья или резерв для роста", Rules.Decisions!.Complexity["house"], ordinary));
+        if (ordinary.Length > 0 && life.Discoveries.Contains("storage_buildings") && OutdoorStorageVolume(city, false) > .25)
+        {
+            var count = State.Buildings.Count(b => b.CityId == city.Id && b.Kind == "warehouse" && Standing(b));
+            ideas.Add(new($"warehouse:{count}", "warehouse", "construction", "Запасы под открытым небом портятся; требуется общий склад",
+                Rules.Decisions!.Complexity["warehouse"], Sites("warehouse")));
+        }
+        if (ordinary.Length > 0 && life.Discoveries.Contains("granary") && FoodStorageNeedVolume(city) > .08)
+        {
+            var count = State.Buildings.Count(b => b.CityId == city.Id && b.Kind == "granary" && Standing(b));
+            ideas.Add(new($"granary:{count}", "granary", "food", "Урожаю и семенам не хватает сухого защищённого хранения",
+                Rules.Decisions!.Complexity["granary"], Sites("granary")));
+        }
         if (life.Discoveries.Contains("well") && life.WaterTravelHours > Population(city) * .035 &&
             (Rules.Lifecycle is null ? !State.Buildings.Any(b => b.CityId == city.Id && b.Kind == "well" && Standing(b)) :
                 State.Buildings.Where(b => b.CityId == city.Id && b.Kind == "well" && Standing(b)).Sum(b => b.Status == "building" ? Rules.Lifecycle.WellRechargePerDay : b.Well?.RechargeRate ?? 0) < Population(city) * .005 * 1.05))
         {
-            var sites = Sites(true);
+            var sites = Sites("well");
             if (sites.Length > 0) ideas.Add(new("well", "well", "water", "Сократить труд на доставку воды", Rules.Decisions!.Complexity["well"], sites));
         }
         if (world.Day >= 30 && world.Day - life.LastRelocationDay >= Rules.RelocationCooldownDays && !State.Buildings.Any(b => b.CityId == city.Id && Moving(b)))
@@ -220,6 +234,9 @@ public sealed partial class SettlementSimulation
                 if (building.Status == "active" && building.Kind == "house")
                     benefit = building.Residents > 0 ? Math.Min(1, building.Residents / 12.5) :
                         life.HousingCapacity - Rules.ResidentsPerHouse < Population(city) * 1.05 ? .5 : -1;
+                else if (building.Status == "active" && (building.Kind is "warehouse" or "granary") && life.Storage is { } storage)
+                    benefit = Math.Clamp(storage.UsedByBuildingKind.GetValueOrDefault(building.Kind) /
+                        Math.Max(.001, storage.CapacityByBuildingKind.GetValueOrDefault(building.Kind)) * 2 - 1, -1, 1);
                 else if (building.Status == "active" && building.Kind == "well" && terrain[building.Cell].Water.DistanceToRiver != 0)
                 {
                     var delivered = life.Tasks.Where(t => t.Activity == "water" && t.Destination == building.Cell).Sum(t => t.Output);

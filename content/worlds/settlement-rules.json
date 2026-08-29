@@ -5,7 +5,7 @@
   "walkingMetersPerHour": 4000,
   "carryWaterTonnes": 0.015,
   "reserveDays": 5,
-  "abandonAfterDays": 45,
+  "stalledConstructionAbandonAfterDays": 45,
   "relocationCooldownDays": 60,
   "wellbeing": {
     "foods": [
@@ -22,8 +22,24 @@
     "waterTravelHoursPerPerson": 0.5, "satisfactionSmoothing": 0.08,
     "projectPriorityBonus": 3, "housingImprovementThreshold": 0.15
   },
+  "storage": {
+    "outdoorDecayMultiplier": 3,
+    "generalBuildingDecayMultiplier": 0.75,
+    "volumePerUnit": {
+      "essential": 1,
+      "food_raw": 1,
+      "food_intermediate": 1,
+      "crop": 1,
+      "seed": 0.65,
+      "material": 0.8,
+      "fuel": 0.9,
+      "ore": 0.7,
+      "equipment": 0.08,
+      "household_equipment": 0.04
+    }
+  },
   "lifecycle": {
-    "repairTrigger": 0.03, "maintenanceLaborShare": 0.15,
+    "repairTrigger": 0.03, "maintenanceLaborShare": 0.15, "unusedWearMultiplier": 1.5,
     "replacementAgeShare": 0.8, "replacementEfficiency": 0.6, "unsafeEfficiency": 0.1,
     "wellCapacity": 1.2, "wellRechargePerDay": 0.9,
     "soilLossPerTonne": 0.025, "fallowRecoveryPerDay": 0.001,
@@ -60,7 +76,7 @@
     "siteMajority": 0.6, "siteMargin": 0.1,
     "minimumDiscussionDays": 2, "siteStableDays": 2, "expiryDays": 90,
     "evaluationDays": 30, "maximumEvaluationDays": 120, "retainedResults": 12,
-    "complexity": { "house": 1, "well": 1.5, "relocation": 1 }
+    "complexity": { "house": 1, "well": 1.5, "warehouse": 1.4, "granary": 1.8, "relocation": 1 }
   },
   "exploration": {
     "windowDays": 14, "pressureDays": 7, "supplyRadiusCost": 12,
@@ -102,8 +118,14 @@
     { "id": "garden", "name": "Домашний огород", "output": "food", "outputPerHour": 0.0022, "maximumLaborShare": 0.25, "pool": null, "discovery": "gardening", "inputs": {} }
   ],
   "buildings": [
-    { "id": "house", "laborHours": 80, "materials": { "timber": 0.12 } },
-    { "id": "well", "laborHours": 240, "materials": { "timber": 0.2 } }
+    { "id": "house", "laborHours": 80, "materials": { "timber": 0.12 }, "storageCapacity": 0.75 },
+    { "id": "well", "laborHours": 240, "materials": { "timber": 0.2 }, "storageCapacity": 0.1 },
+    { "id": "warehouse", "laborHours": 160, "materials": { "timber": 0.28 }, "storageCapacity": 8,
+      "storage": { "decayMultiplier": 0.35, "fallbackDecayMultiplier": 0.7,
+        "preferred": ["material", "fuel", "ore", "equipment", "household_equipment"] } },
+    { "id": "granary", "laborHours": 240, "materials": { "timber": 0.35 }, "storageCapacity": 10,
+      "storage": { "decayMultiplier": 0.18, "fallbackDecayMultiplier": 0.7,
+        "preferred": ["resource:food", "resource:winter_food", "food_raw", "food_intermediate", "food_direct", "food_preserved", "crop", "seed"] } }
   ],
   "discoveries": [
     { "id": "weaving", "name": "Плетение и грубое ткачество", "practice": "fiber", "practiceHours": 80 },

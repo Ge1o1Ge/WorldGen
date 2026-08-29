@@ -6,23 +6,10 @@ namespace WorldGen.Tests;
 public sealed partial class SettlementSimulationTests
 {
     [Fact]
-    public async Task MobileGameMigrationTransfersBiomassInsteadOfCopyingCellStocks()
+    public async Task ChangedWildlifeRulesRejectAnOldWorld()
     {
         var old = await CreateFood(legacy: true); old.Advance(5);
-        var total = old.World.Spatial.Territories.Values.Sum(t => old.Development!.Stock(t, "game"));
-        var snapshot = WorldSnapshot.Create(old.World); var original = WorldSnapshot.Hash(old.World);
-        var sim = await CreateFood(snapshot); var state = sim.Development!.State;
-        Assert.NotEmpty(state.Wildlife!);
-        Assert.Equal(total, state.Wildlife!.Sum(g => g.Biomass), 8);
-        Assert.All(state.WildStocks.Values, stocks => Assert.False(stocks.ContainsKey("game")));
-        foreach (var city in old.World.Cities.Values) Assert.Equal(city.Stocks.ToDictionary(), sim.World.Cities[city.Id].Stocks.ToDictionary());
-        Assert.Equal(original, WorldSnapshot.Hash(old.World));
-        sim.Advance(30);
-        Assert.Equal(total, state.Wildlife!.Sum(g => g.Biomass + g.Harvested - g.Regrown), 8);
-        var restored = await CreateFood(WorldSnapshot.Create(sim.World));
-        Assert.Equal(WorldSnapshot.Hash(sim.World), WorldSnapshot.Hash(restored.World));
-        sim.Advance(5); restored.Advance(5);
-        Assert.Equal(WorldSnapshot.Hash(sim.World), WorldSnapshot.Hash(restored.World));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CreateFood(WorldSnapshot.Create(old.World)));
     }
 
     [Fact]

@@ -7,8 +7,10 @@ import {renderLifecyclePanel} from "./sphere-lifecycle-panel.js";
 import {renderWellbeingPanel} from "./sphere-wellbeing-panel.js";
 import {renderPrimitivePanel} from "./sphere-primitive-panel.js";
 import {renderBiologyPanel} from './sphere-biology.js';
+import {renderStoragePanel} from './sphere-storage-panel.js';
+import {renderProcessPanel} from './sphere-process-panel.js';
 
-export async function connectSphereSimulation({onState,onFocus,biosphere,mapQuery=()=>""}) {
+export async function connectSphereSimulation({onState,onFocus,biosphere,processes=[],mapQuery=()=>""}) {
   let state=null;
   const one=document.getElementById("sphere-step-one"),month=document.getElementById("sphere-step-month"),play=document.getElementById("sphere-play");
   const status=document.getElementById("sphere-sim-status"),sites=document.getElementById("sphere-industry");
@@ -57,6 +59,8 @@ export async function connectSphereSimulation({onState,onFocus,biosphere,mapQuer
         for(const [id,hours] of activityHours){const row=document.createElement("li");row.textContent=`${({water:"Доставка воды",cultivate:"Уход за освоенными огородами",move:"Переезд частями",repair:"Ремонт",demolition:"Разбор строений",clay:"Заготовка глины",stone:"Заготовка камня"})[id]??next.activityNames[id]??id}: ${hours.toFixed(1)} чел·ч`;taskList.append(row);}
         tasks.append(taskTitle,taskList);card.append(labor,production,skills,knowledge,decision,tasks);
         if(life.primitive)card.append(renderPrimitivePanel(city));
+        if(life.processes)card.append(renderProcessPanel(city,processes,next.resourceUnits));
+        if(life.storage)card.append(renderStoragePanel(city,next.resourceUnits));
         if(city.biology&&biosphere)card.append(renderBiologyPanel(city,biosphere));
         if(life.wellbeing)card.append(renderWellbeingPanel(city,next.wellbeingRules,onFocus));
         if(life.maintenance||next.lifecycleRules)card.append(renderLifecyclePanel(city,next.lifecycleRules,onFocus));

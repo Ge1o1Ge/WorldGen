@@ -85,17 +85,10 @@ public sealed partial class SettlementSimulationTests
     }
 
     [Fact]
-    public async Task OldWorldAddsAnEmptyCouncilWithoutChangingItsPeopleOrStocks()
+    public async Task ChangedCouncilRulesRejectAnOldWorld()
     {
         var old = await CreateCouncil(legacy: true); old.Advance(8);
-        var snapshot = WorldSnapshot.Create(old.World); var originalHash = WorldSnapshot.Hash(old.World);
-        var upgraded = await CreateCouncil(snapshot);
-        Assert.Equal(old.World.Day, upgraded.World.Day);
-        Assert.Equal(old.World.Spatial.Nodes[old.World.Spatial.RegionNodeId].Aggregate.Population,
-            upgraded.World.Spatial.Nodes[upgraded.World.Spatial.RegionNodeId].Aggregate.Population);
-        foreach (var city in old.World.Cities.Values) Assert.Equal(city.Stocks.ToDictionary(), upgraded.World.Cities[city.Id].Stocks.ToDictionary());
-        Assert.All(upgraded.Development!.State.Cities.Values, c => Assert.Empty(c.Council!.Proposals));
-        Assert.Equal(originalHash, WorldSnapshot.Hash(old.World));
-        upgraded.Advance(1);
+        var snapshot = WorldSnapshot.Create(old.World);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CreateCouncil(snapshot));
     }
 }

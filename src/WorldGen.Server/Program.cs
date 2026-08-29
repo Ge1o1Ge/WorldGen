@@ -113,6 +113,7 @@ app.MapGet("/api/sphere", () =>
         sphericalDefinition.Seed,
         sphericalDefinition.Terrain.SeaLevelMeters,
         biosphere = settlementRules.Primitive?.Biosphere,
+        processes = settlementRules.Primitive?.Processes,
         zones = sphericalTopology.CellCount,
         triangles = sphericalTopology.TriangleCount,
         chunks = sphericalLayout.ChunkCount,

@@ -8,7 +8,7 @@ using WorldGen.Core.Simulation;
 namespace WorldGen.Content;
 
 public sealed record TechnologyEditorNode(string Id, string TechnologyId, string Title, string Domain,
-    string Layer, string Source, string Description, string[] Conditions, string[] Effects, string? Symbol);
+    string Layer, string Source, string Description, string[] Conditions, string[] Effects, string? Symbol, string Kind = "technology");
 public sealed record TechnologyEditorEdge(string Id, string From, string To, string Type);
 public sealed record TechnologyAnnotation(string Description, string[] Effects, string? Symbol);
 public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, TechnologyEditorEdge[] Edges)
@@ -21,17 +21,26 @@ public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, Techn
     {
         var nodes = new List<TechnologyEditorNode>();
         var edges = new List<TechnologyEditorEdge>();
+        var primitiveIds = (primitive?.Technologies ?? []).Select(t => t.Id).ToHashSet(StringComparer.Ordinal);
+        var resourceNames = content.Resources.Resources.Concat(primitive?.Resources ?? [])
+            .GroupBy(resource => resource.Id, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First().Name, StringComparer.Ordinal);
+        string NodeId(string technologyId) => primitiveIds.Contains(technologyId) ? "primitive:" + technologyId : "catalog:" + technologyId;
         static string N(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
         foreach (var tech in primitive?.Technologies ?? [])
         {
             var crop = primitive!.Biosphere?.Crops.FirstOrDefault(c => c.Technology == tech.Id);
             var animal = primitive.Biosphere?.Animals.FirstOrDefault(a => a.Technology == tech.Id);
+            var processes = primitive.Processes.Where(process => process.Technology == tech.Id).ToArray();
+            var animalProducts = primitive.Biosphere?.Animals.SelectMany(owner => owner.ProductRules.Select(product => (Owner: owner, Product: product)))
+                .Where(pair => pair.Product.Technology == tech.Id).ToArray() ?? [];
             var annotation = annotations?.GetValueOrDefault(tech.Id);
             var conditions = new List<string>();
             conditions.Add(tech.Baseline ? "Стартовое знание у всех поселений; материальное внедрение учитывается отдельно."
                 : $"Практика «{tech.Practice}»: {N(tech.PracticeHours)} человеко-часов. Предпосылки должны быть известны до начала дня.");
             if (tech.Prerequisites.Length > 0)
                 conditions.Add("Необходимые знания: " + string.Join(", ", tech.Prerequisites.Select(id => primitive.Technologies.First(t => t.Id == id).Name)) + ".");
+            if (tech.AlternativePrerequisites.Length > 0)
+                conditions.Add("Нужен хотя бы один альтернативный путь: " + string.Join(" или ", tech.AlternativePrerequisites.Select(id => primitive.Technologies.First(t => t.Id == id).Name)) + ".");
             var effects = annotation?.Effects.ToList() ?? [];
             if (crop is not null)
             {
@@ -48,6 +57,19 @@ public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, Techn
                 effects.Add($"Открывает содержание «{animal.Name}». На животное в день: корм {N(animal.FeedPerDay)} т, вода {N(animal.WaterPerDay)} т, уход {N(animal.CareHoursPerDay)} ч.");
                 effects.Add($"Созревание {animal.MaturityDays} дней; период размножения {animal.GestationDays} дней. Угодья получают навоз; внедрение определяется фактическим поголовьем.");
             }
+            foreach (var pair in animalProducts)
+            {
+                conditions.Add($"Для продукта «{pair.Product.Name}» нужны самки вида «{pair.Owner.Name}», уход и {N(pair.Product.LaborHoursPerUnit)} ч труда на единицу." +
+                    (pair.Product.LactationDays > 0 ? $" Получение возможно {pair.Product.LactationDays} дней после приплода." : ""));
+                effects.Add($"Реальная партия «{pair.Product.Name}»: {N(pair.Product.PerFemalePerDay)} {pair.Product.Unit} на самку в день; базовая порча {N(pair.Product.DecayPerDay * 100)}% в день.");
+            }
+            foreach (var process in processes)
+            {
+                string Amounts(IEnumerable<KeyValuePair<string, double>> amounts) => string.Join(", ", amounts.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                    .Select(pair => $"{resourceNames.GetValueOrDefault(pair.Key, pair.Key)} {N(pair.Value)}"));
+                conditions.Add($"Процесс «{process.Name}»: входы {Amounts(process.Inputs)}; оснащение {Amounts(process.RequiredStocks)}; труд {N(process.LaborHoursPerBatch)} ч на партию.");
+                effects.Add($"Выход процесса: {Amounts(process.Outputs)}. Целевой запас {N(process.TargetOutputPerPerson)} {resourceNames.GetValueOrDefault(process.TargetResource, process.TargetResource)} на жителя; фактические партии ограничены трудом, входами и оснащением.");
+            }
             if (tech.Id == "crop_rotation")
             {
                 conditions.Add($"Получены урожаи не менее {primitive.Biosphere?.RotationCropCount ?? 3} разных культур (не просто открыты знания).");
@@ -60,18 +82,34 @@ public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, Techn
                     : animal is not null ? "Видовое знание содержания животных, отделённое от живого поголовья." : "Технология начальной эпохи."),
                 conditions.ToArray(), effects.ToArray(), crop?.Symbol ?? animal?.Symbol ?? annotation?.Symbol));
             edges.AddRange(tech.Prerequisites.Select(p => new TechnologyEditorEdge($"primitive:{p}>{tech.Id}:required", "primitive:" + p, "primitive:" + tech.Id, "required")));
+            if (tech.AlternativePrerequisites.Length > 0)
+            {
+                var logicId = "logic:any:" + tech.Id;
+                nodes.Add(new(logicId, "any:" + tech.Id, "ИЛИ", tech.Domain, "primitive", "anyPrerequisites",
+                    "Достаточно одного из входящих альтернативных знаний.",
+                    tech.AlternativePrerequisites.Select(id => primitive.Technologies.First(t => t.Id == id).Name).ToArray(),
+                    [$"Разрешает обязательное условие для «{tech.Name}» при наличии любого одного входа."], null, "logic"));
+                edges.AddRange(tech.AlternativePrerequisites.Select(p => new TechnologyEditorEdge(
+                    $"primitive:{p}>{logicId}:alternative", "primitive:" + p, logicId, "alternative")));
+                edges.Add(new($"{logicId}>primitive:{tech.Id}:required", logicId, "primitive:" + tech.Id, "required"));
+            }
         }
-        // The later catalogue has overlapping IDs but different semantics: never merge by name/ID.
-        foreach (var tech in content.Technologies.Technologies)
+        edges.AddRange((primitive?.Relations ?? []).Select(relation => new TechnologyEditorEdge(
+            $"primitive:{relation.From}>{relation.To}:{relation.Type}", "primitive:" + relation.From, "primitive:" + relation.To, relation.Type)));
+        // There is one organic knowledge graph. Primitive definitions are the
+        // authoritative version of overlapping IDs; the remaining catalogue
+        // definitions stay connected in the same layer instead of forming an era.
+        foreach (var tech in content.Technologies.Technologies.Where(t => !primitiveIds.Contains(t.Id)))
         {
             var recipes = content.Recipes.Recipes.Where(r => r.RequiredTechnologyIds.Contains(tech.Id)).ToArray();
-            nodes.Add(new("catalog:" + tech.Id, tech.Id, tech.Name, tech.Domain, "catalog", "content/technologies.json",
-                "Общий каталог прежнего экономического контура. Не считается внедрённой механикой начальной эпохи.",
-                [$"Сложность: {N(tech.Complexity)}; коэффициент распространения: {N(tech.Diffusion)}. Связи показаны по каталогу, без переноса в начальный сценарий."],
+            nodes.Add(new("catalog:" + tech.Id, tech.Id, tech.Name, tech.Domain, "primitive", "content/technologies.json",
+                "Технология единого каталога знаний. Её положение определяется связями и условиями, а не назначенной эпохой.",
+                [$"Сложность освоения: {N(tech.Complexity)}; коэффициент распространения: {N(tech.Diffusion)}."],
                 recipes.Length > 0 ? recipes.Select(r => "Условие рецепта: " + r.Name + ".").ToArray() : ["Отдельные производственные эффекты в каталоге не указаны."],
                 tech.Id == "water_mill" ? "mill" : null));
         }
-        edges.AddRange(content.Technologies.Relations.Select(e => new TechnologyEditorEdge($"catalog:{e.From}>{e.To}:{e.Type}", "catalog:" + e.From, "catalog:" + e.To, e.Type)));
-        return new(nodes.ToArray(), edges.ToArray());
+        edges.AddRange(content.Technologies.Relations.Select(e => new TechnologyEditorEdge($"catalog:{e.From}>{e.To}:{e.Type}", NodeId(e.From), NodeId(e.To), e.Type)));
+        var uniqueEdges = edges.GroupBy(e => (e.From, e.To, e.Type)).Select(group => group.First()).ToArray();
+        return new(nodes.ToArray(), uniqueEdges);
     }
 }

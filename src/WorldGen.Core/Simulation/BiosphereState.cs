@@ -47,6 +47,8 @@ public sealed class HerdState
     public int LastBirthDay { get; set; } = -10000;
     public CellAddress? Pasture { get; set; }
     public double PastureWork { get; set; }
+    public Dictionary<string, double> ProductsToday { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, double> TotalProducts { get; set; } = new(StringComparer.Ordinal);
     public int LastDay { get; set; } = -1;
     public int Count => Females + Males + Young.Sum(y => y.Count);
 }

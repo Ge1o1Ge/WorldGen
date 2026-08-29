@@ -12,7 +12,8 @@ public static class Economy
     {
         var telemetry = new DailyTelemetry { Day = world.Day };
         development?.ReconcileFoodComposition();
-        DecayStocks(world, content, telemetry);
+        if (development is null) DecayStocks(world, content, telemetry);
+        else development.DecayStoredResources(telemetry);
         development?.ReconcileFoodComposition();
         if (development is null) RecoverNaturalSites(world); else development.RecoverNaturalSites();
         development?.RunDay(telemetry);
@@ -174,14 +175,17 @@ public static class Economy
             var population = world.Spatial.Nodes[city.SpatialNodeId].Aggregate.Population;
             var needed = SimulationMath.Quantize(population * city.FoodPerPersonPerDay);
             var localNeed = Math.Max(0, needed - (development?.RemoteNeed(cityId, "food") ?? 0));
+            var directConsumed = development?.ConsumeEdibleStocks(city, localNeed, telemetry) ?? 0;
+            localNeed = Math.Max(0, localNeed - directConsumed);
             var localConsumed = SimulationMath.Quantize(Math.Min(localNeed, city.Stocks["food"]));
             development?.RecordFoodConsumption(city, localConsumed);
-            var consumed = SimulationMath.Quantize(localConsumed + (development?.RemoteConsumption(cityId, "food") ?? 0));
-            var missing = SimulationMath.Quantize(needed - consumed);
+            var remoteConsumed = development?.RemoteConsumption(cityId, "food") ?? 0;
+            var consumed = SimulationMath.Quantize(directConsumed + localConsumed + remoteConsumed);
+            var missing = SimulationMath.Quantize(Math.Max(0, needed - consumed));
             city.Stocks["food"] = SimulationMath.Quantize(Math.Max(0, city.Stocks["food"] - localConsumed));
             telemetry.HouseholdFoodConsumed = SimulationMath.Quantize(telemetry.HouseholdFoodConsumed + consumed);
             telemetry.HouseholdFoodMissing = SimulationMath.Quantize(telemetry.HouseholdFoodMissing + missing);
-            telemetry.HouseholdConsumptionByResource["food"] = SimulationMath.Quantize(telemetry.HouseholdConsumptionByResource.GetValueOrDefault("food") + consumed);
+            telemetry.HouseholdConsumptionByResource["food"] = SimulationMath.Quantize(telemetry.HouseholdConsumptionByResource.GetValueOrDefault("food") + localConsumed + remoteConsumed);
             telemetry.HouseholdMissingByResource["food"] = SimulationMath.Quantize(telemetry.HouseholdMissingByResource.GetValueOrDefault("food") + missing);
             if (missing > Epsilon)
             {

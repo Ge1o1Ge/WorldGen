@@ -33,4 +33,5 @@ public static class TechnologyStateFactory
                 },
                 StringComparer.Ordinal);
     }
+
 }

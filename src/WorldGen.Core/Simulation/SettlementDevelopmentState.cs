@@ -58,6 +58,10 @@ public sealed class SettlementLifeState
     public double IndustryLaborHours { get; set; }
     public Dictionary<string, double> Production { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, double> PracticeHours { get; set; } = new(StringComparer.Ordinal);
+    // Practice from before prerequisites became known is general domain experience,
+    // not retroactive practice of the newly available method.
+    public Dictionary<string, double> TechnologyPracticeBaselines { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, PrimitiveProcessState> Processes { get; set; } = new(StringComparer.Ordinal);
     public HashSet<string> Discoveries { get; set; } = new(StringComparer.Ordinal);
     public List<HouseholdTaskState> Tasks { get; set; } = [];
     public string Decision { get; set; } = "Начальная стоянка";
@@ -71,6 +75,31 @@ public sealed class SettlementLifeState
     public SettlementMaintenanceState? Maintenance { get; set; }
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public SettlementWellbeingState? Wellbeing { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public SettlementStorageState? Storage { get; set; }
+}
+
+public sealed class PrimitiveProcessState
+{
+    public int LastDay { get; set; } = -1;
+    public double BatchesToday { get; set; }
+    public double LaborHoursToday { get; set; }
+    public double TotalBatches { get; set; }
+    public string? Constraint { get; set; }
+}
+
+public sealed class SettlementStorageState
+{
+    public double TotalCapacity { get; set; }
+    public double UsedVolume { get; set; }
+    public double OutdoorVolume { get; set; }
+    public double LostToday { get; set; }
+    public Dictionary<string, double> CapacityByBuildingKind { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, double> UsedByBuildingKind { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, double> StoredByResource { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, double> SpecializedByResource { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, double> OutdoorByResource { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, double> LostByResource { get; set; } = new(StringComparer.Ordinal);
 }
 
 public sealed class HouseholdFoodState

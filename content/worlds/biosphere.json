@@ -671,8 +671,21 @@
       "maturityDays": 140,
       "gestationDays": 35,
       "litter": 5,
-      "productPerDay": 0.000035,
-      "manurePerDay": 2.4000000000000003e-7
+      "manurePerDay": 2.4000000000000003e-7,
+      "products": [
+        {
+          "resourceId": "eggs",
+          "name": "Яйца",
+          "unit": "тонна",
+          "category": "food_direct",
+          "technology": null,
+          "perFemalePerDay": 0.000035,
+          "laborHoursPerUnit": 90,
+          "decayPerDay": 0.035,
+          "foodValue": 0.9,
+          "lactationDays": 0
+        }
+      ]
     },
     {
       "id": "pig",
@@ -694,7 +707,6 @@
       "maturityDays": 300,
       "gestationDays": 115,
       "litter": 5,
-      "productPerDay": 0,
       "manurePerDay": 0.000009600000000000001
     },
     {
@@ -717,8 +729,21 @@
       "maturityDays": 650,
       "gestationDays": 280,
       "litter": 1,
-      "productPerDay": 0.0009,
-      "manurePerDay": 0.000036
+      "manurePerDay": 0.000036,
+      "products": [
+        {
+          "resourceId": "milk",
+          "name": "Свежее молоко",
+          "unit": "тонна",
+          "category": "food_direct",
+          "technology": "dairy",
+          "perFemalePerDay": 0.0009,
+          "laborHoursPerUnit": 180,
+          "decayPerDay": 0.08,
+          "foodValue": 1,
+          "lactationDays": 180
+        }
+      ]
     },
     {
       "id": "deer",
@@ -740,7 +765,6 @@
       "maturityDays": 500,
       "gestationDays": 220,
       "litter": 1,
-      "productPerDay": 0,
       "manurePerDay": 0.000012
     },
     {
@@ -763,7 +787,6 @@
       "maturityDays": 850,
       "gestationDays": 335,
       "litter": 1,
-      "productPerDay": 0,
       "manurePerDay": 0.000036
     },
     {
@@ -786,7 +809,6 @@
       "maturityDays": 140,
       "gestationDays": 35,
       "litter": 4,
-      "productPerDay": 0,
       "manurePerDay": 3.6e-7
     },
     {
@@ -809,8 +831,21 @@
       "maturityDays": 360,
       "gestationDays": 150,
       "litter": 1.5,
-      "productPerDay": 0.00035,
-      "manurePerDay": 0.0000042000000000000004
+      "manurePerDay": 0.0000042000000000000004,
+      "products": [
+        {
+          "resourceId": "milk",
+          "name": "Свежее молоко",
+          "unit": "тонна",
+          "category": "food_direct",
+          "technology": "dairy",
+          "perFemalePerDay": 0.00035,
+          "laborHoursPerUnit": 220,
+          "decayPerDay": 0.08,
+          "foodValue": 1,
+          "lactationDays": 180
+        }
+      ]
     },
     {
       "id": "sheep",
@@ -832,8 +867,21 @@
       "maturityDays": 400,
       "gestationDays": 150,
       "litter": 1.3,
-      "productPerDay": 0.0002,
-      "manurePerDay": 0.000004800000000000001
+      "manurePerDay": 0.000004800000000000001,
+      "products": [
+        {
+          "resourceId": "wool",
+          "name": "Сырая шерсть",
+          "unit": "тонна",
+          "category": "material",
+          "technology": "wool_clothing",
+          "perFemalePerDay": 0.000007,
+          "laborHoursPerUnit": 180,
+          "decayPerDay": 0.0002,
+          "foodValue": 0,
+          "lactationDays": 0
+        }
+      ]
     }
   ],
   "searchHoursPerDay": 2,

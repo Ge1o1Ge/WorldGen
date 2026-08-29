@@ -1,6 +1,6 @@
 import { symbolSvg } from './map-symbols.js';
 import { preventGraphSelection, preventGraphNativeDrag } from './technology-interaction.js';
-import { LINK_TYPES, DOMAINS, assembleGraph, resolveId, layoutGraph, restoreLayout, screenToWorld, zoomAt, edgePath, prerequisiteCycles, vacantPosition } from './technology-graph.js';
+import { LINK_TYPES, DOMAINS, assembleGraph, resolveId, restoreLayout, screenToWorld, zoomAt, edgePath, prerequisiteCycles, vacantPosition, snapNodePosition } from './technology-graph.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('canvas'), world = $('world'), wires = $('wires'), nodeLayer = $('nodes');
@@ -89,8 +89,7 @@ function pendingIds() {
   return ids;
 }
 function filteredNodes() {
-  const layer = $('layer').value;
-  let nodes = graph.nodes.filter(n => layer === 'all' || layer === 'primitive' && ['primitive', 'draft', 'missing'].includes(n.layer) || n.layer === layer);
+  let nodes = graph.nodes;
   if (pendingOnly) {
     const ids = pendingIds();
     // Keep one-hop context: a proposal should not lose the prerequisites around it.
@@ -107,19 +106,18 @@ function refresh() {
   visible = filteredNodes();
   $('node-count').textContent = graph.nodes.length;
   $('pending-count').textContent = data.workspace.nodes.filter(n => n.status === 'manual').length + data.workspace.edges.filter(e => e.status === 'manual').length + data.workspace.comments.filter(c => c.status === 'manual').length;
-  $('graph-title').textContent = pendingOnly ? 'На адаптацию + контекст' : ({ primitive: 'Начальная эпоха', all: 'Полная сеть', draft: 'Ручные черновики', catalog: 'Поздний каталог' })[$('layer').value];
+  $('graph-title').textContent = pendingOnly ? 'На адаптацию + контекст' : 'Единое дерево';
   $('empty').hidden = visible.length > 0;
   renderLibrary(); renderNodes(); renderInspector();
 }
 function renderLibrary() {
   const list = $('search-results'); list.replaceChildren();
   const search = $('search').value.trim().toLocaleLowerCase('ru');
-  // Search spans the entire catalogue; choosing a result can reveal its layer.
   const matches = (search ? graph.nodes : visible).filter(n => !search || `${n.title} ${n.technologyId} ${n.description}`.toLocaleLowerCase('ru').includes(search));
-  for (const layer of ['primitive', 'draft', 'catalog', 'missing']) {
-    const group = matches.filter(n => n.layer === layer);
+  for (const layer of ['primitive', 'draft', 'missing']) {
+    const group = matches.filter(n => n.layer === layer && n.kind !== 'logic');
     if (!group.length) continue;
-    list.append(el('div', 'list-heading', ({ primitive: 'Начальная эпоха', draft: 'Твои ноды · manual', catalog: 'Поздний каталог', missing: 'Требуют сверки' })[layer]));
+    list.append(el('div', 'list-heading', ({ primitive: 'Технологии', draft: 'Твои ноды · manual', missing: 'Требуют сверки' })[layer]));
     for (const n of group) {
       const b = button('', () => focusNode(n.id), `list-item${selected === n.id ? ' selected' : ''}`);
       b.title = n.title; b.append(icon(n.symbol), el('span', 'item-title', n.title));
@@ -143,7 +141,7 @@ function renderNodes() {
   const cycles = prerequisiteCycles(graph.nodes, graph.edges);
   for (const n of visible) {
     const isExpanded = expanded.has(n.id);
-    const card = el('article', `tech-node${n.status === 'manual' ? ' manual' : ''}${isExpanded ? ' expanded' : ''}${selected === n.id ? ' selected' : ''}${cycles.has(n.id) ? ' cycle' : ''}`);
+    const card = el('article', `tech-node${n.kind === 'logic' ? ' logic' : ''}${n.status === 'manual' ? ' manual' : ''}${isExpanded ? ' expanded' : ''}${selected === n.id ? ' selected' : ''}${cycles.has(n.id) ? ' cycle' : ''}`);
     card.dataset.nodeId = n.id; card.setAttribute('aria-label', n.title);
     card.style.left = positions[n.id].x + 'px'; card.style.top = positions[n.id].y + 'px';
     const header = el('div', 'node-header'); header.dataset.dragNode = n.id;
@@ -158,7 +156,8 @@ function renderNodes() {
       }
     }, 'expand-button');
     expand.setAttribute('aria-label', `${isExpanded ? 'Свернуть' : 'Развернуть'} ${n.title}`); expand.setAttribute('aria-expanded', String(isExpanded));
-    header.append(port(n.id, 'in'), icon(n.symbol), title, expand, port(n.id, 'out'));
+    if (n.kind === 'logic') header.append(port(n.id, 'in'), title, port(n.id, 'out'));
+    else header.append(port(n.id, 'in'), icon(n.symbol), title, expand, port(n.id, 'out'));
     if (n.manualCount) header.append(el('span', 'node-badge', `manual${n.manualCount > 1 ? ' · ' + n.manualCount : ''}`));
     card.append(header);
     if (isExpanded) {
@@ -174,7 +173,6 @@ function renderNodes() {
   scheduleWires();
 }
 function appendDetails(container, n, surface) {
-  if (n.layer === 'catalog') container.append(el('p', 'small-note', 'Каталог прежнего контура — не внедрён в начальную эпоху.'));
   container.append(el('h3', '', 'Описание'), el('p', 'details-copy', n.description || 'Пока без описания.'));
   for (const [title, values] of [['Условия возникновения', n.conditions], ['Эффекты внедрения', n.effects]]) {
     container.append(el('h3', '', title)); const list = el('ul', 'facts');
@@ -214,6 +212,10 @@ function appendDetails(container, n, surface) {
       const original = data.workspace.comments.find(c => c.id === part.commentId);
       if (original) { const reference = el('details'); reference.append(el('summary', '', 'Исходная мысль'), el('p', 'details-copy', original.text)); entry.append(reference); }
     }
+    for (const edge of review.edgeAdaptations || []) {
+      const original = data.workspace.edges.find(item => item.id === edge.edgeId);
+      if (original) entry.append(el('p', 'small-note', `Связь нормализована: ${original.type} → ${edge.implementedType}.`));
+    }
     for (const id of review.nodeIds) {
       const draft = data.workspace.nodes.find(d => d.id === id);
       if (draft) { const original = el('details'); original.append(el('summary', '', 'Исходная нода: ' + draft.title), el('p', 'details-copy', [draft.description, draft.conditions, draft.effects].filter(Boolean).join('\n\n'))); entry.append(original); }
@@ -251,7 +253,7 @@ function renderInspector() {
   const n = graph.nodes.find(n => n.id === selected); if (!n) return;
   panel.append(el('span', 'eyebrow', DOMAINS[n.domain] || n.domain));
   const heading = el('div', 'inspector-heading'); heading.append(icon(n.symbol), el('h2', '', n.title)); panel.append(heading);
-  panel.append(el('div', 'source-id', `${n.id}\n${n.source || ''}`), el('span', `tag${n.status === 'manual' ? ' manual' : ''}`, n.status === 'manual' ? 'manual · ожидает адаптации' : n.layer === 'primitive' ? 'Начальная эпоха · каталог' : n.layer === 'missing' ? 'Нет исходного определения' : 'Поздний каталог'));
+  panel.append(el('div', 'source-id', `${n.id}\n${n.source || ''}`), el('span', `tag${n.status === 'manual' ? ' manual' : ''}`, n.status === 'manual' ? 'manual · ожидает адаптации' : n.layer === 'missing' ? 'Нет исходного определения' : 'Единый каталог'));
   if (n.status === 'manual') panel.append(button('Редактировать черновик', () => openNodeDialog(n.id), 'text-button'));
   appendDetails(panel, n, 'inspector');
   panel.append(el('h3', '', 'Связи'));
@@ -266,7 +268,7 @@ function renderInspector() {
 function selectNode(id) { const changed = selected !== id || selectedEdge; selected = id; selectedEdge = null; renderLibrary(); renderInspector(); if (changed) $('inspector').scrollTop = 0; for (const [key, card] of cards) card.classList.toggle('selected', key === id); drawWires(); }
 function focusNode(id) {
   if (!graph.nodes.some(n => n.id === id)) return;
-  if (!visible.some(n => n.id === id)) { $('layer').value = 'all'; pendingOnly = false; $('manual-filter').setAttribute('aria-pressed', 'false'); refresh(); }
+  if (!visible.some(n => n.id === id)) { pendingOnly = false; $('manual-filter').setAttribute('aria-pressed', 'false'); refresh(); }
   selectNode(id); const p = positions[id]; camera = { x: canvas.clientWidth / 2 - (p.x + 143), y: canvas.clientHeight / 2 - (p.y + 30), scale: 1 }; applyCamera();
 }
 function applyCamera() {
@@ -356,7 +358,8 @@ canvas.addEventListener('pointermove', event => {
   if (gesture.kind === 'node') {
     const dx = current.x - gesture.start.x, dy = current.y - gesture.start.y;
     if (Math.abs(dx) + Math.abs(dy) < 4 && !gesture.moved) return;
-    gesture.moved = true; positions[gesture.id] = { x: gesture.original.x + dx / camera.scale, y: gesture.original.y + dy / camera.scale };
+    gesture.moved = true;
+    positions[gesture.id] = snapNodePosition({ x: gesture.original.x + dx / camera.scale, y: gesture.original.y + dy / camera.scale });
     const card = cards.get(gesture.id); card.style.left = positions[gesture.id].x + 'px'; card.style.top = positions[gesture.id].y + 'px'; scheduleWires();
   }
 });
@@ -411,15 +414,9 @@ $('close-dialog').addEventListener('click', () => $('node-dialog').close());
 $('create').addEventListener('click', () => openNodeDialog());
 $('reload').addEventListener('click', () => load());
 $('search').addEventListener('input', () => { if (graph) renderLibrary(); });
-$('layer').addEventListener('change', () => { refresh(); fit(); });
 $('manual-filter').addEventListener('click', () => { pendingOnly = !pendingOnly; $('manual-filter').setAttribute('aria-pressed', String(pendingOnly)); refresh(); fit(); });
 $('fit').addEventListener('click', () => fit());
 for (const [id, factor] of [['zoom-in', 1.25], ['zoom-out', .8]]) $(id).addEventListener('click', () => { camera = zoomAt(camera, { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 }, camera.scale * factor); applyCamera(); });
-$('layout').addEventListener('click', async () => {
-  if (!data || !visible.length || !confirm('Переразложить видимые ноды? Их сохранённые позиции будут заменены. Комментарии и связи сохранятся.')) return;
-  const next = layoutGraph(visible, graph.edges); positions = { ...positions, ...next }; renderNodes(); fit();
-  try { await command({ action: 'move-nodes', positions: next }); } catch { /* Reported centrally. */ }
-});
 $('export').addEventListener('click', () => {
   if (!data) return;
   const blob = new Blob([JSON.stringify({ ...data, localRecovery: { notes: noteDrafts, form: formDraft, positions } }, null, 2)], { type: 'application/json' });

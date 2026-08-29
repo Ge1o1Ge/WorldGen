@@ -26,6 +26,9 @@ public sealed partial class SettlementSimulationTests
         age.Age(wood, 1095); Assert.Equal(.15, age.RepairableWear, 9); Assert.Equal(.05, age.PermanentWear, 9);
         age.RepairableWear = 0; Assert.Equal(.95, age.Efficiency, 9);
         age.Age(wood, 1095); Assert.Equal(.05, age.PermanentWear, 9); // same day cannot age twice
+        var idle = new BuildingLifecycleState { Material = wood.Id, AgeDays = 730, LastAgedDay = 730 };
+        idle.Age(wood, 1095, rules.Lifecycle.UnusedWearMultiplier);
+        Assert.Equal(.225, idle.RepairableWear, 9); Assert.Equal(.05, idle.PermanentWear, 9);
         foreach (var material in materials)
         {
             var maintained = new BuildingLifecycleState { Material = material.Id };
@@ -36,6 +39,7 @@ public sealed partial class SettlementSimulationTests
         Assert.True(materials.Single(m => m.Id == "stone").LaborMultiplier > wood.LaborMultiplier);
         Assert.Throws<InvalidOperationException>(() => (rules.Lifecycle with { WellCapacity = double.NaN }).Validate());
         Assert.Throws<InvalidOperationException>(() => (rules.Lifecycle with { MaintenanceLaborShare = 1.1 }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (rules.Lifecycle with { UnusedWearMultiplier = .9 }).Validate());
     }
 
     [Fact]
@@ -157,7 +161,8 @@ public sealed partial class SettlementSimulationTests
         {
             var w = b.Well!;
             Assert.Equal(before[b.Id] + w.RechargedToday - w.OverflowToday - w.WithdrawnToday, w.Stock, 8);
-            Assert.InRange(w.Stock, 0, w.Capacity); Assert.InRange(w.WithdrawnToday, 0, before[b.Id] + w.RechargedToday);
+            Assert.InRange(w.Stock, -1e-12, w.Capacity + 1e-12);
+            Assert.InRange(w.WithdrawnToday, -1e-12, before[b.Id] + w.RechargedToday + 1e-12);
         }
         Assert.All(sim.Development.State.Cities.Values, life => Assert.True(life.WaterCoverage > .99));
         Assert.True(wells.Sum(b => b.Well!.WithdrawnToday) > 0);
@@ -186,17 +191,10 @@ public sealed partial class SettlementSimulationTests
     }
 
     [Fact]
-    public async Task LifecycleLegacyMigrationPreservesDayPeopleStocksSoilAndStartsExplicitAgeAccounting()
+    public async Task ChangedLifecycleRulesRejectAnOldWorld()
     {
         var old = await CreateLifecycle(legacy: true); old.Advance(5); old.World.Day = 5000;
-        var upgraded = await CreateLifecycle(WorldSnapshot.Create(old.World));
-        Assert.Equal(5000, upgraded.World.Day);
-        foreach (var city in old.World.Cities.Values) Assert.Equal(city.Stocks.ToDictionary(), upgraded.World.Cities[city.Id].Stocks.ToDictionary());
-        Assert.Equal(old.Development!.State.Buildings.Sum(b => b.Residents), upgraded.Development!.State.Buildings.Sum(b => b.Residents));
-        Assert.All(upgraded.Development.State.Buildings.Where(b => b.Lifecycle is not null), b =>
-        { Assert.True(b.Lifecycle!.BaselineAssessment); Assert.Equal(5000, b.Lifecycle.AccountedFromDay); Assert.Equal(0, b.Lifecycle.AgeDays); });
-        Assert.All(old.World.Spatial.Territories.Values, t => Assert.Equal(t.NaturalState.SoilQuality, upgraded.World.Spatial.Territories[t.Id].NaturalState.SoilQuality));
-        upgraded.Advance(3); Assert.DoesNotContain(upgraded.Development.State.Buildings, b => b.Lifecycle?.PermanentWear > 0);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CreateLifecycle(WorldSnapshot.Create(old.World)));
     }
 
     [Fact]

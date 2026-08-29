@@ -236,6 +236,8 @@ public sealed partial class SettlementSimulation
         foreach (var tech in r.Technologies)
         {
             var knowledge = city.TechnologyState[tech.Id];
+            var totalPractice = life.PracticeHours.GetValueOrDefault(tech.Practice);
+            var practice = Math.Max(0, totalPractice - life.TechnologyPracticeBaselines.GetValueOrDefault(tech.Id));
             if(BiologyRules is {} bio)
             {
                 var state=life.Biology!;
@@ -244,9 +246,17 @@ public sealed partial class SettlementSimulation
                 var animal=bio.Animals.FirstOrDefault(a=>a.Technology==tech.Id);
                 if(crop is not null&&!state.KnownPlants.Contains(crop.Id)||animal is not null&&!state.KnownAnimals.Contains(animal.Id))continue;
             }
-            if (!knownBefore.Contains(tech.Id) && tech.Prerequisites.All(knownBefore.Contains))
+            if (!knownBefore.Contains(tech.Id) && (!tech.Prerequisites.All(knownBefore.Contains) ||
+                tech.AlternativePrerequisites.Length > 0 && !tech.AlternativePrerequisites.Any(knownBefore.Contains)))
             {
-                knowledge.Knowledge = Math.Min(1, life.PracticeHours.GetValueOrDefault(tech.Practice) / tech.PracticeHours);
+                // Practice before the prerequisites existed is general domain
+                // experience, not retroactive practice of the still-unknown method.
+                life.TechnologyPracticeBaselines[tech.Id] = totalPractice;
+                continue;
+            }
+            if (!knownBefore.Contains(tech.Id))
+            {
+                knowledge.Knowledge = Math.Min(1, practice / tech.PracticeHours);
                 if (knowledge.Knowledge >= 1)
                 {
                     life.Discoveries.Add(tech.Id);
@@ -254,8 +264,8 @@ public sealed partial class SettlementSimulation
                 }
             }
             if (!life.Discoveries.Contains(tech.Id)) continue;
-            knowledge.Competence = Math.Clamp(.5 + life.PracticeHours.GetValueOrDefault(tech.Practice) / tech.PracticeHours * .5, 0, 1);
-            knowledge.Capability = tech.Id switch
+            knowledge.Competence = Math.Clamp(.5 + practice / tech.PracticeHours * .5, 0, 1);
+            knowledge.Capability = tech.Staged ? 0 : tech.Id switch
             {
                 "stone_axes" or "spears" or "stone_vessels" => KitCoverage(city),
                 "archery" => Math.Clamp(city.Stocks["primitive_bow"] / Math.Max(1, Population(city) * .02), 0, 1),
@@ -263,15 +273,35 @@ public sealed partial class SettlementSimulation
                 "gardening" => Math.Clamp(State.Buildings.Count(b => b.CityId == city.Id && ReadyGarden(b)) / 4d, 0, 1),
                 "well" => State.Buildings.Any(b => b.CityId == city.Id && b.Kind == "well" && b.Status == "active") ? 1 : 0,
                 "taming" => Math.Clamp(life.Primitive!.HerdBiomass / Math.Max(.01, Population(city) * .002), 0, 1),
+                "storage_buildings" => State.Buildings.Any(b => b.CityId == city.Id && b.Kind == "warehouse" && b.Status == "active") ? 1 : 0,
+                "granary" => State.Buildings.Any(b => b.CityId == city.Id && b.Kind == "granary" && b.Status == "active") ? 1 : 0,
                 _ => 1
             };
             knowledge.Adoption = knowledge.Capability;
+            var processes = r.Processes.Where(process => process.Technology == tech.Id).ToArray();
+            if (processes.Length > 0)
+            {
+                static double Coverage(CityState owner, IReadOnlyDictionary<string, double> requirements) => requirements.Count == 0 ? 1 :
+                    requirements.Min(pair => Math.Clamp(owner.Stocks.GetValueOrDefault(pair.Key) / pair.Value, 0, 1));
+                knowledge.Capability = processes.Max(process => Math.Min(Coverage(city, process.Inputs), Coverage(city, process.RequiredStocks)));
+                knowledge.Adoption = Math.Clamp(processes.Sum(process =>
+                        (life.Processes.GetValueOrDefault(process.Id)?.TotalBatches ?? 0) * process.Outputs[process.TargetResource]) /
+                    Math.Max(1, Population(city) * processes.Sum(process => process.TargetOutputPerPerson)), 0, 1);
+            }
             if(BiologyRules is {} biology)
             {
                 var crop=biology.Crops.FirstOrDefault(c=>c.Technology==tech.Id);
                 var animal=biology.Animals.FirstOrDefault(a=>a.Technology==tech.Id);
                 if(crop is not null){knowledge.Capability=Math.Clamp(city.Stocks[crop.SeedResource]/crop.SeedTonnes,0,1);knowledge.Adoption=Math.Clamp(life.Biology!.Plots.Values.Where(p=>p.CropId==crop.Id).Sum(p=>p.Area)/3,0,1);}
                 if(animal is not null)knowledge.Adoption=knowledge.Capability=Math.Clamp((life.Biology!.Herds.GetValueOrDefault(animal.Id)?.Count??0)/4d,0,1);
+                var animalProducts = biology.Animals.SelectMany(animalRule => animalRule.ProductRules.Select(product => (Animal: animalRule, Product: product)))
+                    .Where(pair => pair.Product.Technology == tech.Id).ToArray();
+                if (animalProducts.Length > 0 && processes.Length == 0)
+                {
+                    knowledge.Capability = Math.Clamp(animalProducts.Sum(pair => life.Biology!.Herds.GetValueOrDefault(pair.Animal.Id)?.Females ?? 0) / 3d, 0, 1);
+                    knowledge.Adoption = Math.Clamp(animalProducts.Sum(pair => life.Biology!.Herds.GetValueOrDefault(pair.Animal.Id)?.TotalProducts.GetValueOrDefault(pair.Product.ResourceId) ?? 0) /
+                        Math.Max(.01, Population(city) * .01), 0, 1);
+                }
             }
         }
     }

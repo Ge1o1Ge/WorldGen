@@ -25,6 +25,8 @@ public sealed record ResourceDefinition
     public required string Category { get; init; }
     public required double BaseValue { get; init; }
     public required double DecayPerDay { get; init; }
+    /// <summary>Food-equivalent tonnes supplied by one stored unit; zero means inedible.</summary>
+    public double FoodValue { get; init; }
     public HouseholdNeedDefinition? HouseholdNeed { get; init; }
 }
 

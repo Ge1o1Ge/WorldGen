@@ -78,7 +78,7 @@ public sealed partial class SettlementSimulation
         return rate * PrimitiveActivityFactor(city, activity, site.Value);
     }
     private SettlementBuildingRule BuildingRule(string kind) => kind == "garden" && Rules.Subsistence is { } rules
-        ? new("garden", rules.GardenLaborHours, new Dictionary<string, double> { ["timber"] = rules.GardenTimber })
+        ? new("garden", rules.GardenLaborHours, new Dictionary<string, double> { ["timber"] = rules.GardenTimber }, .08)
         : Rules.Buildings.Single(b => b.Id == kind);
 
     private void RecordFoodTask(SettlementLifeState life, HouseholdActivityRule activity, double hours, double amount, double travel, double distance)
@@ -121,7 +121,8 @@ public sealed partial class SettlementSimulation
             }
             if (source.Residents > 0 && target.Residents < Rules.ResidentsPerHouse) continue;
             target.MoveFinished = true; life.LastRelocationDay = world.Day;
-            // Empty housing is abandoned only after the normal disuse interval.
+            // The vacated house remains standing. Disuse affects maintenance and wear,
+            // while abandonment is reserved for physical failure or an explicit decision.
             Journal.Record(world, "household_relocated", city.Id, [target.CauseEventId], new JsonObject
             { ["cityId"] = city.Id, ["from"] = source.Id, ["to"] = target.Id, ["remainingResidents"] = source.Residents });
         }

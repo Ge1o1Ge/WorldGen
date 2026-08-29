@@ -48,6 +48,22 @@ public sealed class TechnologyEditorTests : IDisposable
         Assert.Equal(3, state.Positions.Count);
     }
     [Fact]
+    public async Task AdaptedDraftTransfersItsPositionWithoutOverwritingAnExistingCanonicalPosition()
+    {
+        var store = Store;
+        await store.ApplyAsync(Command("create-node") with { Node = Draft() });
+        await store.ApplyAsync(Command("move-nodes", 1) with { Positions = new() { ["draft:test"] = new(37, 91) } });
+        var review = new EditorReview("mapped", ["draft:test"], [], [], "primitive:a", "Внесено", ["source.json"], default);
+        var mapped = await store.ApplyAsync(Command("review", 2) with { Review = review });
+        Assert.Equal(new(37, 91), mapped.Positions["primitive:a"]);
+
+        store = new(FilePath + ".other", catalog);
+        await store.ApplyAsync(Command("create-node") with { Node = Draft() });
+        await store.ApplyAsync(Command("move-nodes", 1) with { Positions = new() { ["draft:test"] = new(37, 91), ["primitive:a"] = new(400, 500) } });
+        mapped = await store.ApplyAsync(Command("review", 2) with { Review = review });
+        Assert.Equal(new(400, 500), mapped.Positions["primitive:a"]);
+    }
+    [Fact]
     public async Task StaleTabAndChangedCatalogCannotOverwrite()
     {
         var store = Store;
@@ -119,6 +135,26 @@ public sealed class TechnologyEditorTests : IDisposable
         Assert.Empty(JsonSerializer.SerializeToNode(TechnologyEditorStore.Pending(state))!["edges"]!.AsArray());
     }
     [Fact]
+    public async Task ReviewCanNormalizeApproximateRequiredEdgeThroughAnExplicitOrNode()
+    {
+        var logicalCatalog = new TechnologyEditorCatalog([
+            new("primitive:a", "a", "Корова", "food", "primitive", "source.json", "", [], [], null),
+            new("logic:any:b", "any:b", "ИЛИ", "food", "primitive", "anyPrerequisites", "", [], [], null, "logic"),
+            new("primitive:b", "b", "Молочное хозяйство", "food", "primitive", "source.json", "", [], [], null)
+        ], [
+            new("a-or", "primitive:a", "logic:any:b", "alternative"),
+            new("or-b", "logic:any:b", "primitive:b", "required")
+        ]);
+        var store = new TechnologyEditorStore(FilePath + ".logic", logicalCatalog);
+        EditorCommand Cmd(string action, long revision = 0) => new() { Action = action, Revision = revision, CatalogVersion = logicalCatalog.Version };
+        await store.ApplyAsync(Cmd("add-edge") with { Edge = new("rough", "primitive:a", "primitive:b", "required") });
+        var review = new EditorReview("normalized", [], [], [], "primitive:b", "Уточнён тип", ["source.json"], default,
+            EdgeAdaptations: [new("rough", "alternative")]);
+        var state = await store.ApplyAsync(Cmd("review", 1) with { Review = review });
+        Assert.Equal("adapted", state.Edges.Single().Status);
+        Assert.Equal("alternative", state.Journal.Single().EdgeAdaptations!.Single().ImplementedType);
+    }
+    [Fact]
     public async Task PartialReviewKeepsRemainingWorkManualAndEveryImplementationStageInJournal()
     {
         var store = Store;
@@ -147,16 +183,31 @@ public sealed class TechnologyEditorTests : IDisposable
         Assert.Equal("{ broken", await File.ReadAllTextAsync(FilePath));
     }
     [Fact]
-    public async Task CatalogContainsActualSpeciesRequirementsAndSeparateLegacyLayer()
+    public async Task CatalogContainsActualSpeciesRequirementsInOneDeduplicatedTree()
     {
         var content = await ContentLoader.LoadAsync(); var rules = await SettlementRulesLoader.LoadAsync(scenario: "primordial");
         var graph = TechnologyEditorCatalog.Build(content, rules.Primitive);
-        Assert.Equal(65, graph.Nodes.Length); Assert.Equal(65, graph.Nodes.Select(n => n.Id).Distinct().Count());
-        Assert.Contains(graph.Nodes, n => n.Id == "primitive:woodworking"); Assert.Contains(graph.Nodes, n => n.Id == "catalog:woodworking");
+        Assert.Equal(89, graph.Nodes.Length); Assert.Equal(89, graph.Nodes.Select(n => n.Id).Distinct().Count());
+        Assert.Equal(graph.Nodes.Length, graph.Nodes.Select(n => n.TechnologyId).Distinct().Count());
+        Assert.Contains(graph.Nodes, n => n.Id == "primitive:woodworking"); Assert.DoesNotContain(graph.Nodes, n => n.Id == "catalog:woodworking");
+        Assert.All(graph.Nodes, n => Assert.Equal("primitive", n.Layer));
         var wheat = graph.Nodes.Single(n => n.Id == "primitive:grow_wheat");
         Assert.Equal("grain", wheat.Symbol); Assert.Contains(wheat.Conditions, c => c.Contains("семян"));
         Assert.Contains(graph.Edges, e => e.From == "primitive:gardening" && e.To == wheat.Id && e.Type == "required");
         Assert.Contains(graph.Nodes.Single(n => n.Id == "primitive:crop_rotation").Conditions, c => c.Contains("не менее 3"));
+        var horticulture = graph.Nodes.Single(n => n.Id == "primitive:horticulture");
+        Assert.Contains(graph.Edges, e => e.From == "primitive:gardening" && e.To == horticulture.Id && e.Type == "required");
+        Assert.Contains(graph.Edges, e => e.From == horticulture.Id && e.To == "primitive:grow_apple" && e.Type == "required");
+        Assert.DoesNotContain(graph.Edges, e => e.From == "primitive:gardening" && e.To == "primitive:grow_apple" && e.Type == "required");
+        Assert.Contains(graph.Edges, e => e.From == "primitive:charcoal_burning" && e.To == "primitive:bloomery_smelting" && e.Type == "required");
+        Assert.Contains(graph.Edges, e => e.From == "primitive:woodworking" && e.To == "primitive:hand_tools" && e.Type == "required");
+        Assert.Contains(graph.Nodes, n => n.Id == "primitive:storage_buildings" && n.Title == "Складские помещения");
+        Assert.Contains(graph.Edges, e => e.From == "primitive:building" && e.To == "primitive:stone_road" && e.Type == "required");
+        var dairyOr = graph.Nodes.Single(n => n.Id == "logic:any:dairy");
+        Assert.Equal("logic", dairyOr.Kind); Assert.Equal("ИЛИ", dairyOr.Title);
+        Assert.Contains(graph.Edges, e => e.From == "primitive:herd_cow" && e.To == dairyOr.Id && e.Type == "alternative");
+        Assert.Contains(graph.Edges, e => e.From == dairyOr.Id && e.To == "primitive:dairy" && e.Type == "required");
+        Assert.DoesNotContain(graph.Edges, e => e.From == "primitive:herd_cow" && e.To == "primitive:dairy");
         Assert.Equal(64, graph.Version.Length); Assert.Equal(graph.Version, TechnologyEditorCatalog.Build(content, rules.Primitive).Version);
         Assert.All(graph.Edges, e => { Assert.Contains(graph.Nodes, n => n.Id == e.From); Assert.Contains(graph.Nodes, n => n.Id == e.To); });
     }

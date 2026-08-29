@@ -146,16 +146,11 @@ public sealed partial class SettlementSimulationTests
     }
 
     [Fact]
-    public async Task PreviousSupplyRulesMigrateWithoutResettingTheWorld()
+    public async Task ChangedSupplyRulesRejectAnOldWorld()
     {
         var old = await CreateScouting(pressure: false, legacy: true); old.Advance(9);
         var snapshot = WorldSnapshot.Create(old.World);
-        var restored = await CreateScouting(pressure: false, snapshot: snapshot);
-        Assert.Equal(old.World.Day, restored.World.Day);
-        foreach (var city in old.World.Cities.Values) Assert.Equal(city.Stocks.ToDictionary(), restored.World.Cities[city.Id].Stocks.ToDictionary());
-        Assert.All(restored.Development!.State.Cities.Values, life => Assert.Empty(life.Supply!.History));
-        restored.Advance(1);
-        Assert.All(restored.Development.State.Cities.Values, life => Assert.Single(life.Supply!.History));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CreateScouting(pressure: false, snapshot: snapshot));
     }
 
     [Fact]

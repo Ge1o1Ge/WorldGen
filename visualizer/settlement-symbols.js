@@ -1,4 +1,4 @@
-export const buildingNames={house:"Жильё",garden:"Освоенный огород",well:"Колодец",camp:"Общий очаг",ruin:"Руины",worksite:"Предприятие",water_mill:"Мельница",hill_fort:"Укрепление",market_hall:"Рынок",meeting_hall:"Общий дом"};
+export const buildingNames={house:"Жильё",garden:"Освоенный огород",well:"Колодец",warehouse:"Склад",granary:"Амбар",camp:"Общий очаг",ruin:"Руины",worksite:"Предприятие",water_mill:"Мельница",hill_fort:"Укрепление",market_hall:"Рынок",meeting_hall:"Общий дом"};
 export const buildingStates={active:"действует",building:"строится",abandoned:"заброшено",demolishing:"разбирается",demolished:"снесено"};
 export function buildingGlyph(building){
   if(building.status==="abandoned"||building.status==="demolishing")return "ruin";

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assembleGraph, layoutGraph, restoreLayout, screenToWorld, zoomAt, edgePath, prerequisiteCycles, LINK_TYPES, vacantPosition } from '../visualizer/technology-graph.js';
+import { assembleGraph, layoutGraph, restoreLayout, screenToWorld, zoomAt, edgePath, prerequisiteCycles, LINK_TYPES, vacantPosition, snapNodePosition } from '../visualizer/technology-graph.js';
 
 const nodes = ['a', 'b', 'c'].map(id => ({ id, title: id, technologyId: id, layer: 'primitive', domain: 'food' }));
 const catalog = { nodes, edges: [{ id: 'ab', from: 'a', to: 'b', type: 'required' }] };
@@ -65,6 +65,12 @@ test('saved positions survive reload, renaming, new nodes and prerequisite chang
   const reopened = restoreLayout(changed, [], JSON.parse(JSON.stringify(after)));
   assert.deepEqual(reopened, after);
 });
+test('only an explicitly dragged position is snapped to the visible 24px grid', () => {
+  assert.deepEqual(snapNodePosition({ x: 35, y: -13 }), { x: 24, y: -24 });
+  assert.deepEqual(snapNodePosition({ x: 47.9, y: 48.1 }), { x: 48, y: 48 });
+  const saved = { a: { x: 35.25, y: -13.75 } };
+  assert.deepEqual(restoreLayout(nodes, catalog.edges, saved).a, saved.a);
+});
 test('incremental layout avoids occupied manual coordinates and does not mutate saved data', () => {
   const proposed = layoutGraph(nodes, catalog.edges);
   const saved = { a: { ...proposed.b } }, original = structuredClone(saved);
@@ -72,4 +78,22 @@ test('incremental layout avoids occupied manual coordinates and does not mutate 
   assert.deepEqual(restored.a, saved.a); assert.notDeepEqual(restored.b, restored.a);
   assert.deepEqual(saved, original);
   assert.deepEqual(restoreLayout(nodes, catalog.edges, saved, { a: { x: 20, y: 30 } }).a, { x: 20, y: 30 });
+});
+
+test('explicit OR node is placed between alternatives and target without moving saved technologies',()=>{
+  const nodes=[
+    {id:'cow',layer:'primitive',technologyId:'cow',domain:'food',title:'Корова'},
+    {id:'goat',layer:'primitive',technologyId:'goat',domain:'food',title:'Коза'},
+    {id:'or',layer:'primitive',technologyId:'any:dairy',kind:'logic',domain:'food',title:'ИЛИ'},
+    {id:'dairy',layer:'primitive',technologyId:'dairy',domain:'food',title:'Молочное хозяйство'}
+  ];
+  const edges=[
+    {from:'cow',to:'or',type:'alternative',status:'source'},
+    {from:'goat',to:'or',type:'alternative',status:'source'},
+    {from:'or',to:'dairy',type:'required',status:'source'}
+  ];
+  const saved={cow:{x:0,y:0},goat:{x:0,y:200},dairy:{x:700,y:100}};
+  const result=restoreLayout(nodes,edges,saved);
+  assert.deepEqual(result.cow,saved.cow);assert.deepEqual(result.goat,saved.goat);assert.deepEqual(result.dairy,saved.dairy);
+  assert.ok(result.or.x>250&&result.or.x<650);assert.ok(Number.isFinite(result.or.y));
 });

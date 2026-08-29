@@ -46,25 +46,17 @@ public sealed partial class SettlementSimulationTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public async Task RecognizedPreviousTrailRulesUpgradeWithoutResettingPopulationOrStocks()
+    public async Task ChangedRulesRejectOldSnapshotInsteadOfMigratingIt()
     {
         var (content, definition, economy, rules, hydro) = await Base.Value;
         var topology = new CubeSphereTopology(definition.FaceSize); var terrain = new SphericalTerrainGenerator(definition);
         var oldLayer = SphericalSettlementLayer.Build(definition, topology, terrain);
         var old = SphericalSimulation.Create(content, definition, economy, topology, terrain, hydro, oldLayer, rules with { Trails = null });
         old.Advance(3); var snapshot = WorldSnapshot.Create(old.World); var beforeHash = WorldSnapshot.Hash(old.World);
-        var layer = SphericalSettlementLayer.Build(definition, topology, terrain);
-        var upgraded = SphericalSimulation.Create(content, definition, economy, topology, terrain, hydro, layer, rules, snapshot);
-        Assert.Equal(3, upgraded.World.Day);
-        Assert.Equal(old.World.Spatial.Nodes[old.World.Spatial.RegionNodeId].Aggregate.Population,
-            upgraded.World.Spatial.Nodes[upgraded.World.Spatial.RegionNodeId].Aggregate.Population);
-        foreach (var city in old.World.Cities.Values) Assert.Equal(city.Stocks.ToDictionary(), upgraded.World.Cities[city.Id].Stocks.ToDictionary());
-        Assert.Contains(upgraded.World.Journal, e => e.Type == "simulation_rules_updated");
-        Assert.Equal(beforeHash, WorldSnapshot.Hash(old.World));
-        Assert.NotEqual(snapshot["contentFingerprint"]!.GetValue<string>(), upgraded.Content.Fingerprint);
-        snapshot["contentFingerprint"] = "unknown-content";
+
         Assert.Throws<InvalidOperationException>(() => SphericalSimulation.Create(content, definition, economy, topology, terrain, hydro,
             SphericalSettlementLayer.Build(definition, topology, terrain), rules, snapshot));
+        Assert.Equal(beforeHash, WorldSnapshot.Hash(old.World));
     }
 
     [Fact]
@@ -206,19 +198,22 @@ public sealed partial class SettlementSimulationTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public async Task PersistentWaterDistanceCanCausePaidRelocationAndRuinsKeepTheirFootprint()
+    public async Task PersistentWaterDistanceCanCausePaidRelocationWhileVacatedHouseKeepsItsFootprint()
     {
         var (simulation, layer, _) = await Create(disableWells: true);
         simulation.Advance(100);
-        Assert.Contains(simulation.World.Journal, e => e.Type == "household_relocated");
-        var ruins = simulation.Development!.State.Buildings.Where(b => b.Status == "abandoned").ToArray();
-        Assert.NotEmpty(ruins);
-        foreach (var ruin in ruins)
+        var relocations = simulation.World.Journal.Where(e => e.Type == "household_relocated").ToArray();
+        Assert.NotEmpty(relocations);
+        foreach (var relocation in relocations)
         {
-            Assert.Equal(0, ruin.Residents);
-            Assert.Equal("ruin", layer.Construction.Buildings[ruin.Id].BuildingTypeId);
-            Assert.Equal(0, layer.Construction.Buildings[ruin.Id].InfluenceStrength);
-            Assert.True(layer.Construction.GetOccupiedCapacity(ruin.Cell) > 0);
+            var sourceId = relocation.Details["from"]!.GetValue<string>();
+            var vacated = simulation.Development!.State.Buildings.Single(b => b.Id == sourceId);
+            Assert.InRange(vacated.Residents, relocation.Details["remainingResidents"]!.GetValue<int>(), simulation.Development.Rules.ResidentsPerHouse);
+            Assert.Equal("active", vacated.Status);
+            if (vacated.Residents == 0) Assert.True(vacated.UnusedDays > 0);
+            Assert.Equal("house", layer.Construction.Buildings[vacated.Id].BuildingTypeId);
+            Assert.True(layer.Construction.Buildings[vacated.Id].InfluenceStrength > 0);
+            Assert.True(layer.Construction.GetOccupiedCapacity(vacated.Cell) > 0);
         }
     }
 

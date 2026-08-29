@@ -114,22 +114,10 @@ public sealed partial class SettlementSimulationTests
     }
 
     [Fact]
-    public async Task WellbeingLegacyMigrationKeepsStocksPeopleDayAndDoesNotInventExperience()
+    public async Task ChangedWellbeingRulesRejectAnOldWorld()
     {
         var old = await CreateWellbeing(legacy: true); old.Advance(5); old.World.Day = 5000;
-        var before = WorldSnapshot.Hash(old.World);
-        var upgraded = await CreateWellbeing(WorldSnapshot.Create(old.World));
-        Assert.Equal(5000, upgraded.World.Day); Assert.Equal(before, WorldSnapshot.Hash(old.World));
-        foreach (var city in old.World.Cities.Values)
-        {
-            Assert.Equal(city.Stocks.ToDictionary(), upgraded.World.Cities[city.Id].Stocks.ToDictionary());
-            var state = upgraded.Development!.State.Cities[city.Id].Wellbeing!;
-            Assert.Equal(5000, state.StartedDay); Assert.Equal(-1, state.LastEvaluatedDay);
-            Assert.Equal(city.Stocks["food"], state.FoodStock.Amounts.GetValueOrDefault("unknown"), 9);
-            Assert.All(state.Households.Values, p => { Assert.Equal(0, p.ObservedDays); Assert.Empty(p.Foods); });
-        }
-        Assert.Equal(old.Development!.State.Buildings.Sum(b => b.Residents), upgraded.Development!.State.Buildings.Sum(b => b.Residents));
-        upgraded.Advance(1); Assert.All(upgraded.Development.State.Cities.Values, l => Assert.Equal(5000, l.Wellbeing!.LastEvaluatedDay));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CreateWellbeing(WorldSnapshot.Create(old.World)));
     }
 
     [Fact]

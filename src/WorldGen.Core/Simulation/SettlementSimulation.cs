@@ -86,6 +86,8 @@ public sealed partial class SettlementSimulation
         InitializeWellbeing();
         InitializePrimitiveWorld();
         InitializeBiology();
+        if (rules.Storage is not null)
+            foreach (var life in State.Cities.Values) life.Storage ??= new();
     }
 
     public void RehousePopulation()
@@ -241,6 +243,7 @@ public sealed partial class SettlementSimulation
             scoutingHours += FarmCrops(city, Math.Max(0,life.LaborAvailableHours-scoutingHours),telemetry);
             scoutingHours += ProcessCropFood(city, Math.Max(0,life.LaborAvailableHours-scoutingHours),telemetry);
             scoutingHours += TendPrimitiveHerd(city, Math.Max(0, life.LaborAvailableHours - scoutingHours), telemetry);
+            scoutingHours += RunPrimitiveProcesses(city, Math.Max(0, life.LaborAvailableHours - scoutingHours), telemetry);
             life.LaborUsedHours = scoutingHours;
             var homeLaborShare = life.LaborAvailableHours > 0 ? Math.Max(0, 1 - scoutingHours / life.LaborAvailableHours) : 0;
             var homes = State.Buildings.Where(b => b.CityId == city.Id && b.Kind == "house" && b.Status == "active" && b.Residents > 0).ToList();
@@ -271,7 +274,8 @@ public sealed partial class SettlementSimulation
                     {
                         if (available <= 1e-6) break;
                         var target = Target(city, activity.Output);
-                        var missing = Math.Max(0, target - city.Stocks[activity.Output]);
+                        var availableStock = city.Stocks[activity.Output] + (activity.Output == "food" ? EdibleFoodEquivalent(city) : 0);
+                        var missing = Math.Max(0, target - availableStock);
                         missing = FoodActivityDeficit(city, activity, missing);
                         if (Rules.Primitive is not null && activity.Id == "hunt") missing = Math.Max(missing, Math.Max(0, PrimitiveTarget(city, "hides") - city.Stocks["hides"]) / .12);
                         if (missing <= 1e-8) break;
@@ -399,14 +403,17 @@ public sealed partial class SettlementSimulation
     {
         var life = State.Cities[city.Id];
         var homes = State.Buildings.Where(b => b.CityId == city.Id && b.Kind == "house" && b.Status == "active").ToArray();
+        var remainingStorageUse = life.Storage?.UsedByBuildingKind.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal)
+            ?? new Dictionary<string, double>(StringComparer.Ordinal);
         foreach (var building in State.Buildings.Where(b => b.CityId == city.Id && b.Status == "active"))
         {
+            var storageUsed = (building.Kind is "warehouse" or "granary") && remainingStorageUse.GetValueOrDefault(building.Kind) > 1e-9;
+            if (storageUsed) remainingStorageUse[building.Kind] = Math.Max(0, remainingStorageUse[building.Kind] - BuildingRule(building.Kind).StorageCapacity * Efficiency(building));
             var used = building.Kind == "house" ? building.Residents > 0 || Moving(building) || life.HousingCapacity - Rules.ResidentsPerHouse < Population(city) * 1.05 :
                 building.Kind == "garden" ? world.Day < building.ReadyDay || FieldDormant(building.Cell) || life.Tasks.Any(task => task.Activity == "cultivate" && task.Destination == building.Cell) :
+                (building.Kind is "warehouse" or "granary") ? storageUsed :
                 life.Tasks.Any(task => task.Activity == "water" && task.Destination == building.Cell);
             building.UnusedDays = used ? 0 : building.UnusedDays + 1;
-            var abandonAfter=BiologyRules is not null&&building.Kind=="garden"?world.Calendar.DaysPerYear*2:Rules.AbandonAfterDays;
-            if (building.UnusedDays >= abandonAfter) Abandon(building, "Не используется");
         }
         var project = State.Buildings.FirstOrDefault(b => b.CityId == city.Id && b.Status == "building");
         if (Rules.Decisions is not null) project = CouncilConstruction(city, homes, project, telemetry);
@@ -456,7 +463,7 @@ public sealed partial class SettlementSimulation
         project.LaborDone += hours * productiveFraction; life.LaborUsedHours += hours;
         if (Rules.Lifecycle is not null) Add(life.PracticeHours, "construction", hours * productiveFraction);
         project.UnusedDays = hours > 0 ? 0 : project.UnusedDays + 1;
-        if (project.UnusedDays >= Rules.AbandonAfterDays) { Abandon(project, "Стройка остановлена из-за нехватки труда или доступа"); return; }
+        if (project.UnusedDays >= Rules.StalledConstructionAbandonAfterDays) { Abandon(project, "Стройка остановлена из-за нехватки труда или доступа"); return; }
         if (hours > 0)
         {
             Passage(projectRoute.Path(project.Cell), hours / Rules.WorkHoursPerDay * 2);

@@ -6,7 +6,7 @@ public static class ContentValidator
 {
     private static readonly HashSet<string> TechnologyRelationTypes = new(StringComparer.Ordinal)
     {
-        "required", "helps", "enables", "substitutes", "industrial", "scientific", "supports"
+        "required", "alternative", "helps", "enables", "substitutes", "industrial", "scientific", "supports"
     };
 
     private static readonly HashSet<string> SitePotentialTypes = new(StringComparer.Ordinal)
@@ -30,6 +30,7 @@ public static class ContentValidator
             NonEmpty(resource.Category, $"resources.resources.{resource.Id}.category");
             Range(resource.BaseValue, double.Epsilon, double.MaxValue, $"resources.resources.{resource.Id}.baseValue");
             Range(resource.DecayPerDay, 0, 1, $"resources.resources.{resource.Id}.decayPerDay");
+            Range(resource.FoodValue, 0, double.MaxValue, $"resources.resources.{resource.Id}.foodValue");
             if (resource.HouseholdNeed is null) continue;
             Range(resource.HouseholdNeed.PerPersonPerDay, 0, double.MaxValue,
                 $"resources.resources.{resource.Id}.householdNeed.perPersonPerDay");

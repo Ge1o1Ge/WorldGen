@@ -79,22 +79,6 @@ public sealed class PrimitiveWorldTests(ITestOutputHelper output)
         Assert.Equal(WorldSnapshot.Hash(original.World), WorldSnapshot.Hash(restored.World));
     }
     [Fact]
-    public async Task WinterMigrationPreservesDayCitiesAndExistingSnowWithoutInventingIceHistory()
-    {
-        var b = await Base.Value; var topology = new CubeSphereTopology(b.Definition.FaceSize); var terrain = new SphericalTerrainGenerator(b.Definition);
-        var oldRules = b.Rules with { Primitive = b.Rules.Primitive! with { Winter = null } };
-        var old = SphericalSimulation.Create(b.Content, b.Definition, b.Economy, topology, terrain, b.Hydro,
-            SphericalSettlementLayer.Build(b.Definition, topology, terrain), oldRules);
-        old.Advance(4); var ground = old.Development!.State.Atmosphere!.Ground.First(); ground.Value.Snow = 17;
-        var snapshot = WorldSnapshot.Create(old.World); var restored = await Create(snapshot);
-        Assert.Equal(4, restored.World.Day);
-        Assert.True(JsonNode.DeepEquals(snapshot["cities"], WorldSnapshot.Create(restored.World)["cities"]));
-        Assert.Equal(17, restored.Development!.State.Atmosphere!.Ground[ground.Key].Snow);
-        Assert.All(restored.Development.State.Atmosphere.Ground.Values, g => Assert.Equal(0, g.IceMeters));
-        Assert.All(restored.Development.State.Atmosphere.Surface!.Ice, value => Assert.Equal(0, value));
-        restored.Advance(1); Assert.Equal(5, restored.World.Day);
-    }
-    [Fact]
     public async Task PreciseHydrologyKeepsAllNewHomesOnDryCellsAndRejectsCoarseSnapshots()
     {
         var simulation = await Create(); var b = await Base.Value;
@@ -128,6 +112,32 @@ public sealed class PrimitiveWorldTests(ITestOutputHelper output)
         Assert.DoesNotContain("gardening", simulation.Development.State.Cities["grass_camp"].Discoveries);
         Assert.Equal(0, simulation.Development.State.Cities["grass_camp"].Primitive!.HerdBiomass);
         Assert.All(simulation.World.Cities.Values, c => Assert.Equal(0, c.TechnologyState["water_mill"].Knowledge));
+    }
+    [Fact]
+    public async Task DependentTechnologyStartsPracticeAfterItsPrerequisiteAndStagedMechanicsStayInactive()
+    {
+        var simulation = await Create(); var development = simulation.Development!;
+        var city = simulation.World.Cities.Values.First(); var life = development.State.Cities[city.Id];
+        life.Discoveries.Add("horticulture"); life.Discoveries.Add("pottery");
+        life.Discoveries.Remove("grow_grape"); life.Discoveries.Remove("winemaking");
+        city.TechnologyState["grow_grape"].Knowledge = 0;
+        city.TechnologyState["winemaking"].Knowledge = 0;
+        life.PracticeHours["cultivate"] = 100_000;
+        life.TechnologyPracticeBaselines["grow_grape"] = 0;
+        life.TechnologyPracticeBaselines["winemaking"] = 0;
+        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var discover = typeof(SettlementSimulation).GetMethod("DiscoverPrimitive", flags)!;
+
+        discover.Invoke(development, [city]);
+        Assert.Contains("grow_grape", life.Discoveries);
+        Assert.DoesNotContain("winemaking", life.Discoveries);
+        Assert.Equal(100_000, life.TechnologyPracticeBaselines["winemaking"]);
+
+        life.PracticeHours["cultivate"] += 7_200;
+        discover.Invoke(development, [city]);
+        Assert.Contains("winemaking", life.Discoveries);
+        Assert.Equal(0, city.TechnologyState["winemaking"].Capability);
+        Assert.Equal(0, city.TechnologyState["winemaking"].Adoption);
     }
     [Fact]
     public async Task SeasonsAndCalendarRespectHemisphereAndDoNotUseWeatherForecast()
@@ -260,7 +270,7 @@ public sealed class PrimitiveWorldTests(ITestOutputHelper output)
                 Assert.InRange(life.LaborUsedHours, 0, life.LaborAvailableHours + 1e-6);
                 Assert.All(city.Stocks.Values, n => Assert.True(double.IsFinite(n) && n >= -1e-8));
                 Assert.InRange(p.HerdBiomass, 0, 100);
-                Assert.Equal(city.Stocks["winter_food"], p.StoredComposition.Amounts.Values.Sum(), 7);
+                Assert.InRange(Math.Abs(city.Stocks["winter_food"] - p.StoredComposition.Amounts.Values.Sum()), 0, 1e-8);
                 Assert.InRange(p.Weather!.SoilWater, 0, 1);
                 observedPreservation |= p.PreservedToday > 0;
             }

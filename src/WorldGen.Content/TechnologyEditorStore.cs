@@ -9,8 +9,10 @@ public sealed record EditorDraft(string Id, string Title, string Description, st
 public sealed record EditorLink(string Id, string From, string To, string Type, string Status = "manual");
 public sealed record EditorComment(string Id, string NodeId, string Text, DateTimeOffset CreatedAt, string Status = "manual", string? RemainingText = null);
 public sealed record EditorCommentProgress(string CommentId, string Implemented, string Remaining);
+public sealed record EditorEdgeAdaptation(string EdgeId, string ImplementedType);
 public sealed record EditorReview(string Id, string[] NodeIds, string[] CommentIds, string[] EdgeIds,
-    string TargetId, string Summary, string[] References, DateTimeOffset CreatedAt, EditorCommentProgress[]? CommentProgress = null);
+    string TargetId, string Summary, string[] References, DateTimeOffset CreatedAt, EditorCommentProgress[]? CommentProgress = null,
+    EditorEdgeAdaptation[]? EdgeAdaptations = null);
 public sealed record TechnologyWorkspace
 {
     public int SchemaVersion { get; init; } = 1;
@@ -133,11 +135,16 @@ public sealed class TechnologyEditorStore(string path, TechnologyEditorCatalog c
                     if (review.References is null || review.References.Length == 0) throw new ArgumentException("Укажите файлы/тесты, подтверждающие адаптацию");
                     foreach (var reference in review.References) RequireText(reference, 500);
                     if (state.Journal.Any(r => r.Id == review.Id) || review.NodeIds is null || review.CommentIds is null || review.EdgeIds is null ||
-                        review.NodeIds.Length + review.CommentIds.Length + review.EdgeIds.Length + (review.CommentProgress?.Length ?? 0) == 0) throw new ArgumentException("Пустой или повторный результат адаптации");
+                        review.NodeIds.Length + review.CommentIds.Length + review.EdgeIds.Length + (review.CommentProgress?.Length ?? 0) +
+                        (review.EdgeAdaptations?.Length ?? 0) == 0) throw new ArgumentException("Пустой или повторный результат адаптации");
                     foreach (var id in review.NodeIds)
                     {
                         var i = state.Nodes.FindIndex(n => n.Id == id && n.Status == "manual");
                         if (i < 0) throw new ArgumentException("Нода для адаптации не найдена или уже обработана");
+                        // A new canonical node inherits the user's deliberate graph position.
+                        // Never overwrite a canonical position that the user already placed.
+                        if (state.Positions.TryGetValue(id, out var position) && !state.Positions.ContainsKey(review.TargetId))
+                            state.Positions[review.TargetId] = position;
                         state.Nodes[i] = state.Nodes[i] with { Status = "adapted", TargetId = review.TargetId };
                     }
                     foreach (var id in review.CommentIds)
@@ -175,6 +182,23 @@ public sealed class TechnologyEditorStore(string path, TechnologyEditorCatalog c
                         if (e.Type == "required" && !catalog.Edges.Any(c => c.From == Resolve(e.From) && c.To == Resolve(e.To) && c.Type == "required"))
                             throw new ArgumentException("Необходимая связь ещё не внесена в исходный каталог");
                         state.Edges[i] = e with { Status = "adapted" };
+                    }
+                    var exactEdgeIds = review.EdgeIds.ToHashSet(StringComparer.Ordinal);
+                    foreach (var adaptation in review.EdgeAdaptations ?? [])
+                    {
+                        if (!exactEdgeIds.Add(adaptation.EdgeId)) throw new ArgumentException("Связь указана в адаптации дважды");
+                        var i = state.Edges.FindIndex(e => e.Id == adaptation.EdgeId && e.Status == "manual");
+                        if (i < 0) throw new ArgumentException("Связь для нормализации не найдена или уже обработана");
+                        var proposedEdge = state.Edges[i];
+                        string Resolve(string nodeId) => state.Nodes.FirstOrDefault(n => n.Id == nodeId)?.TargetId ?? nodeId;
+                        var from = Resolve(proposedEdge.From); var to = Resolve(proposedEdge.To);
+                        var direct = catalog.Edges.Any(source => source.From == from && source.To == to && source.Type == adaptation.ImplementedType);
+                        var throughOr = adaptation.ImplementedType == "alternative" && catalog.Edges.Any(first => first.From == from &&
+                            first.Type == "alternative" && first.To.StartsWith("logic:any:", StringComparison.Ordinal) &&
+                            catalog.Edges.Any(last => last.From == first.To && last.To == to && last.Type == "required"));
+                        if (!LinkTypes.Contains(adaptation.ImplementedType) || !direct && !throughOr)
+                            throw new ArgumentException("Нормализованный тип связи ещё не внесён в исходный каталог");
+                        state.Edges[i] = proposedEdge with { Status = "adapted" };
                     }
                     state.Journal.Add(review with { CreatedAt = DateTimeOffset.UtcNow });
                     break;

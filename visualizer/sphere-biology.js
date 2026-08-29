@@ -20,12 +20,15 @@ export function biologicalGlyph(kind,plants,variant){
 export function biologyLines(city,catalog){
   if(!city.biology||!catalog)return [];
   const b=city.biology,names=new Map([...catalog.crops,...catalog.animals].map(s=>[s.id,s.name]));
+  const products=new Map(catalog.animals.flatMap(animal=>(animal.products??[]).map(product=>[product.resourceId,product.name])));
   const seeds=catalog.crops.filter(c=>(city.stocks['seed_'+c.id]??0)>.000001).map(c=>`${c.name}: ${(city.stocks['seed_'+c.id]*1000).toFixed(2)} кг`);
+  const productText=h=>Object.entries(h.productsToday??{}).filter(([,n])=>n>1e-9)
+    .map(([id,n])=>`${products.get(id)??id} ${(n*1000).toFixed(2)} кг сегодня, всего ${((h.totalProducts?.[id]??0)*1000).toFixed(1)} кг`).join('; ');
   return [
     `Найдены растения: ${b.knownPlants.map(id=>names.get(id)??id).join(', ')||'ещё не обследованы'}.`,
     `Посадочный материал: ${seeds.join('; ')||'нет'}.`,
     `Получен урожай: ${b.harvestedCrops.map(id=>names.get(id)??id).join(', ')||'пока нет'}; суммарно ${(b.harvestedTonnes*1000).toFixed(0)} кг.`,
-    ...Object.entries(b.herds).filter(([,h])=>h.count>0||h.captured>0).map(([id,h])=>`${names.get(id)} · самки: ${h.females}, самцы: ${h.males}, молодняк: ${h.young.reduce((s,y)=>s+y.count,0)}; захвачено ${h.captured}, родилось ${h.births}, погибло ${h.deaths}, забой ${h.slaughtered??0}${h.pastureWork>=24?' · пастбище освоено':''}.`),
+    ...Object.entries(b.herds).filter(([,h])=>h.count>0||h.captured>0).map(([id,h])=>`${names.get(id)} · самки: ${h.females}, самцы: ${h.males}, молодняк: ${h.young.reduce((s,y)=>s+y.count,0)}; захвачено ${h.captured}, родилось ${h.births}, погибло ${h.deaths}, забой ${h.slaughtered??0}${h.pastureWork>=24?' · пастбище освоено':''}${productText(h)?` · ${productText(h)}`:''}.`),
     `Промысловые лагеря: ${b.camps.filter(c=>!c.abandoned).length}; доставлено древесины ${(b.campTimberDelivered*1000).toFixed(0)} кг.`,
     ...Object.entries(b.plots).filter(([id,p])=>p.cropId&&(!city.activeCropPlots||city.activeCropPlots.includes(id))).slice(0,20).map(([id,p])=>`${names.get(p.cropId)} · ${(p.area*100).toFixed(0)}% поля · ${p.phase} · ${Math.round(p.degreeDays)} градусо-дней`)
   ];

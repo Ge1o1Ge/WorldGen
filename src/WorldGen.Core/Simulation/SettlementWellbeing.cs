@@ -69,7 +69,13 @@ public sealed partial class SettlementSimulation
         if (Rules.Wellbeing is null) return;
         var state = State.Cities[city.Id].Wellbeing!;
         state.FoodStock.Reconcile(city.Stocks["food"]);
-        state.ConsumedToday = state.FoodStock.Take(amount);
+        foreach (var (category, consumed) in state.FoodStock.Take(amount)) Add(state.ConsumedToday, category, consumed);
+    }
+
+    private void RecordDirectFoodConsumption(CityState city, string resourceId, double foodEquivalent)
+    {
+        if (Rules.Wellbeing is null || foodEquivalent <= 0) return;
+        Add(State.Cities[city.Id].Wellbeing!.ConsumedToday, resourceId, foodEquivalent);
     }
 
     private Dictionary<string, double> DesiredFoodShares(CityState city)
@@ -87,7 +93,7 @@ public sealed partial class SettlementSimulation
     private double FoodPreference(CityState city, string homeId, HouseholdActivityRule activity)
     {
         if (Rules.Wellbeing is not { } rules || activity.Output != "food" ||
-            city.Stocks["food"] < Population(city) * city.FoodPerPersonPerDay * rules.SafetyFoodDays) return 1;
+            city.Stocks["food"] + EdibleFoodEquivalent(city) < Population(city) * city.FoodPerPersonPerDay * rules.SafetyFoodDays) return 1;
         var profile = State.Cities[city.Id].Wellbeing!.Households.GetValueOrDefault(HouseholdIdentity(homeId));
         var memory = profile?.Foods.GetValueOrDefault(FoodCategory(activity.Id));
         return memory?.FirstTastedDay is not null ? 1 + rules.VarietyPriorityBonus * Math.Max(0, memory.ExpectedShare - memory.EatenShareToday) / rules.MaximumFoodExpectation : 1;
@@ -96,7 +102,7 @@ public sealed partial class SettlementSimulation
     private double FoodActivityDeficit(CityState city, HouseholdActivityRule activity, double missing)
     {
         if (Rules.Wellbeing is not { } rules || activity.Output != "food" ||
-            city.Stocks["food"] < Population(city) * city.FoodPerPersonPerDay * rules.SafetyFoodDays) return missing;
+            city.Stocks["food"] + EdibleFoodEquivalent(city) < Population(city) * city.FoodPerPersonPerDay * rules.SafetyFoodDays) return missing;
         var target = Target(city, "food"); var category = FoodCategory(activity.Id);
         var stock = State.Cities[city.Id].Wellbeing!.FoodStock;
         var otherPreferences = DesiredFoodShares(city).Where(p => p.Key != category)

@@ -15,8 +15,14 @@ public sealed class BiosphereTests
     {
         var rules = await SettlementRulesLoader.LoadAsync(scenario: "primordial"); var bio = rules.Primitive!.Biosphere!;
         Assert.Equal(24, bio.Crops.Length); Assert.Equal(8, bio.Animals.Length);
-        Assert.All(bio.Crops, c => Assert.Contains(rules.Primitive.Technologies, t => t.Id == c.Technology && t.Prerequisites.Contains("gardening")));
+        Assert.All(bio.Crops, c => Assert.Contains(rules.Primitive.Technologies, t => t.Id == c.Technology &&
+            t.Prerequisites.Contains(c.MatureYears > 0 ? "horticulture" : "gardening")));
         Assert.All(bio.Animals, a => Assert.Contains(rules.Primitive.Technologies, t => t.Id == a.Technology && t.Prerequisites.Contains("taming")));
+        Assert.Contains(bio.Animals.Single(a => a.Id == "chicken").ProductRules, p => p.ResourceId == "eggs" && p.FoodValue > 0);
+        Assert.Contains(bio.Animals.Single(a => a.Id == "cow").ProductRules, p => p.ResourceId == "milk" && p.Technology == "dairy" && p.LactationDays > 0);
+        Assert.Contains(bio.Animals.Single(a => a.Id == "sheep").ProductRules, p => p.ResourceId == "wool" && p.FoodValue == 0);
+        Assert.Equal(1, rules.Resources.Count(r => r.Id == "milk"));
+        Assert.Contains(rules.Primitive.Processes, p => p.Id == "make_cheese" && p.Inputs.ContainsKey("milk"));
         Assert.Throws<InvalidOperationException>(() => (bio with { FarmingLaborShare = double.NaN }).Validate());
         Assert.Throws<InvalidOperationException>(() => (bio with { Crops = [.. bio.Crops, bio.Crops[0]] }).Validate());
         Assert.Throws<InvalidOperationException>(() => (bio with { Crops = [bio.Crops[0] with { SeedTonnes = 0 }, .. bio.Crops.Skip(1)] }).Validate());
@@ -81,6 +87,22 @@ public sealed class BiosphereTests
         life.Biology.HarvestedCrops.UnionWith(["wheat", "barley", "peas"]); Invoke(d, "DiscoverPrimitive", city); Assert.Contains("crop_rotation", life.Discoveries);
     }
     [Fact]
+    public async Task AlternativeAnimalPrerequisiteNeedsOnlyOneSuitableSpeciesAndResetsPracticeWhileBlocked()
+    {
+        var sim = await PrimitiveWorldTests.Create(); var d = sim.Development!; var city = sim.World.Cities["grass_camp"];
+        var life = d.State.Cities[city.Id]; life.Discoveries.Remove("dairy");
+        life.Discoveries.Add("taming"); life.Discoveries.Add("herd_chicken"); life.PracticeHours["herd"] = 10000;
+        city.TechnologyState["dairy"].Knowledge = 0;
+        Invoke(d, "DiscoverPrimitive", city);
+        Assert.DoesNotContain("dairy", life.Discoveries);
+        Assert.Equal(10000, life.TechnologyPracticeBaselines["dairy"]);
+
+        life.Discoveries.Add("herd_goat"); life.PracticeHours["herd"] += 4799;
+        Invoke(d, "DiscoverPrimitive", city); Assert.DoesNotContain("dairy", life.Discoveries);
+        life.PracticeHours["herd"]++;
+        Invoke(d, "DiscoverPrimitive", city); Assert.Contains("dairy", life.Discoveries);
+    }
+    [Fact]
     public async Task CaptureRemovesWildBiomassAndBreedingRequiresBothSexes()
     {
         var sim = await PrimitiveWorldTests.Create(); var d = sim.Development!; var city = sim.World.Cities["grass_camp"]; var life = d.State.Cities[city.Id]; var bio = life.Biology!;
@@ -93,8 +115,38 @@ public sealed class BiosphereTests
         var herd = bio.Herds[animal.Id]; Assert.Equal(1, herd.Captured); Assert.Equal(1 - animal.BodyTonnes, wild.Biomass, 8); Assert.Equal(1, herd.Females); Assert.Equal(0, herd.Males);
         d.State.Wildlife.Clear(); life.Discoveries.Add(animal.Technology); herd.Pasture = origin; herd.PastureWork = 24; herd.PregnancyDays = animal.GestationDays - 1;
         sim.World.Day++; Invoke(d, "TendSpeciesHerds", city, 100d, new DailyTelemetry { Day = sim.World.Day }); Assert.Equal(0, herd.Births);
+        Assert.True(city.Stocks["eggs"] > 0); Assert.True(herd.ProductsToday.GetValueOrDefault("eggs") > 0);
         herd.Males = 1; var soil = sim.World.Spatial.Territories[SphericalSimulation.ZoneId(origin)].NaturalState; var before = soil.SoilQuality;
         sim.World.Day++; Invoke(d, "TendSpeciesHerds", city, 100d, new DailyTelemetry { Day = sim.World.Day }); Assert.True(herd.Births > 0); Assert.True(soil.SoilQuality > before);
+    }
+    [Fact]
+    public async Task MilkNeedsKnowledgeRecentBirthAndPaidLaborThenCanBeEatenAsItsOwnStock()
+    {
+        var sim = await PrimitiveWorldTests.Create(); var d = sim.Development!; var city = sim.World.Cities["grass_camp"]; var life = d.State.Cities[city.Id];
+        var origin = (CellAddress)Invoke(d, "Anchor", city)!; var cow = d.Rules.Primitive!.Biosphere!.Animals.Single(a => a.Id == "cow");
+        life.Biology!.Herds.Clear(); var herd = new HerdState { Females = 2, Males = 1, Pasture = origin, PastureWork = 24, LastBirthDay = sim.World.Day };
+        life.Biology.Herds[cow.Id] = herd; life.Discoveries.Add(cow.Technology); life.LaborAvailableHours = 1000; city.Stocks["water"] = city.Stocks["food"] = 10;
+        Invoke(d, "TendSpeciesHerds", city, 100d, new DailyTelemetry { Day = sim.World.Day }); Assert.Equal(0, city.Stocks["milk"]);
+        life.Discoveries.Add("dairy"); sim.World.Day++;
+        var telemetry = new DailyTelemetry { Day = sim.World.Day };
+        var spent = (double)Invoke(d, "TendSpeciesHerds", city, 100d, telemetry)!;
+        Assert.True(spent > 0); Assert.True(city.Stocks["milk"] > 0); Assert.True(herd.ProductsToday["milk"] > 0);
+        var milk = city.Stocks["milk"]; var eaten = d.ConsumeEdibleStocks(city, milk * .5, telemetry);
+        Assert.True(eaten > 0); Assert.True(city.Stocks["milk"] < milk); Assert.True(telemetry.HouseholdConsumptionByResource["milk"] > 0);
+    }
+    [Fact]
+    public async Task DataDefinedProcessPaysInputsEquipmentAndLaborAndPersistsProgress()
+    {
+        var sim = await PrimitiveWorldTests.Create(); var d = sim.Development!; var city = sim.World.Cities["elder_camp"]; var life = d.State.Cities[city.Id];
+        life.Discoveries.Add("pottery"); city.Stocks["clay"] = city.Stocks["firewood"] = city.Stocks["stone_kit"] = 1; city.Stocks["pottery_ware"] = 0;
+        var telemetry = new DailyTelemetry { Day = sim.World.Day }; var clay = city.Stocks["clay"];
+        var spent = (double)Invoke(d, "RunPrimitiveProcesses", city, 100d, telemetry)!;
+        Assert.True(spent > 0); Assert.True(city.Stocks["pottery_ware"] > 0); Assert.True(city.Stocks["clay"] < clay);
+        var state = life.Processes["open_fire_pottery"];
+        Assert.True(state.BatchesToday > 0); Assert.Equal(spent, state.LaborHoursToday, 8); Assert.Equal(state.BatchesToday, state.TotalBatches, 8);
+        city.Stocks["pottery_ware"] = 0; city.Stocks["stone_kit"] = 0; sim.World.Day++;
+        Assert.Equal(0, (double)Invoke(d, "RunPrimitiveProcesses", city, 100d, new DailyTelemetry { Day = sim.World.Day })!);
+        Assert.Equal("equipment:stone_kit", state.Constraint); Assert.Equal(0, city.Stocks["pottery_ware"]);
     }
     [Fact]
     public async Task AbandonedTrialCannotLeaveCouncilBlockedInObservationForever()

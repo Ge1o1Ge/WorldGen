@@ -15,11 +15,14 @@ public sealed record CropRule(string Id, string Name, string Group, string Symbo
     [JsonIgnore] public string SeedResource => "seed_" + Id;
     [JsonIgnore] public string HarvestResource => "harvest_" + Id;
 }
+public sealed record AnimalProductRule(string ResourceId, string Name, string Unit, string Category, string? Technology,
+    double PerFemalePerDay, double LaborHoursPerUnit, double DecayPerDay, double FoodValue = 0, int LactationDays = 0);
 public sealed record AnimalRule(string Id, string Name, string Symbol, HabitatRule Habitat,
     double BodyTonnes, double CaptureHours, double FeedPerDay, double WaterPerDay, double CareHoursPerDay,
-    int MaturityDays, int GestationDays, double Litter, double ProductPerDay = 0, double ManurePerDay = .00001)
+    int MaturityDays, int GestationDays, double Litter, double ManurePerDay = .00001, AnimalProductRule[]? Products = null)
 {
     [JsonIgnore] public string Technology => "herd_" + Id;
+    [JsonIgnore] public IReadOnlyList<AnimalProductRule> ProductRules => Products ?? [];
 }
 public sealed record BiosphereRules
 {
@@ -48,8 +51,11 @@ public sealed record BiosphereRules
         if (Version != 1 || ids.Length != ids.Distinct(StringComparer.Ordinal).Count() || ids.Any(id => string.IsNullOrWhiteSpace(id) || id.Any(c => !(char.IsAsciiLetterOrDigit(c) || c == '_'))) ||
             Crops.Any(c => !Habitat(c.Habitat) || string.IsNullOrWhiteSpace(c.Symbol) || !double.IsFinite(c.DegreeDays + c.SeedTonnes + c.YieldTonnes + c.PlantHours + c.CareHours + c.SeedShare + c.FrostTolerance + c.MatureYears + c.FoodValue + c.BaseTemperature + c.StorageDecay + c.HarvestTonnesPerHour) ||
                 c.DegreeDays <= 0 || c.SeedTonnes <= 0 || c.YieldTonnes <= c.SeedTonnes || c.PlantHours <= 0 || c.CareHours < 0 || c.HarvestTonnesPerHour <= 0 || c.SeedShare <= 0 || c.SeedShare >= .5 || c.MatureYears < 0 || c.FoodValue <= 0 || c.StorageDecay < 0 || c.StorageDecay >= 1) ||
-            Animals.Any(a => !Habitat(a.Habitat) || !double.IsFinite(a.BodyTonnes + a.CaptureHours + a.FeedPerDay + a.WaterPerDay + a.CareHoursPerDay + a.Litter + a.ProductPerDay + a.ManurePerDay) ||
-                a.BodyTonnes <= 0 || a.CaptureHours <= 0 || a.FeedPerDay <= 0 || a.WaterPerDay <= 0 || a.CareHoursPerDay <= 0 || a.MaturityDays < 1 || a.GestationDays < 1 || a.Litter <= 0 || a.ProductPerDay < 0 || a.ManurePerDay < 0) ||
+            Animals.Any(a => !Habitat(a.Habitat) || !double.IsFinite(a.BodyTonnes + a.CaptureHours + a.FeedPerDay + a.WaterPerDay + a.CareHoursPerDay + a.Litter + a.ManurePerDay) ||
+                a.BodyTonnes <= 0 || a.CaptureHours <= 0 || a.FeedPerDay <= 0 || a.WaterPerDay <= 0 || a.CareHoursPerDay <= 0 || a.MaturityDays < 1 || a.GestationDays < 1 || a.Litter <= 0 || a.ManurePerDay < 0 ||
+                a.ProductRules.Any(p => string.IsNullOrWhiteSpace(p.ResourceId) || string.IsNullOrWhiteSpace(p.Name) || string.IsNullOrWhiteSpace(p.Unit) || string.IsNullOrWhiteSpace(p.Category) ||
+                    p.Technology is { Length: 0 } || !double.IsFinite(p.PerFemalePerDay + p.LaborHoursPerUnit + p.DecayPerDay + p.FoodValue) ||
+                    p.PerFemalePerDay <= 0 || p.LaborHoursPerUnit <= 0 || p.DecayPerDay < 0 || p.DecayPerDay >= 1 || p.FoodValue < 0 || p.LactationDays < 0)) ||
             FarmingLaborShare is <= 0 or > .6 || AnimalLaborShare is <= 0 or > .3 || SearchHoursPerDay <= 0 || SeedTonnesPerSearchHour <= 0 || FoodProcessingTonnesPerHour <= 0 ||
             RotationCropCount < 2 || RotationCropCount > Crops.Length || SurveyIntervalDays < 1 || CampRadiusCells is < 1 or > 8 || MaximumCampsPerCity is < 1 or > 8 ||
             !double.IsFinite(SearchHoursPerDay + SeedTonnesPerSearchHour + FarmingLaborShare + AnimalLaborShare + FoodProcessingTonnesPerHour + CampSetupHours + CampTimber + CampDailyHours + CampCarryTonnesPerHour + CampWorkerShare) ||
@@ -57,12 +63,22 @@ public sealed record BiosphereRules
             throw new InvalidOperationException("Некорректный каталог биосферы");
     }
     public IEnumerable<PrimitiveTechnologyRule> Technologies() =>
-        Crops.Select(c => new PrimitiveTechnologyRule(c.Technology, "Выращивание: " + c.Name, "food", false, ["gardening"], "seed:" + c.Id, 30))
+        Crops.Select(c => new PrimitiveTechnologyRule(c.Technology, "Выращивание: " + c.Name, "food", false,
+            c.MatureYears > 0 ? ["horticulture"] : ["gardening"], "seed:" + c.Id, 30))
         .Concat(Animals.Select(a => new PrimitiveTechnologyRule(a.Technology, "Разведение: " + a.Name, "food", false, ["taming"], "animal:" + a.Id, 80)))
-        .Append(new("crop_rotation", "Севооборот", "food", false, ["gardening"], "cultivate", 600));
+        .Append(new("crop_rotation", "Севооборот", "food", false, ["gardening", "seed_selection"], "cultivate", 600));
     public IEnumerable<ResourceDefinition> Resources() => Crops.SelectMany(c => new[] {
         new ResourceDefinition {Id=c.SeedResource,Name="Посадочный материал: "+c.Name,Unit="тонна",Category="seed",BaseValue=2,DecayPerDay=.0003},
-        new ResourceDefinition {Id=c.HarvestResource,Name=c.Name,Unit="тонна",Category="crop",BaseValue=c.FoodValue,DecayPerDay=c.StorageDecay}});
+        new ResourceDefinition {Id=c.HarvestResource,Name=c.Name,Unit="тонна",Category="crop",BaseValue=c.FoodValue,DecayPerDay=c.StorageDecay}})
+        .Concat(Animals.SelectMany(a => a.ProductRules).GroupBy(p => p.ResourceId, StringComparer.Ordinal).Select(group =>
+        {
+            var product = group.First();
+            if (group.Any(p => p.Name != product.Name || p.Unit != product.Unit || p.Category != product.Category ||
+                p.DecayPerDay != product.DecayPerDay || p.FoodValue != product.FoodValue))
+                throw new InvalidOperationException($"Несогласованное описание животного продукта {group.Key}");
+            return new ResourceDefinition { Id = product.ResourceId, Name = product.Name, Unit = product.Unit,
+                Category = product.Category, BaseValue = Math.Max(1, product.FoodValue), DecayPerDay = product.DecayPerDay, FoodValue = product.FoodValue };
+        }));
 }
 
 public static class Biosphere

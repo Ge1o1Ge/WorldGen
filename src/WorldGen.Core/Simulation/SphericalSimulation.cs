@@ -64,14 +64,19 @@ public sealed class SphericalSimulation
                     {
                         Technologies = source.Technologies.Technologies.Where(t => !ids.Contains(t.Id)).Concat(era.Technologies.Select(t => new TechnologyDefinition
                         { Id = t.Id, Name = t.Name, Domain = t.Domain, Complexity = 1, Diffusion = .01 })).ToArray(),
-                        Relations = source.Technologies.Relations.Concat(era.Technologies.SelectMany(t => t.Prerequisites.Select(p => new TechnologyRelation { From = p, To = t.Id, Type = "required" }))).ToArray()
+                        Relations = source.Technologies.Relations
+                            .Concat(era.Technologies.SelectMany(t => t.Prerequisites.Select(p => new TechnologyRelation { From = p, To = t.Id, Type = "required" })))
+                            .Concat(era.Technologies.SelectMany(t => t.AlternativePrerequisites.Select(p => new TechnologyRelation { From = p, To = t.Id, Type = "alternative" })))
+                            .Concat(era.Relations)
+                            .GroupBy(relation => (relation.From, relation.To, relation.Type)).Select(group => group.First()).ToArray()
                     }
                 };
             }
             var resourceIds = source.Resources.Resources.Select(r => r.Id).Concat(rules.Resources.Select(r => r.Id)).ToArray();
             if (resourceIds.Distinct().Count() != resourceIds.Length || rules.Activities.Any(a => !resourceIds.Contains(a.Output) || a.Inputs.Keys.Any(id => !resourceIds.Contains(id))) ||
                 rules.Buildings.Any(b => b.Materials.Keys.Any(id => !resourceIds.Contains(id))) ||
-                rules.Lifecycle is { } lifecycle && lifecycle.Materials.Any(m => m.Materials.Keys.Any(id => !resourceIds.Contains(id))))
+                rules.Lifecycle is { } lifecycle && lifecycle.Materials.Any(m => m.Materials.Keys.Any(id => !resourceIds.Contains(id))) ||
+                rules.Primitive?.Processes.Any(p => p.Inputs.Keys.Concat(p.RequiredStocks.Keys).Concat(p.Outputs.Keys).Any(id => !resourceIds.Contains(id))) == true)
                 throw new InvalidOperationException("Повторяющийся ресурс или неизвестная ссылка в правилах домохозяйств");
             source = source with { Resources = source.Resources with { Resources = source.Resources.Resources.Concat(rules.Resources).ToArray() } };
         }
@@ -298,38 +303,6 @@ public sealed class SphericalSimulation
         };
         var hydrologyIdentity = new { generator = SphericalHydrology.GeneratorVersion, hydro.Resolution, hydro.RunoffWeight };
         var fingerprint = CanonicalJson.Hash(JsonSerializer.SerializeToNode(new { source = source.Fingerprint, definition, economy, rules, hydrologyIdentity })!);
-        var upgradedRules = false;
-        var upgradedSubsistence = false;
-        var upgradedLifecycle = false;
-        var upgradedWellbeing = false;
-        var upgradedWinter = false;
-        if (snapshot is not null && rules is not null && snapshot["contentFingerprint"]?.GetValue<string>() != fingerprint)
-        {
-            // Only the precisely recognized predecessor can migrate. Never bypass
-            // fingerprint validation for unrelated content edits or foreign worlds.
-            var predecessors = Enumerable.Range(1, 127).Select(mask => rules with
-            {
-                Trails = (mask & 1) != 0 ? null : rules.Trails,
-                Exploration = (mask & 2) != 0 ? null : rules.Exploration,
-                Decisions = (mask & 4) != 0 ? null : rules.Decisions,
-                Subsistence = (mask & 8) != 0 ? null : rules.Subsistence,
-                Lifecycle = (mask & 16) != 0 ? null : rules.Lifecycle,
-                Wellbeing = (mask & 32) != 0 ? null : rules.Wellbeing,
-                Primitive = (mask & 64) != 0 && rules.Primitive is { } primitive ? primitive with { Winter = null } : rules.Primitive
-            })
-                .Select(previous => new { Previous = previous, Hash = CanonicalJson.Hash(JsonSerializer.SerializeToNode(new { source = source.Fingerprint, definition, economy, rules = previous, hydrologyIdentity })!) });
-            var predecessor = predecessors.FirstOrDefault(p => p.Hash == snapshot["contentFingerprint"]?.GetValue<string>());
-            if (predecessor is not null)
-            {
-                snapshot = (JsonObject)snapshot.DeepClone();
-                snapshot["contentFingerprint"] = fingerprint;
-                upgradedRules = true;
-                upgradedSubsistence = predecessor.Previous.Subsistence is null && rules.Subsistence is not null;
-                upgradedLifecycle = predecessor.Previous.Lifecycle is null && rules.Lifecycle is not null;
-                upgradedWellbeing = predecessor.Previous.Wellbeing is null && rules.Wellbeing is not null;
-                upgradedWinter = predecessor.Previous.Primitive?.Winter is null && rules.Primitive?.Winter is not null;
-            }
-        }
         var content = source with { Scenario = scenario, Fingerprint = fingerprint };
         var spatial = new SpatialHierarchy { RegionNodeId = regionId, Grid = grid, Nodes = nodes, Territories = territories };
         var world = snapshot is null ? WorldFactory.Create(content, spatial, coordinate => ZoneId(FromAtlas(coordinate)))
@@ -376,15 +349,6 @@ public sealed class SphericalSimulation
             }
             simulation.Development = new SettlementSimulation(world, content, rules, topology, settlements, addresses, economy.Stage == "foragers", Survey, terrain, Materialize);
         }
-        if (upgradedRules) Journal.Record(world, "simulation_rules_updated", details: new JsonObject
-        {
-            ["policy"] = upgradedWinter ? "weather-winter-v1" : upgradedWellbeing ? "settlement-wellbeing-v1" : upgradedLifecycle ? "settlement-lifecycle-v1" : upgradedSubsistence ? "settlement-subsistence-v1" : "settlement-council-v1",
-            ["note"] = upgradedWinter ? "День, жители, запасы и местный снег сохранены. Учёт льда и обзорного снежного покрова начинается сейчас, без выдуманной истории морозов" : upgradedWellbeing ?
-            "День, жители и запасы сохранены. Наблюдение за потребностями начинается сейчас; состав прежней еды неизвестен, история привычек не выдумывается" : upgradedLifecycle ?
-            "Жители, запасы и почва сохранены. Учёт возраста старых построек начинается с текущего дня без выдуманной истории ремонтов; колодцы начинают накапливать воду с пустого резервуара" : upgradedSubsistence ?
-            "Запасы природы, городов и жители сохранены. Добавлены трудность добычи, промысловая нагрузка, медленное восстановление, освоенные огороды и постепенный переезд" :
-            "Сохранённый мир продолжает работу с коллективными строительными решениями, снабжением и разведкой"
-        });
         return simulation;
     }
     public static SphericalWorldDefinition PrepareWorld(SphericalWorldDefinition definition, SphericalEconomyDefinition economy) =>

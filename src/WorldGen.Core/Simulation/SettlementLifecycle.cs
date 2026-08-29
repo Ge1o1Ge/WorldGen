@@ -19,7 +19,6 @@ public sealed partial class SettlementSimulation
             b.Field ??= new() { FallowSinceDay = b.Status == "abandoned" ? world.Day : null };
             return;
         }
-        if (b.Kind is not ("house" or "well")) return;
         b.Lifecycle ??= new()
         {
             Material = (material ?? rules.Materials.Single(m => m.Id == (Rules.Primitive is null ? "wood" : "clay_straw"))).Id,
@@ -42,7 +41,7 @@ public sealed partial class SettlementSimulation
         foreach (var b in State.Buildings)
         {
             if (b.Lifecycle is { } age && b.Status is "active" or "abandoned" or "demolishing")
-                age.Age(Material(b), world.Day);
+                age.Age(Material(b), world.Day, b.Status == "active" && b.UnusedDays > 0 ? rules.UnusedWearMultiplier : 1);
             if (b.Well is not { } well || well.LastRechargeDay >= world.Day) continue;
             var elapsed = world.Day - well.LastRechargeDay;
             well.LastRechargeDay = world.Day;
@@ -52,7 +51,7 @@ public sealed partial class SettlementSimulation
             well.OverflowToday = Math.Max(0, well.Stock - well.Capacity);
             well.Stock -= well.OverflowToday;
             well.RechargedToday = Math.Min(well.Capacity - well.Stock, well.RechargeRate * elapsed);
-            well.Stock += well.RechargedToday;
+            well.Stock = Math.Clamp(well.Stock + well.RechargedToday, 0, well.Capacity);
         }
     }
 
@@ -80,7 +79,7 @@ public sealed partial class SettlementSimulation
                 var draw = amount;
                 foreach (var b in wells[source])
                 {
-                    var taken = Math.Min(draw, b.Well!.Stock); b.Well.Stock -= taken; b.Well.WithdrawnToday += taken; draw -= taken;
+                    var taken = Math.Min(draw, b.Well!.Stock); b.Well.Stock = Math.Max(0, b.Well.Stock - taken); b.Well.WithdrawnToday += taken; draw -= taken;
                 }
             }
             var trips = amount / WaterCarry(city); var hours = trips * tripHours;
@@ -95,8 +94,8 @@ public sealed partial class SettlementSimulation
     private bool NeedsReplacement(DwellingState b) => Rules.Lifecycle is { } r && b.Lifecycle is { } age && b.Status == "active" && !age.Retiring &&
         (age.AgeDays >= Material(b).ServiceLifeDays * r.ReplacementAgeShare || Efficiency(b) < r.ReplacementEfficiency);
 
-    private double MaterialFactor(string kind) => kind == "well" ?
-        BuildingRule("well").Materials.GetValueOrDefault("timber") / Math.Max(1e-9, BuildingRule("house").Materials.GetValueOrDefault("timber")) : 1;
+    private double MaterialFactor(string kind) => BuildingRule(kind).Materials.GetValueOrDefault("timber") /
+        Math.Max(1e-9, BuildingRule("house").Materials.GetValueOrDefault("timber"));
 
     private BuildingMaterialRule ChooseMaterial(CityState city, string kind)
     {
@@ -154,7 +153,7 @@ public sealed partial class SettlementSimulation
             Math.Max(0, 1 - distance * 2 * world.Spatial.Grid.ZoneSizeMeters / Rules.WalkingMetersPerHour / Rules.WorkHoursPerDay) : 0;
         double Available() => Math.Max(0, Math.Min(life.LaborAvailableHours - life.LaborUsedHours,
             life.LaborAvailableHours * rules.MaintenanceLaborShare - report.RepairHours - report.DemolitionHours));
-        foreach (var b in State.Buildings.Where(b => b.CityId == city.Id && b.Status == "active" && b.Lifecycle is not null)
+        foreach (var b in State.Buildings.Where(b => b.CityId == city.Id && b.Status == "active" && b.Lifecycle is not null && b.UnusedDays == 0)
             .OrderBy(b => Efficiency(b)).ThenBy(b => b.Id, StringComparer.Ordinal))
         {
             var age = b.Lifecycle!; var material = Material(b); var productive = Fraction(b);
@@ -203,7 +202,7 @@ public sealed partial class SettlementSimulation
     private void ReconcileRetiredBuildings(CityState city)
     {
         foreach (var old in State.Buildings.Where(b => b.CityId == city.Id && b.Status == "active" && b.Lifecycle?.Retiring == true && b.Residents == 0).ToArray())
-            Abandon(old, "Замена готова, жители переехали; старое строение можно разобрать");
+            Abandon(old, "Замена готова; старое строение освобождено и может быть разобрано");
     }
 
     private void CompleteLifecycle(DwellingState project)

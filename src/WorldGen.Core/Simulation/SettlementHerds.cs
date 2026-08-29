@@ -32,6 +32,7 @@ public sealed partial class SettlementSimulation
                 bio.Herds[a.Id] = herd = new();
             }
             if (herd.LastDay == world.Day) continue; herd.LastDay = world.Day;
+            herd.ProductsToday.Clear();
             foreach (var young in herd.Young.Where(y => world.Day - y.BirthDay >= a.MaturityDays).ToArray())
             { var females = (young.Count + 1) / 2; herd.Females += females; herd.Males += young.Count - females; herd.Young.Remove(young); }
             var target = Math.Clamp((int)(Population(city) * .003 / a.BodyTonnes), 2, 12);
@@ -51,7 +52,7 @@ public sealed partial class SettlementSimulation
             if (herd.Count > 0)
             {
                 herd.Health = Math.Clamp(herd.Health + (coverage - .85) * .03, 0, 1);
-                Add(life.PracticeHours, "animal:" + a.Id, used);
+                Add(life.PracticeHours, "animal:" + a.Id, used); Add(life.PracticeHours, "herd", used);
                 if (used > 0) { life.Tasks.Add(new("camp:" + city.Id, "herd", from, used, fed)); Passage(routesFromHome.Path(from), 2); }
             }
             if (herd.Health < .25 && herd.Count > 0 && world.Day % 14 == 0)
@@ -85,8 +86,21 @@ public sealed partial class SettlementSimulation
                         if (born > 0) { herd.Young.Add(new(world.Day, born)); herd.Births += born; herd.LastBirthDay = world.Day; Journal.Record(world, "herd_birth", city.Id, details: new JsonObject { ["cityId"] = city.Id, ["species"] = a.Id, ["count"] = born }); }
                     }
                 }
-                var product = Knows(city, a.Technology) && (a.Id == "chicken" || world.Day - herd.LastBirthDay < 180) ? herd.Females * a.ProductPerDay * coverage : 0;
-                if (product > 0) { city.Stocks["food"] += product; RecordFoodProduction(city, "hunt", product); Add(life.Production, "food", product); Add(telemetry.ProductionByResource, "food", product); }
+                if (Knows(city, a.Technology)) foreach (var product in a.ProductRules.OrderBy(p => p.ResourceId, StringComparer.Ordinal))
+                {
+                    if (product.Technology is { } technology && !Knows(city, technology) ||
+                        product.LactationDays > 0 && world.Day - herd.LastBirthDay >= product.LactationDays) continue;
+                    var potential = herd.Females * product.PerFemalePerDay * coverage;
+                    var amount = Math.Min(potential, Math.Max(0, budget - spent) / product.LaborHoursPerUnit);
+                    if (amount <= 1e-12) continue;
+                    var labor = amount * product.LaborHoursPerUnit; spent += labor;
+                    city.Stocks[product.ResourceId] += amount;
+                    Add(herd.ProductsToday, product.ResourceId, amount); Add(herd.TotalProducts, product.ResourceId, amount);
+                    Add(life.Production, product.ResourceId, amount); Add(telemetry.ProductionByResource, product.ResourceId, amount);
+                    var practice = product.Technology is { } id ? Rules.Primitive!.Technologies.Single(t => t.Id == id).Practice : "herd";
+                    Add(life.PracticeHours, practice, labor);
+                    life.Tasks.Add(new("camp:" + city.Id, "animal_product:" + product.ResourceId, grazing, labor, amount));
+                }
             }
             if (budget - spent > 0 && herd.Count < target && city.Stocks["food"] > Population(city) * city.FoodPerPersonPerDay)
             {

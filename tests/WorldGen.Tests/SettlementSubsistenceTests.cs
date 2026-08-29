@@ -58,22 +58,12 @@ public sealed partial class SettlementSimulationTests
     }
 
     [Fact]
-    public async Task DepletedPatchesReduceEncounterRateAndPreserveDepletionAcrossMigration()
+    public async Task ChangedSubsistenceRulesRejectAnOldWorld()
     {
         var old = await CreateFood(legacy: true); old.Advance(3);
         var territory = old.World.Spatial.Territories.Values.First(t => old.Development!.Capacity(t, "forage") > .01);
         old.Development!.Extract(territory, "forage", old.Development.Stock(territory, "forage") * .8);
-        var before = WorldSnapshot.Hash(old.World);
-        var sim = await CreateFood(WorldSnapshot.Create(old.World)); var t = sim.World.Spatial.Territories[territory.Id];
-        Assert.Equal(old.World.Day, sim.World.Day);
-        foreach (var city in old.World.Cities.Values) Assert.Equal(city.Stocks.ToDictionary(), sim.World.Cities[city.Id].Stocks.ToDictionary());
-        Assert.Equal(.2, sim.Development!.Stock(t, "forage") / sim.Development.Capacity(t, "forage"), 8);
-        Assert.InRange(sim.Development.EncounterRate(t, "forage"), .2, .4);
-        sim.Development.Extract(t, "forage", double.MaxValue);
-        Assert.Equal(0, sim.Development.EncounterRate(t, "forage"));
-        sim.Development.RecoverNaturalSites();
-        Assert.Equal(sim.Development.Capacity(t, "forage") * sim.Development.RecoveryRate("forage"), sim.Development.Stock(t, "forage"), 10);
-        Assert.Equal(before, WorldSnapshot.Hash(old.World));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CreateFood(WorldSnapshot.Create(old.World)));
     }
 
     [Fact]

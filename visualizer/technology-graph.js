@@ -8,6 +8,14 @@ export const LINK_TYPES = {
   alternative: { label: 'Альтернатива', color: '#93aaa9', description: 'A — предложенная альтернатива B (направление сохраняется)' },
 };
 export const DOMAINS = { food: 'Пища и природа', construction: 'Строительство', craft: 'Ремёсла', water: 'Вода', knowledge: 'Знания', organization: 'Общество' };
+export const NODE_GRID_SIZE = 24;
+export function snapNodePosition(position, gridSize = NODE_GRID_SIZE) {
+  if (!Number.isFinite(gridSize) || gridSize <= 0) return { ...position };
+  return {
+    x: Math.round(position.x / gridSize) * gridSize,
+    y: Math.round(position.y / gridSize) * gridSize,
+  };
+}
 export function resolveId(id, workspace) {
   return workspace.nodes.find(n => n.id === id)?.targetId ?? id;
 }
@@ -22,8 +30,10 @@ export function assembleGraph(catalog, workspace) {
     if (!ids.has(id)) { ids.add(id); nodes.push({ id, title: `Нет в каталоге: ${id}`, layer: 'missing', domain: 'knowledge', status: 'missing', description: 'Исходная технология отсутствует. Заметки сохранены; нужна сверка каталога.', conditions: [], effects: [] }); }
   }
   const edges = catalog.edges.map(e => ({ ...e, status: 'source' }));
+  const normalized = new Set(workspace.journal.flatMap(review => (review.edgeAdaptations || []).map(item => item.edgeId)));
   for (const e of workspace.edges.filter(e => e.status !== 'withdrawn')) {
     const edge = { ...e, from: resolveId(e.from, workspace), to: resolveId(e.to, workspace) };
+    if (edge.status === 'adapted' && normalized.has(edge.id)) continue;
     if (edge.status === 'adapted' && edges.some(c => c.from === edge.from && c.to === edge.to && c.type === edge.type)) continue;
     edges.push(edge);
   }
@@ -40,7 +50,7 @@ export function layoutGraph(nodes, edges) {
     // Only source prerequisites define layout. Proposed cycles remain visible, never hang the layout.
     for (let pass = 0; pass < Math.min(12, members.length); pass++) {
       let changed = false;
-      for (const e of edges.filter(e => e.status === 'source' && e.type === 'required' && ids.has(e.from) && ids.has(e.to))) {
+      for (const e of edges.filter(e => e.status === 'source' && (e.type === 'required' || e.type === 'alternative') && ids.has(e.from) && ids.has(e.to))) {
         const next = Math.min(12, rank.get(e.from) + 1);
         if (next > rank.get(e.to)) { rank.set(e.to, next); changed = true; }
       }
@@ -67,10 +77,18 @@ export function restoreLayout(nodes, edges, saved = {}, current = {}) {
     const position = current[node.id] ?? saved[node.id];
     if (position) positions[node.id] = { ...position };
   }
-  const missing = nodes.filter(node => !positions[node.id]);
+  const suggested = layoutGraph(nodes, edges);
+  const missing = nodes.filter(node => !positions[node.id] && node.kind !== 'logic');
   if (missing.length) {
-    const suggested = layoutGraph(nodes, edges);
     for (const node of missing) positions[node.id] = vacantPosition(suggested[node.id], positions);
+  }
+  for (const node of nodes.filter(node => !positions[node.id] && node.kind === 'logic')) {
+    const incoming = edges.filter(edge => edge.to === node.id).map(edge => positions[edge.from]).filter(Boolean);
+    const targetId = edges.find(edge => edge.from === node.id && edge.type === 'required')?.to;
+    const target = positions[targetId];
+    const source = incoming.length ? { x: Math.max(...incoming.map(point => point.x)) + 286, y: incoming.reduce((sum, point) => sum + point.y, 0) / incoming.length } : null;
+    const preferred = source && target ? { x: (source.x + target.x) / 2 - 36, y: (source.y + target.y) / 2 } : suggested[node.id];
+    positions[node.id] = vacantPosition(preferred, positions, 92, 64);
   }
   return positions;
 }
@@ -84,8 +102,8 @@ export function edgePath(a, b, lane = 0) {
   const bend = Math.max(60, Math.abs(b.x - a.x) * .5);
   return `M ${a.x} ${a.y} C ${a.x + bend} ${a.y + lane}, ${b.x - bend} ${b.y + lane}, ${b.x} ${b.y}`;
 }
-export function vacantPosition(preferred, occupied) {
-  const free = p => !Object.values(occupied).some(o => Math.abs(o.x - p.x) < 320 && Math.abs(o.y - p.y) < 88);
+export function vacantPosition(preferred, occupied, clearanceX = 320, clearanceY = 88) {
+  const free = p => !Object.values(occupied).some(o => Math.abs(o.x - p.x) < clearanceX && Math.abs(o.y - p.y) < clearanceY);
   if (free(preferred)) return preferred;
   for (let radius = 1; radius < 80; radius++) {
     for (let x = -radius; x <= radius; x++) for (const y of [-radius, radius]) {

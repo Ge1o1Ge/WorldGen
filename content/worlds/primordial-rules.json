@@ -3,7 +3,7 @@
   "technologies": [
     {
       "id": "stone_axes",
-      "name": "Каменные топоры",
+      "name": "Составные каменные инструменты",
       "domain": "construction",
       "baseline": true,
       "prerequisites": [],
@@ -108,6 +108,37 @@
       "practiceHours": 16000
     },
     {
+      "id": "seed_selection",
+      "name": "Отбор и сохранение семян",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": ["gardening"],
+      "practice": "cultivate",
+      "practiceHours": 1800,
+      "staged": true
+    },
+    {
+      "id": "herbal_medicine",
+      "name": "Травничество и уход",
+      "domain": "knowledge",
+      "baseline": false,
+      "prerequisites": ["gathering"],
+      "practice": "gather",
+      "practiceHours": 20000,
+      "staged": true
+    },
+    {
+      "id": "horticulture",
+      "name": "Садоводство",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": [
+        "gardening"
+      ],
+      "practice": "cultivate",
+      "practiceHours": 1200
+    },
+    {
       "id": "archery",
       "name": "Лук и деревянные стрелы",
       "domain": "food",
@@ -129,6 +160,17 @@
       ],
       "practice": "hunt",
       "practiceHours": 22000
+    },
+    {
+      "id": "animal_husbandry",
+      "name": "Системное скотоводство",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": ["taming"],
+      "anyPrerequisites": ["herd_deer", "herd_horse", "herd_cow", "herd_goat", "herd_rabbit", "herd_chicken", "herd_pig", "herd_sheep"],
+      "practice": "herd",
+      "practiceHours": 12000,
+      "staged": true
     },
     {
       "id": "chieftains",
@@ -174,7 +216,280 @@
       ],
       "practice": "water",
       "practiceHours": 12000
+    },
+    {
+      "id": "pottery",
+      "name": "Открытый обжиг глины",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["fire", "building", "stone_vessels"],
+      "practice": "construction",
+      "practiceHours": 2400,
+      "staged": true
+    },
+    {
+      "id": "fletched_arrows",
+      "name": "Оперение стрел и каменный наконечник",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["hunting", "archery"],
+      "practice": "hunt",
+      "practiceHours": 3600,
+      "staged": true
+    },
+    {
+      "id": "wool_clothing",
+      "name": "Шерстяная одежда",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["hide_clothing", "weaving", "herd_sheep"],
+      "practice": "fiber",
+      "practiceHours": 7200,
+      "staged": true
+    },
+    {
+      "id": "dairy",
+      "name": "Молочная продукция",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": ["taming"],
+      "anyPrerequisites": ["herd_cow", "herd_goat"],
+      "practice": "herd",
+      "practiceHours": 4800,
+      "staged": true
+    },
+    {
+      "id": "cheesemaking",
+      "name": "Сыроварение",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": ["dairy", "pottery"],
+      "practice": "herd",
+      "practiceHours": 7200,
+      "staged": true
+    },
+    {
+      "id": "draught_animals",
+      "name": "Тягловые животные",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": ["taming", "woodworking"],
+      "anyPrerequisites": ["herd_horse", "herd_deer", "herd_cow"],
+      "practice": "herd",
+      "practiceHours": 12000,
+      "staged": true
+    },
+    {
+      "id": "riding",
+      "name": "Верховая езда",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": ["taming"],
+      "anyPrerequisites": ["herd_horse", "herd_deer", "herd_cow"],
+      "practice": "herd",
+      "practiceHours": 12000,
+      "staged": true
+    },
+    {
+      "id": "granary",
+      "name": "Зернохранилище",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": ["storage_buildings", "gardening", "building", "woodworking"],
+      "practice": "food_storage",
+      "practiceHours": 900
+    },
+    {
+      "id": "storage_buildings",
+      "name": "Складские помещения",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": ["building", "calendar"],
+      "practice": "storage",
+      "practiceHours": 900
+    },
+    {
+      "id": "masonry",
+      "name": "Каменная кладка",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": ["building", "stone_axes"],
+      "practice": "construction",
+      "practiceHours": 2000
+    },
+    {
+      "id": "stone_road",
+      "name": "Каменный тракт",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": ["building", "stone_axes"],
+      "practice": "construction",
+      "practiceHours": 14000,
+      "staged": true
+    },
+    {
+      "id": "log_construction",
+      "name": "Бревенчатый сруб",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": ["building", "woodworking"],
+      "practice": "construction",
+      "practiceHours": 9000,
+      "staged": true
+    },
+    {
+      "id": "pottery_kiln",
+      "name": "Глиняные печи",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["pottery", "building"],
+      "practice": "construction",
+      "practiceHours": 8500,
+      "staged": true
+    },
+    {
+      "id": "charcoal_burning",
+      "name": "Изготовление древесного угля",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["pottery_kiln", "woodworking"],
+      "practice": "wood",
+      "practiceHours": 9000,
+      "staged": true
+    },
+    {
+      "id": "rafts",
+      "name": "Плоты",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["woodworking", "fishing"],
+      "practice": "wood",
+      "practiceHours": 5000,
+      "staged": true
+    },
+    {
+      "id": "fishing_nets",
+      "name": "Рыболовные сети",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": ["fishing", "weaving"],
+      "practice": "fish",
+      "practiceHours": 6200,
+      "staged": true
+    },
+    {
+      "id": "mortar",
+      "name": "Строительные растворы",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": ["building", "stone_axes"],
+      "practice": "construction",
+      "practiceHours": 11000,
+      "staged": true
+    },
+    {
+      "id": "composite_construction",
+      "name": "Комбинирование строительных материалов",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": ["log_construction", "pottery_kiln", "mortar"],
+      "practice": "construction",
+      "practiceHours": 18000,
+      "staged": true
+    },
+    {
+      "id": "grow_grape",
+      "name": "Выращивание винограда",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": ["horticulture"],
+      "practice": "cultivate",
+      "practiceHours": 4200,
+      "staged": true
+    },
+    {
+      "id": "winemaking",
+      "name": "Виноделие",
+      "domain": "food",
+      "baseline": false,
+      "prerequisites": ["grow_grape", "pottery"],
+      "practice": "cultivate",
+      "practiceHours": 7200,
+      "staged": true
+    },
+    {
+      "id": "nonferrous_metallurgy",
+      "name": "Легкоплавкие металлы",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["charcoal_burning", "pottery_kiln"],
+      "practice": "construction",
+      "practiceHours": 22000,
+      "staged": true
+    },
+    {
+      "id": "alloying",
+      "name": "Сплавы металлов",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["nonferrous_metallurgy"],
+      "practice": "construction",
+      "practiceHours": 14000,
+      "staged": true
+    },
+    {
+      "id": "copper_tools",
+      "name": "Медные инструменты",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["nonferrous_metallurgy", "woodworking"],
+      "practice": "wood",
+      "practiceHours": 9000,
+      "staged": true
+    },
+    {
+      "id": "carpentry",
+      "name": "Плотничество",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["log_construction", "woodworking"],
+      "practice": "wood",
+      "practiceHours": 12000,
+      "staged": true
+    },
+    {
+      "id": "bloomery_smelting",
+      "name": "Кованое железо",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["charcoal_burning", "pottery_kiln"],
+      "practice": "construction",
+      "practiceHours": 32000,
+      "staged": true
+    },
+    {
+      "id": "hand_tools",
+      "name": "Ковка инструментов",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["bloomery_smelting", "woodworking"],
+      "practice": "wood",
+      "practiceHours": 18000,
+      "staged": true
     }
+  ],
+  "relations": [
+    { "from": "stone_axes", "to": "gardening", "type": "helps" },
+    { "from": "copper_tools", "to": "wool_clothing", "type": "helps" },
+    { "from": "hand_tools", "to": "wool_clothing", "type": "helps" },
+    { "from": "copper_tools", "to": "carpentry", "type": "helps" },
+    { "from": "hand_tools", "to": "carpentry", "type": "helps" },
+    { "from": "hand_tools", "to": "draught_animals", "type": "helps" },
+    { "from": "crop_rotation", "to": "draught_animals", "type": "supports" },
+    { "from": "carpentry", "to": "draught_animals", "type": "supports" },
+    { "from": "seed_selection", "to": "granary", "type": "supports" },
+    { "from": "herbal_medicine", "to": "gardening", "type": "supports" },
+    { "from": "masonry", "to": "storage_buildings", "type": "supports" }
   ],
   "resources": [
     {
@@ -216,6 +531,23 @@
       "category": "household_equipment",
       "baseValue": 1,
       "decayPerDay": 0.001
+    },
+    {
+      "id": "pottery_ware",
+      "name": "Керамическая посуда",
+      "unit": "комплект",
+      "category": "household_equipment",
+      "baseValue": 1.4,
+      "decayPerDay": 0.0005
+    },
+    {
+      "id": "cheese",
+      "name": "Сыр и кисломолочные продукты",
+      "unit": "тонна",
+      "category": "food_preserved",
+      "baseValue": 2.2,
+      "decayPerDay": 0.002,
+      "foodValue": 0.95
     }
   ],
   "activities": [
@@ -269,6 +601,64 @@
       "inputs": {
         "cloth": 0.0015
       }
+    }
+  ],
+  "processes": [
+    {
+      "id": "open_fire_pottery",
+      "name": "Открытый обжиг посуды",
+      "technology": "pottery",
+      "practice": "pottery",
+      "inputs": { "clay": 0.012, "firewood": 0.004 },
+      "requiredStocks": { "stone_kit": 0.05 },
+      "outputs": { "pottery_ware": 1 },
+      "targetResource": "pottery_ware",
+      "laborHoursPerBatch": 6,
+      "targetOutputPerPerson": 0.08,
+      "maximumBatchesPerPersonPerDay": 0.02,
+      "priority": 30
+    },
+    {
+      "id": "make_cheese",
+      "name": "Домашнее сыроварение",
+      "technology": "cheesemaking",
+      "practice": "dairy",
+      "inputs": { "milk": 1 },
+      "requiredStocks": { "pottery_ware": 0.02 },
+      "outputs": { "cheese": 0.75 },
+      "targetResource": "cheese",
+      "laborHoursPerBatch": 80,
+      "targetOutputPerPerson": 0.02,
+      "maximumBatchesPerPersonPerDay": 0.003,
+      "priority": 40
+    },
+    {
+      "id": "make_wool_clothing",
+      "name": "Прядение, ткачество и шитьё шерстяной одежды",
+      "technology": "wool_clothing",
+      "practice": "fiber",
+      "inputs": { "wool": 0.003 },
+      "requiredStocks": { "stone_kit": 0.05 },
+      "outputs": { "garments": 1 },
+      "targetResource": "garments",
+      "laborHoursPerBatch": 10,
+      "targetOutputPerPerson": 1.05,
+      "maximumBatchesPerPersonPerDay": 0.02,
+      "priority": 20
+    },
+    {
+      "id": "burn_charcoal",
+      "name": "Углежжение древесины",
+      "technology": "charcoal_burning",
+      "practice": "charcoal",
+      "inputs": { "timber": 1 },
+      "requiredStocks": { "stone_kit": 0.05 },
+      "outputs": { "charcoal": 0.45 },
+      "targetResource": "charcoal",
+      "laborHoursPerBatch": 40,
+      "targetOutputPerPerson": 0.015,
+      "maximumBatchesPerPersonPerDay": 0.01,
+      "priority": 10
     }
   ],
   "materials": [

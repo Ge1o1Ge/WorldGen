@@ -714,7 +714,7 @@ parcelSelect.addEventListener("change", () => {
 });
 resize();
 void loadHydrology();
-void connectSphereSimulation({onState:applySimulationView,biosphere:metadata.biosphere,mapQuery:()=>mapData.query(),
+void connectSphereSimulation({onState:applySimulationView,biosphere:metadata.biosphere,processes:metadata.processes??[],mapQuery:()=>mapData.query(),
   onFocus:site=>{selectedCell={face:site.face,x:site.x,y:site.y};camera.focus(facePoint(site.face,site.x,site.y),48);hideTooltip();refreshSelection();scheduleRender();}});
 }
 initialize().catch(error => {

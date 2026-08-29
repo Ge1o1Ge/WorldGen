@@ -1,30 +1,1996 @@
 {
   "schemaVersion": 1,
-  "revision": 42,
-  "nodes": [],
-  "edges": [],
-  "comments": [],
-  "journal": [],
+  "revision": 497,
+  "nodes": [
+    {
+      "id": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
+      "title": "Садоводство",
+      "description": "Выращивание многолетних растений с долгим периодом роста\n\nНеобходимо понимание концепции посадки растений, маловероятно что возникнет раньше посадки простых растений ",
+      "conditions": "",
+      "effects": "",
+      "domain": "food",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:horticulture"
+    },
+    {
+      "id": "draft:30eef327-5f80-4702-b369-11227277e978",
+      "title": "Открытый обжиг глины",
+      "description": "Низкоэффективный обжиг, для создания глиняной посуды \n\nпосуда в свою очередь повышает сроки хранения пищи и удобство жителей \nоткрывает пути к более сложным рецепта блюд",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:pottery"
+    },
+    {
+      "id": "draft:72132855-9c7b-47da-8488-6c5a4798a988",
+      "title": "Оперенье стрел и каменный наконечник",
+      "description": "существенное повышение эффективности и дальности стрельбы ",
+      "conditions": "",
+      "effects": "соответственно и упрощение охоты\nснижение тревожности стад ",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:fletched_arrows"
+    },
+    {
+      "id": "draft:fc402b2d-a2fd-42fa-9983-7c0616a684b3",
+      "title": "шерстяная одежда",
+      "description": "",
+      "conditions": "",
+      "effects": "сохранение тепла, улучшение здоровья и счастья \n",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:wool_clothing"
+    },
+    {
+      "id": "draft:f5071f16-e2e2-4510-86c4-1253684e4c47",
+      "title": "Молочная продукция",
+      "description": "",
+      "conditions": "",
+      "effects": "Новые ресурсы, молоко, сметана, творог",
+      "domain": "food",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:dairy"
+    },
+    {
+      "id": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
+      "title": "тягловые животные",
+      "description": "",
+      "conditions": "",
+      "effects": "Уменьшение трудозатрат для работ на полях",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:draught_animals"
+    },
+    {
+      "id": "draft:145e0beb-7a73-4e8a-90bc-bb04c6b10384",
+      "title": "Сыроварение",
+      "description": "Изготовление сыров",
+      "conditions": "Много молока",
+      "effects": "новый ресурс сыр\nдолгохранящийся продукт",
+      "domain": "food",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:cheesemaking"
+    },
+    {
+      "id": "draft:694eeaee-b0c0-4086-a3dc-995014cef737",
+      "title": "Верховая езда",
+      "description": "",
+      "conditions": "",
+      "effects": "Ускорение перемещений, увеличение максимальной нагрузки ",
+      "domain": "knowledge",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:riding"
+    },
+    {
+      "id": "draft:86637bd2-be5c-442b-adce-18e7a7944975",
+      "title": "Зернохналище",
+      "description": "Открывает специализированную постройку для хранения зерен и семян",
+      "conditions": "",
+      "effects": "хранение зерен и семян, для будущих посевов \nснижение риска утраты культур за счет запаса на 2 года",
+      "domain": "food",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:granary"
+    },
+    {
+      "id": "draft:3ef1d0f1-d615-4e85-8cb9-57cfc3c90260",
+      "title": "Бревенчатый сруб",
+      "description": "",
+      "conditions": "",
+      "effects": "Дает возможность строить постройки из древесины\nувеличение срока службы, удобства жителей \nдополнительная вместимость домохозяйства +1 чел",
+      "domain": "construction",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:log_construction"
+    },
+    {
+      "id": "draft:6cfcc77d-13a2-4335-b96d-9387208d001d",
+      "title": "Глиняные печи",
+      "description": "Повешение температуры и равномерности жара \nсущественно повышает выход глиняной посуды уменьшая расход глины \n\nоткрывает дорогу к использованию обожжённой глины в качестве стройматериала \n",
+      "conditions": "",
+      "effects": "Снижение расхода глины на гончарное дело \nповышение качества посуды - отражается в скорости порчи \nоткрытие кирпича и черепицы\n\nповышение производительности труда \nвыделение отдельного ремесла",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:pottery_kiln"
+    },
+    {
+      "id": "draft:9d5e54c7-0f89-467e-ba0e-710d1aed6b7f",
+      "title": "Изготовление древесного угля",
+      "description": "позволяет преобразовать дрова в древесный уголь \nсокращение объёмов топлива при близкой эффективности",
+      "conditions": "много работы над обжигом",
+      "effects": "топливо занимает меньше места \nрасходы трудозатрат на поддержание огня сокращаются вдвое \n\nоткрывает дорогу к плавке меди, олова, свинца, грязного стекла, кованного железа",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:charcoal_burning"
+    },
+    {
+      "id": "draft:c480dea3-af29-408b-ae6d-1c2c60f983c1",
+      "title": "Плоты",
+      "description": "Позволяет строить малые плавательные постройки для транспортировки грузов по воде \n\nи для рыбалки",
+      "conditions": "",
+      "effects": "переведение по воде на плотах\nрыбалка\nрасширение влияния вдоль водоемов\n\nвысокая скорость порчи - 6 месяцев, неремотопригодность",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:rafts"
+    },
+    {
+      "id": "draft:2afbb125-70bc-4717-9380-799beb836148",
+      "title": "рыбатские сети",
+      "description": "Временная постройка\n\nУпрощает рыболовство, снимает штраф на более глубокий вылов рыбы\nпри снятии имеет шанс полностью прийти в негодность",
+      "conditions": "Рыбалка\nПлетение ",
+      "effects": "Снижение трудозатрат\nболее глубокое изъятие рыбных ресурсов до наступления штрафов ",
+      "domain": "food",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:fishing_nets"
+    },
+    {
+      "id": "draft:8d724c50-b61b-4675-9c19-b66f498bac66",
+      "title": "Комбинирование материалов строительства",
+      "description": "Использование разных соотношений стройматериалов \n\nдолгое внедрение ",
+      "conditions": "как минимум 3 стройматериала",
+      "effects": "За счет закрытия недостатков разных материалов достигается повышение сроков эксплуатации\nдо 75% от лучшего из списка при полном внедрении при 25% включении в состав \n\n\n",
+      "domain": "construction",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:composite_construction"
+    },
+    {
+      "id": "draft:4a81aa5f-1209-49a5-8c1d-611ddb3f27d2",
+      "title": "Строительные растворы",
+      "description": "Глиняный, Гипсовый (при наличии месторождений) ",
+      "conditions": "",
+      "effects": "Каменная, кирпичная кладки",
+      "domain": "construction",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:mortar"
+    },
+    {
+      "id": "draft:53c97cdf-eff4-4a5a-bf96-a5de5d3b592e",
+      "title": "Выращивание Виноград",
+      "description": "Выращивание винограда",
+      "conditions": "",
+      "effects": "",
+      "domain": "food",
+      "symbol": "berry_bush",
+      "status": "adapted",
+      "targetId": "primitive:grow_grape"
+    },
+    {
+      "id": "draft:0e258712-85bf-4ca1-9f69-bea4ffae90b9",
+      "title": "Виноделие",
+      "description": "Раннее производство алкоголя ",
+      "conditions": "Порча винограда в определенном объёме \nчеловекочасы на выращивание",
+      "effects": "Спиртосодержащие продукты, как повышают счастье \nтак и обеспечиваю некий обеззараживающий эффект\n",
+      "domain": "food",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:winemaking"
+    },
+    {
+      "id": "draft:b1af8d43-817a-485d-b5c5-bc05d8a52429",
+      "title": "Легкоплавкие металлы",
+      "description": "Медь, олово, свинец, серебро\n\nу поселенцев будет возникать естественное желание кинуть что-нибудь в печь\nмалые месторождения встречаются нередко \n\n",
+      "conditions": "Наличие в поселении или округе небольших запасов руд\nУскорение появления знания - относительно большое число детей ",
+      "effects": "Отливка различной утвари из металла \nинструменты",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:nonferrous_metallurgy"
+    },
+    {
+      "id": "draft:7b2cd585-cd94-499a-b6d1-47120ca1e7e7",
+      "title": "Сплавы металлов",
+      "description": "Позволяет производить соединения имеющихся металлов",
+      "conditions": "более двух легкоплавких металлов в наличии",
+      "effects": "Открывает дорогу к известным сплавам",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:alloying"
+    },
+    {
+      "id": "draft:9d4daa5c-541a-4b90-bb35-929c999e2af0",
+      "title": "Медные инструменты",
+      "description": "Сокращение трудозатрат на работы",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:copper_tools"
+    },
+    {
+      "id": "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1",
+      "title": "Плотничество",
+      "description": "Доски\nМебель \nДеревянные изделия\nВедра",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:carpentry"
+    },
+    {
+      "id": "draft:8e2f3696-ff89-4afe-80de-3b464f3f96e1",
+      "title": "Кованное железо",
+      "description": "Альтернатива для тех кого обделило легкоплавкими металлами \nтребует куда больше опыта в обжиге \n\nоткрывается существенно быстрее при знании о плавке",
+      "conditions": "",
+      "effects": "Изделия из кованного железа\nгвозди",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:bloomery_smelting"
+    },
+    {
+      "id": "draft:d00e460e-c149-4a4e-b930-ef49ae405cff",
+      "title": "Ковка инструментов",
+      "description": "",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:hand_tools"
+    },
+    {
+      "id": "draft:6da3821d-b04a-49fd-bc28-344009a55e7e",
+      "title": "Складские помещения",
+      "description": "Хранение ресурсов в специально отведенных местах \nповышение продолжительности хранения строительных и подобных материалов\n\nпостройки Склад, Амбар",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:storage_buildings"
+    },
+    {
+      "id": "draft:3bd41871-c167-4927-af8f-9cfe5d6eabd2",
+      "title": "Каменный тракт",
+      "description": "Поселение может принять решение о модернизации троп с большим потоком",
+      "conditions": "",
+      "effects": "",
+      "domain": "construction",
+      "symbol": "road",
+      "status": "adapted",
+      "targetId": "primitive:stone_road"
+    }
+  ],
+  "edges": [
+    {
+      "id": "a72ae74a-fccc-4ad7-ad56-938ceaae1fa5",
+      "from": "primitive:gardening",
+      "to": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "a482d356-610e-4d6f-8d86-a4ac6738402e",
+      "from": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
+      "to": "primitive:grow_cherry",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "1edea1ed-1e61-4e65-928f-1ae586a34b3f",
+      "from": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
+      "to": "primitive:grow_apple",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "ebdeb2d6-780c-42fa-b151-b77127b75e02",
+      "from": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
+      "to": "primitive:grow_pear",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "a67e1497-dba7-40c2-8f5b-c5e70bc6216a",
+      "from": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
+      "to": "primitive:grow_plum",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "a9eabc00-f262-4354-bd93-5623c429df5d",
+      "from": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
+      "to": "primitive:grow_hazel",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "7a26b0fa-d85d-4ecd-a034-b71c13174a80",
+      "from": "primitive:stone_axes",
+      "to": "primitive:gardening",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "e146c21e-8f41-488a-b15f-3a3e383a5ca6",
+      "from": "primitive:fire",
+      "to": "draft:30eef327-5f80-4702-b369-11227277e978",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "03d5d5ea-97b4-456e-9180-5e288dafd3ed",
+      "from": "primitive:building",
+      "to": "draft:30eef327-5f80-4702-b369-11227277e978",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "f2611ccf-a186-482c-b1d4-aa0b8060021f",
+      "from": "primitive:hunting",
+      "to": "draft:72132855-9c7b-47da-8488-6c5a4798a988",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "95863c84-e3e7-487c-bff2-eb1d8e4fe7b1",
+      "from": "primitive:archery",
+      "to": "draft:72132855-9c7b-47da-8488-6c5a4798a988",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "d2300e96-b5d7-4190-9a81-a98a1a1a4aa5",
+      "from": "primitive:hide_clothing",
+      "to": "draft:fc402b2d-a2fd-42fa-9983-7c0616a684b3",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "62de7862-27a0-4137-854f-65b2e8a2a814",
+      "from": "primitive:herd_sheep",
+      "to": "draft:fc402b2d-a2fd-42fa-9983-7c0616a684b3",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "bfaba159-b5d2-40fb-aca3-ed71d06dab31",
+      "from": "primitive:herd_cow",
+      "to": "draft:f5071f16-e2e2-4510-86c4-1253684e4c47",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "e18fd609-ba80-4ab7-ad03-448f461c5abc",
+      "from": "primitive:herd_goat",
+      "to": "draft:f5071f16-e2e2-4510-86c4-1253684e4c47",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "e938f5f5-0c79-4b1b-952f-9c4cb8075a1c",
+      "from": "primitive:herd_horse",
+      "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "01b13a7a-51bc-490b-b361-83a7fbe0be1e",
+      "from": "primitive:herd_deer",
+      "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "36727a7a-f939-4e44-af07-c007a8e09244",
+      "from": "primitive:herd_cow",
+      "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "68ef2ff9-09b0-4287-b57d-a02b995d2ee4",
+      "from": "draft:f5071f16-e2e2-4510-86c4-1253684e4c47",
+      "to": "draft:145e0beb-7a73-4e8a-90bc-bb04c6b10384",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "aad53cc1-a6dd-43a3-87e8-19c6cc7e204d",
+      "from": "primitive:herd_deer",
+      "to": "draft:694eeaee-b0c0-4086-a3dc-995014cef737",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "af7601b0-018f-4b7d-8871-35b7cb45556f",
+      "from": "primitive:herd_horse",
+      "to": "draft:694eeaee-b0c0-4086-a3dc-995014cef737",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "bb8c54ac-43cb-40ea-84b0-7ae23bd5c60f",
+      "from": "primitive:herd_cow",
+      "to": "draft:694eeaee-b0c0-4086-a3dc-995014cef737",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "664fb919-b267-4d7f-b217-e448791ad077",
+      "from": "primitive:gardening",
+      "to": "draft:86637bd2-be5c-442b-adce-18e7a7944975",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "0d0fdefa-21ab-4da3-aef3-fc3fd64c1d02",
+      "from": "primitive:woodworking",
+      "to": "draft:3ef1d0f1-d615-4e85-8cb9-57cfc3c90260",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "15c5912e-d67a-4d32-9bd7-2363bc93193d",
+      "from": "draft:30eef327-5f80-4702-b369-11227277e978",
+      "to": "draft:6cfcc77d-13a2-4335-b96d-9387208d001d",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "85c5ab57-d194-4e76-a683-8ec82141e05d",
+      "from": "draft:6cfcc77d-13a2-4335-b96d-9387208d001d",
+      "to": "draft:9d5e54c7-0f89-467e-ba0e-710d1aed6b7f",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "154acaf2-442b-415e-b751-16dfa4e1eb62",
+      "from": "primitive:woodworking",
+      "to": "draft:c480dea3-af29-408b-ae6d-1c2c60f983c1",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "9190a262-abdd-4620-98b5-237944d3c5c3",
+      "from": "primitive:fishing",
+      "to": "draft:c480dea3-af29-408b-ae6d-1c2c60f983c1",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "80a8f87c-4bba-4aee-b4e0-fac082b07b00",
+      "from": "primitive:fishing",
+      "to": "draft:2afbb125-70bc-4717-9380-799beb836148",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "24c005a3-94a9-4cd2-be8e-b39ad99b06b9",
+      "from": "primitive:weaving",
+      "to": "draft:2afbb125-70bc-4717-9380-799beb836148",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "68b92720-b26b-45ad-aebb-34d48d288898",
+      "from": "draft:3ef1d0f1-d615-4e85-8cb9-57cfc3c90260",
+      "to": "draft:8d724c50-b61b-4675-9c19-b66f498bac66",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "4bb8cd88-b13b-41ec-b88b-6251e74763cf",
+      "from": "draft:6cfcc77d-13a2-4335-b96d-9387208d001d",
+      "to": "draft:8d724c50-b61b-4675-9c19-b66f498bac66",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "8c584cca-c8e3-41b1-a28b-60ab36836743",
+      "from": "primitive:stone_axes",
+      "to": "draft:4a81aa5f-1209-49a5-8c1d-611ddb3f27d2",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "abbf456c-4ef8-40da-98f3-fdd3f2fd9ea8",
+      "from": "draft:4a81aa5f-1209-49a5-8c1d-611ddb3f27d2",
+      "to": "draft:8d724c50-b61b-4675-9c19-b66f498bac66",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "a5663cdf-3ed3-48c9-b8b1-dcfb5485d109",
+      "from": "primitive:stone_vessels",
+      "to": "draft:30eef327-5f80-4702-b369-11227277e978",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "fc44aa29-5090-447b-9061-aad763c151cf",
+      "from": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
+      "to": "draft:53c97cdf-eff4-4a5a-bf96-a5de5d3b592e",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "5c69f31c-b9db-450d-a8be-9d9b7c39d84d",
+      "from": "draft:53c97cdf-eff4-4a5a-bf96-a5de5d3b592e",
+      "to": "draft:0e258712-85bf-4ca1-9f69-bea4ffae90b9",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "7b23a4fa-df57-4fe1-a7fa-a01d0dbffacb",
+      "from": "draft:9d5e54c7-0f89-467e-ba0e-710d1aed6b7f",
+      "to": "draft:b1af8d43-817a-485d-b5c5-bc05d8a52429",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "3132015d-9c6c-4cb4-828e-cd6812e1d063",
+      "from": "draft:b1af8d43-817a-485d-b5c5-bc05d8a52429",
+      "to": "draft:7b2cd585-cd94-499a-b6d1-47120ca1e7e7",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "3690dc44-08d1-4bf1-85c5-fe80fa9ed799",
+      "from": "draft:b1af8d43-817a-485d-b5c5-bc05d8a52429",
+      "to": "draft:9d4daa5c-541a-4b90-bb35-929c999e2af0",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "f03f6a73-a081-461b-ae39-b35f906fb7ba",
+      "from": "draft:9d4daa5c-541a-4b90-bb35-929c999e2af0",
+      "to": "draft:fc402b2d-a2fd-42fa-9983-7c0616a684b3",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "973335ad-b302-4561-bcca-10d81d870bd1",
+      "from": "draft:3ef1d0f1-d615-4e85-8cb9-57cfc3c90260",
+      "to": "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "8150449d-baf3-427f-b323-29037c4fcb49",
+      "from": "draft:9d4daa5c-541a-4b90-bb35-929c999e2af0",
+      "to": "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "4cd0c038-0e48-4ad1-9189-3dc91e9591e3",
+      "from": "draft:9d5e54c7-0f89-467e-ba0e-710d1aed6b7f",
+      "to": "draft:8e2f3696-ff89-4afe-80de-3b464f3f96e1",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "09ee25b9-8d37-484b-94a9-5aa7ec7a1ab8",
+      "from": "draft:8e2f3696-ff89-4afe-80de-3b464f3f96e1",
+      "to": "draft:d00e460e-c149-4a4e-b930-ef49ae405cff",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "bfa71cb3-48fd-4cfd-bb4e-82c6543bcb0e",
+      "from": "draft:d00e460e-c149-4a4e-b930-ef49ae405cff",
+      "to": "draft:fc402b2d-a2fd-42fa-9983-7c0616a684b3",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "ebe77432-f8b5-46dd-9b2b-dc9aae5ede76",
+      "from": "draft:d00e460e-c149-4a4e-b930-ef49ae405cff",
+      "to": "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "b15d1f36-5779-496d-912a-46a5a7b9c055",
+      "from": "draft:d00e460e-c149-4a4e-b930-ef49ae405cff",
+      "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "bdd6b710-daef-4d64-a7dd-6f7f9d4bf6bb",
+      "from": "primitive:crop_rotation",
+      "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "8c5cfef1-2dd6-4e4b-a3f8-75602ba6da7a",
+      "from": "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1",
+      "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "f7c70a47-3d22-4e60-9a07-c3556f99b10b",
+      "from": "primitive:herd_deer",
+      "to": "catalog:animal_husbandry",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "6c86df18-67e7-4c4b-bbd0-b81b28fa1522",
+      "from": "primitive:herd_horse",
+      "to": "catalog:animal_husbandry",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "18ddfa73-f5cb-4c84-bdee-d4993680b998",
+      "from": "primitive:herd_cow",
+      "to": "catalog:animal_husbandry",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "f3d73ed6-67cb-4b40-ae43-8746a780451b",
+      "from": "primitive:herd_goat",
+      "to": "catalog:animal_husbandry",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "06c788dd-f0fc-4e92-b72a-be3dcf683350",
+      "from": "primitive:herd_rabbit",
+      "to": "catalog:animal_husbandry",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "1ef91e83-3678-48f2-b3b3-3fa3c49ea641",
+      "from": "primitive:herd_chicken",
+      "to": "catalog:animal_husbandry",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "93ec8c3f-24c5-4b14-8278-267271048790",
+      "from": "primitive:herd_pig",
+      "to": "catalog:animal_husbandry",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "331066ce-0b05-4d4d-8f0a-24c5a1eb2283",
+      "from": "primitive:herd_sheep",
+      "to": "catalog:animal_husbandry",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "2573e256-e06c-42bd-96ca-33dcc4b2d24b",
+      "from": "catalog:seed_selection",
+      "to": "primitive:granary",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "dd6c9b1b-e6f4-4f9c-85ea-778b6432d2a5",
+      "from": "primitive:gardening",
+      "to": "catalog:seed_selection",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "fe7a529f-becb-4530-aeb3-b3b187294c1e",
+      "from": "catalog:herbal_medicine",
+      "to": "primitive:gardening",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "88dd9fa4-15cd-435e-8f44-3fd20edda204",
+      "from": "catalog:masonry",
+      "to": "draft:6da3821d-b04a-49fd-bc28-344009a55e7e",
+      "type": "required",
+      "status": "manual"
+    },
+    {
+      "id": "423335fa-5254-4b6d-acf8-7b01cb99eb66",
+      "from": "primitive:building",
+      "to": "draft:6da3821d-b04a-49fd-bc28-344009a55e7e",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "c314a9f8-cb48-4cbd-beba-8e307e9f917b",
+      "from": "primitive:calendar",
+      "to": "draft:6da3821d-b04a-49fd-bc28-344009a55e7e",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "6cdbad4f-b72c-4c87-9afa-ae439f797e8e",
+      "from": "primitive:building",
+      "to": "draft:3bd41871-c167-4927-af8f-9cfe5d6eabd2",
+      "type": "required",
+      "status": "adapted"
+    }
+  ],
+  "comments": [
+    {
+      "id": "cc15a942-7a69-4e80-b579-45a122f8fd66",
+      "nodeId": "primitive:stone_axes",
+      "text": "переименовать в каменные составные инструменты",
+      "createdAt": "2026-08-28T23:02:02.9762943+00:00",
+      "status": "adapted",
+      "remainingText": ""
+    },
+    {
+      "id": "b89707b7-9c58-416c-9c3f-298c875347ea",
+      "nodeId": "primitive:hunting",
+      "text": "новые ресурсы \n\nперья\nяйца \nшкуры \nмясо",
+      "createdAt": "2026-08-28T23:10:12.4298141+00:00",
+      "status": "manual",
+      "remainingText": "Добавить сбор яиц диких птиц, перья как материальный ресурс и сезонность выходов; разделить происхождение мяса внутри food без дублирования массы."
+    },
+    {
+      "id": "c56c0100-d755-4c6a-97c3-cfb4c2965afd",
+      "nodeId": "draft:145e0beb-7a73-4e8a-90bc-bb04c6b10384",
+      "text": "порча молока в определенном объёме, человеко-часы",
+      "createdAt": "2026-08-28T23:22:52.3570916+00:00",
+      "status": "adapted",
+      "remainingText": ""
+    },
+    {
+      "id": "implementation-primitive-pottery-20260829",
+      "nodeId": "primitive:pottery",
+      "text": "Остаток после интеграции знания: В дерево внесены знание и предпосылки. Физические партии глины, топлива, брак и ёмкости ещё требуют общего процесса обжига.",
+      "createdAt": "2026-08-29T08:19:34.1119618+00:00",
+      "status": "manual",
+      "remainingText": "Добавить место открытого обжига, температурный режим, разброс качества, брак, назначение и жизненный цикл отдельных ёмкостей."
+    },
+    {
+      "id": "implementation-primitive-fletched_arrows-20260829",
+      "nodeId": "primitive:fletched_arrows",
+      "text": "Остаток после интеграции знания: В дерево внесено отдельное знание. Расход стрел, перьев и наконечников и изменение давления на стада ещё не реализованы.",
+      "createdAt": "2026-08-29T08:19:34.1480129+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-wool_clothing-20260829",
+      "nodeId": "primitive:wool_clothing",
+      "text": "Остаток после интеграции знания: В дерево внесены знание и связи. Поток шерсти, стадии переработки и отдельная теплозащита пока не реализованы.",
+      "createdAt": "2026-08-29T08:19:34.1689334+00:00",
+      "status": "manual",
+      "remainingText": "Разделить стрижку, очистку, прядение, ткачество и шитьё; добавить оснащение стадий, качество и отдельное влияние шерстяной одежды на теплозащиту."
+    },
+    {
+      "id": "implementation-primitive-dairy-20260829",
+      "nodeId": "primitive:dairy",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Лактация, быстро портящийся запас молока и труд доения пока не реализованы.",
+      "createdAt": "2026-08-29T08:19:34.1879699+00:00",
+      "status": "adapted",
+      "remainingText": ""
+    },
+    {
+      "id": "implementation-primitive-cheesemaking-20260829",
+      "nodeId": "primitive:cheesemaking",
+      "text": "Остаток после интеграции знания: В дерево внесены знание и предпосылки. Выход продукта, труд, ёмкости и сроки созревания ещё требуют процесса переработки.",
+      "createdAt": "2026-08-29T08:19:34.207508+00:00",
+      "status": "manual",
+      "remainingText": "Добавить время и место созревания, занятость ёмкостей, качество партии и риск заражения или порчи при изготовлении."
+    },
+    {
+      "id": "implementation-primitive-draught_animals-20260829",
+      "nodeId": "primitive:draught_animals",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Выбор конкретного животного, упряжь, усталость, корм и экономия труда пока не подключены.",
+      "createdAt": "2026-08-29T08:19:34.2276645+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-riding-20260829",
+      "nodeId": "primitive:riding",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Скорость, груз, усталость и пригодность конкретного вида пока не влияют на экспедиции.",
+      "createdAt": "2026-08-29T08:19:34.2526751+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-granary-20260829",
+      "nodeId": "primitive:granary",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Вместимость, влажность, вредители, двухлетний резерв и обслуживание ещё не подключены к складам.",
+      "createdAt": "2026-08-29T08:19:34.2722321+00:00",
+      "status": "manual",
+      "remainingText": "Смоделировать влажность, вредителей и заражение партий; выделить защищённый семенной фонд и целевой двухлетний резерв; добавить труд обслуживания, тару и влияние доступности амбара."
+    },
+    {
+      "id": "implementation-primitive-log_construction-20260829",
+      "nodeId": "primitive:log_construction",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Отдельная конструкция, вместимость, стоимость и износ сруба пока не добавлены в жизненный цикл зданий.",
+      "createdAt": "2026-08-29T08:19:34.2926287+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-pottery_kiln-20260829",
+      "nodeId": "primitive:pottery_kiln",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Температура, топливо, партии, брак и специализация печника ещё требуют общей механики процесса.",
+      "createdAt": "2026-08-29T08:19:34.3118806+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-charcoal_burning-20260829",
+      "nodeId": "primitive:charcoal_burning",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Выход угля, потеря массы древесины, труд, дым и ограничение местом производства пока не рассчитаны.",
+      "createdAt": "2026-08-29T08:19:34.3345013+00:00",
+      "status": "manual",
+      "remainingText": "Добавить пространственное место кучи или печи, дым, пожарный риск, длительность партии, объём при перевозке и обслуживание оборудования."
+    },
+    {
+      "id": "implementation-primitive-rafts-20260829",
+      "nodeId": "primitive:rafts",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Корпус плота, грузоподъёмность, износ, причал и водные маршруты ещё не реализованы.",
+      "createdAt": "2026-08-29T08:19:34.3563514+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-fishing_nets-20260829",
+      "nodeId": "primitive:fishing_nets",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Материал, износ, утрата сети и давление на возрастные группы рыбы пока не моделируются.",
+      "createdAt": "2026-08-29T08:19:34.3767615+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-mortar-20260829",
+      "nodeId": "primitive:mortar",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Местные залежи, рецептуры раствора, прочность и расход на конструктивный слой пока не реализованы.",
+      "createdAt": "2026-08-29T08:19:34.3963612+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-composite_construction-20260829",
+      "nodeId": "primitive:composite_construction",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Срок службы должен определяться слоями и их ремонтом; такой состав здания пока не хранится.",
+      "createdAt": "2026-08-29T08:19:34.4169228+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-grow_grape-20260829",
+      "nodeId": "primitive:grow_grape",
+      "text": "Остаток после интеграции знания: В дерево внесено видовое знание. Виноград ещё не добавлен как дикая популяция, посадочный материал, участок и отдельный урожай.",
+      "createdAt": "2026-08-29T08:19:34.4390492+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-winemaking-20260829",
+      "nodeId": "primitive:winemaking",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Виноград, ёмкости, время, риск порчи, алкоголь и влияние на потребности пока не реализованы.",
+      "createdAt": "2026-08-29T08:19:34.4610168+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-nonferrous_metallurgy-20260829",
+      "nodeId": "primitive:nonferrous_metallurgy",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Залежи руд, температура, топливо, шлак, металл и литейные формы пока не моделируются.",
+      "createdAt": "2026-08-29T08:19:34.4822711+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-alloying-20260829",
+      "nodeId": "primitive:alloying",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Состав сплава, качество партии и свойства изделия пока не представлены данными.",
+      "createdAt": "2026-08-29T08:19:34.5029882+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-copper_tools-20260829",
+      "nodeId": "primitive:copper_tools",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Материальные партии, износ и коэффициенты труда по операциям пока не подключены.",
+      "createdAt": "2026-08-29T08:19:34.5233753+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-carpentry-20260829",
+      "nodeId": "primitive:carpentry",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Заготовки, изделия, качество соединений и влияние инструментов пока не реализованы.",
+      "createdAt": "2026-08-29T08:19:34.5436002+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-bloomery_smelting-20260829",
+      "nodeId": "primitive:bloomery_smelting",
+      "text": "Остаток после интеграции знания: В дерево внесён альтернативный металлургический путь. Руда, печь, уголь, крица и проковка шлака пока не реализованы.",
+      "createdAt": "2026-08-29T08:19:34.5641849+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-hand_tools-20260829",
+      "nodeId": "primitive:hand_tools",
+      "text": "Остаток после интеграции знания: В дерево внесено знание. Номенклатура инструментов, качество, износ и влияние на конкретные работы пока не подключены.",
+      "createdAt": "2026-08-29T08:19:34.5849216+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "implementation-primitive-stone_road-20260829",
+      "nodeId": "primitive:stone_road",
+      "text": "Остаток после интеграции знания: нужен линейный проект модернизации загруженной тропы с выбором маршрута советом, расходом камня и труда по рёбрам, строительным состоянием участков, износом и обслуживанием.",
+      "createdAt": "2026-08-29T11:07:01.4408659+00:00",
+      "status": "manual",
+      "remainingText": null
+    }
+  ],
+  "journal": [
+    {
+      "id": "first-pass-horticulture-20260829",
+      "nodeIds": [
+        "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121"
+      ],
+      "commentIds": [],
+      "edgeIds": [
+        "a72ae74a-fccc-4ad7-ad56-938ceaae1fa5",
+        "a482d356-610e-4d6f-8d86-a4ac6738402e",
+        "1edea1ed-1e61-4e65-928f-1ae586a34b3f",
+        "ebdeb2d6-780c-42fa-b151-b77127b75e02",
+        "a67e1497-dba7-40c2-8f5b-c5e70bc6216a",
+        "a9eabc00-f262-4354-bd93-5623c429df5d"
+      ],
+      "targetId": "primitive:horticulture",
+      "summary": "Добавлена самостоятельная технология садоводства после огородничества. Все существующие многолетние культуры требуют её; поиск семян, разработка участка, годы до зрелости и сезонный урожай используют действующую биосферную механику. Возрастное старение сада, прививки и саженцы остаются дальнейшим уточнением модели.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Core/Simulation/BiosphereRules.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs",
+        "tests/WorldGen.Tests/BiosphereTests.cs",
+        "TECHNOLOGY_FIRST_PASS.md"
+      ],
+      "createdAt": "2026-08-29T07:46:08.3133404+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "first-pass-composite-stone-tools-20260829",
+      "nodeIds": [],
+      "commentIds": [
+        "cc15a942-7a69-4e80-b579-45a122f8fd66"
+      ],
+      "edgeIds": [],
+      "targetId": "primitive:stone_axes",
+      "summary": "Технология переименована в Составные каменные инструменты без смены ID, поэтому сохранённые знания и рецептурные ссылки остаются совместимыми.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "src/WorldGen.Core/Simulation/SphericalSimulation.cs",
+        "TECHNOLOGY_FIRST_PASS.md"
+      ],
+      "createdAt": "2026-08-29T07:46:08.3252864+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "first-pass-hunting-products-audit-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:hunting",
+      "summary": "Проведён первый этап разделения продуктов охоты: подтверждено физическое производство мяса и шкур, а незавершённые яйца и перья оставлены в очереди.",
+      "references": [
+        "src/WorldGen.Core/Simulation/SettlementSimulation.cs",
+        "src/WorldGen.Core/Simulation/SettlementHerds.cs",
+        "src/WorldGen.Core/Simulation/SettlementWellbeing.cs",
+        "TECHNOLOGY_FIRST_PASS.md"
+      ],
+      "createdAt": "2026-08-29T07:46:08.3338508+00:00",
+      "commentProgress": [
+        {
+          "commentId": "b89707b7-9c58-416c-9c3f-298c875347ea",
+          "implemented": "Мясо уже поступает в физический запас food и учитывается как категория рациона hunt; шкуры производятся отдельным ресурсом hides при охоте и забое.",
+          "remaining": "Добавить видоспецифичные яйца как портящийся продукт и перья как материальный ресурс; связать выход с видами, полом, сезоном и способом добычи, не дублируя массу мяса в food."
+        }
+      ]
+    },
+    {
+      "id": "knowledge-layer-primitive-pottery-20260829",
+      "nodeIds": [
+        "draft:30eef327-5f80-4702-b369-11227277e978"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:pottery",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.1277499+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-fletched_arrows-20260829",
+      "nodeIds": [
+        "draft:72132855-9c7b-47da-8488-6c5a4798a988"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:fletched_arrows",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.1574744+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-wool_clothing-20260829",
+      "nodeIds": [
+        "draft:fc402b2d-a2fd-42fa-9983-7c0616a684b3"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:wool_clothing",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.1778244+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-dairy-20260829",
+      "nodeIds": [
+        "draft:f5071f16-e2e2-4510-86c4-1253684e4c47"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:dairy",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.1982533+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-cheesemaking-20260829",
+      "nodeIds": [
+        "draft:145e0beb-7a73-4e8a-90bc-bb04c6b10384"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:cheesemaking",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.217072+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-draught_animals-20260829",
+      "nodeIds": [
+        "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:draught_animals",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.2365634+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-riding-20260829",
+      "nodeIds": [
+        "draft:694eeaee-b0c0-4086-a3dc-995014cef737"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:riding",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.2620989+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-granary-20260829",
+      "nodeIds": [
+        "draft:86637bd2-be5c-442b-adce-18e7a7944975"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:granary",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.2821071+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-log_construction-20260829",
+      "nodeIds": [
+        "draft:3ef1d0f1-d615-4e85-8cb9-57cfc3c90260"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:log_construction",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.3020114+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-pottery_kiln-20260829",
+      "nodeIds": [
+        "draft:6cfcc77d-13a2-4335-b96d-9387208d001d"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:pottery_kiln",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.3215102+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-charcoal_burning-20260829",
+      "nodeIds": [
+        "draft:9d5e54c7-0f89-467e-ba0e-710d1aed6b7f"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:charcoal_burning",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.3452011+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-rafts-20260829",
+      "nodeIds": [
+        "draft:c480dea3-af29-408b-ae6d-1c2c60f983c1"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:rafts",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.3663506+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-fishing_nets-20260829",
+      "nodeIds": [
+        "draft:2afbb125-70bc-4717-9380-799beb836148"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:fishing_nets",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.3860164+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-mortar-20260829",
+      "nodeIds": [
+        "draft:4a81aa5f-1209-49a5-8c1d-611ddb3f27d2"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:mortar",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.4065411+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-composite_construction-20260829",
+      "nodeIds": [
+        "draft:8d724c50-b61b-4675-9c19-b66f498bac66"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:composite_construction",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.4279335+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-grow_grape-20260829",
+      "nodeIds": [
+        "draft:53c97cdf-eff4-4a5a-bf96-a5de5d3b592e"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:grow_grape",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.4507137+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-winemaking-20260829",
+      "nodeIds": [
+        "draft:0e258712-85bf-4ca1-9f69-bea4ffae90b9"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:winemaking",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.4712465+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-nonferrous_metallurgy-20260829",
+      "nodeIds": [
+        "draft:b1af8d43-817a-485d-b5c5-bc05d8a52429"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:nonferrous_metallurgy",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.4924838+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-alloying-20260829",
+      "nodeIds": [
+        "draft:7b2cd585-cd94-499a-b6d1-47120ca1e7e7"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:alloying",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.5126563+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-copper_tools-20260829",
+      "nodeIds": [
+        "draft:9d4daa5c-541a-4b90-bb35-929c999e2af0"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:copper_tools",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.5332078+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-carpentry-20260829",
+      "nodeIds": [
+        "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:carpentry",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.5533456+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-bloomery_smelting-20260829",
+      "nodeIds": [
+        "draft:8e2f3696-ff89-4afe-80de-3b464f3f96e1"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:bloomery_smelting",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.5742+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "knowledge-layer-primitive-hand_tools-20260829",
+      "nodeIds": [
+        "draft:d00e460e-c149-4a4e-b930-ef49ae405cff"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:hand_tools",
+      "summary": "Интегрирован первый исполняемый слой: стабильный ID технологии, место в едином дереве, обязательные предпосылки и накопление знания через практику. Физический хозяйственный эффект не объявлен завершённым и сохранён отдельным manual-комментарием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.5955999+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-alloying-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "3132015d-9c6c-4cb4-828e-cd6812e1d063"
+      ],
+      "targetId": "primitive:alloying",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.6523608+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-bloomery_smelting-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "4cd0c038-0e48-4ad1-9189-3dc91e9591e3"
+      ],
+      "targetId": "primitive:bloomery_smelting",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.6624433+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-carpentry-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "973335ad-b302-4561-bcca-10d81d870bd1"
+      ],
+      "targetId": "primitive:carpentry",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.6776835+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-charcoal_burning-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "85c5ab57-d194-4e76-a683-8ec82141e05d"
+      ],
+      "targetId": "primitive:charcoal_burning",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.688252+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-cheesemaking-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "68ef2ff9-09b0-4287-b57d-a02b995d2ee4"
+      ],
+      "targetId": "primitive:cheesemaking",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.6987394+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-composite_construction-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "68b92720-b26b-45ad-aebb-34d48d288898",
+        "4bb8cd88-b13b-41ec-b88b-6251e74763cf",
+        "abbf456c-4ef8-40da-98f3-fdd3f2fd9ea8"
+      ],
+      "targetId": "primitive:composite_construction",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.7095561+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-copper_tools-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "3690dc44-08d1-4bf1-85c5-fe80fa9ed799"
+      ],
+      "targetId": "primitive:copper_tools",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.7202711+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-fishing_nets-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "80a8f87c-4bba-4aee-b4e0-fac082b07b00",
+        "24c005a3-94a9-4cd2-be8e-b39ad99b06b9"
+      ],
+      "targetId": "primitive:fishing_nets",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.7328768+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-fletched_arrows-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "f2611ccf-a186-482c-b1d4-aa0b8060021f",
+        "95863c84-e3e7-487c-bff2-eb1d8e4fe7b1"
+      ],
+      "targetId": "primitive:fletched_arrows",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.7434201+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-granary-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "664fb919-b267-4d7f-b217-e448791ad077"
+      ],
+      "targetId": "primitive:granary",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.7544115+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-grow_grape-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "fc44aa29-5090-447b-9061-aad763c151cf"
+      ],
+      "targetId": "primitive:grow_grape",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.7647056+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-hand_tools-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "09ee25b9-8d37-484b-94a9-5aa7ec7a1ab8"
+      ],
+      "targetId": "primitive:hand_tools",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.7746406+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-log_construction-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "0d0fdefa-21ab-4da3-aef3-fc3fd64c1d02"
+      ],
+      "targetId": "primitive:log_construction",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.8183698+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-mortar-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "8c584cca-c8e3-41b1-a28b-60ab36836743"
+      ],
+      "targetId": "primitive:mortar",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.8296155+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-nonferrous_metallurgy-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "7b23a4fa-df57-4fe1-a7fa-a01d0dbffacb"
+      ],
+      "targetId": "primitive:nonferrous_metallurgy",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.8451957+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-pottery-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "e146c21e-8f41-488a-b15f-3a3e383a5ca6",
+        "03d5d5ea-97b4-456e-9180-5e288dafd3ed",
+        "a5663cdf-3ed3-48c9-b8b1-dcfb5485d109"
+      ],
+      "targetId": "primitive:pottery",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.8595628+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-pottery_kiln-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "15c5912e-d67a-4d32-9bd7-2363bc93193d"
+      ],
+      "targetId": "primitive:pottery_kiln",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.8713458+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-rafts-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "154acaf2-442b-415e-b751-16dfa4e1eb62",
+        "9190a262-abdd-4620-98b5-237944d3c5c3"
+      ],
+      "targetId": "primitive:rafts",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.8835261+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-winemaking-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "5c69f31c-b9db-450d-a8be-9d9b7c39d84d"
+      ],
+      "targetId": "primitive:winemaking",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.9009634+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "source-links-primitive-wool_clothing-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "d2300e96-b5d7-4190-9a81-a98a1a1a4aa5",
+        "62de7862-27a0-4137-854f-65b2e8a2a814"
+      ],
+      "targetId": "primitive:wool_clothing",
+      "summary": "Предложенные обязательные связи подтверждены исполняемым каталогом. Дополнительные связи, требующие альтернативы или усиления вместо жёсткого AND, оставлены manual.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "TECHNOLOGY_UNIFIED_TREE.md"
+      ],
+      "createdAt": "2026-08-29T08:19:34.9135863+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "review-storage-buildings-20260829",
+      "nodeIds": [
+        "draft:6da3821d-b04a-49fd-bc28-344009a55e7e"
+      ],
+      "commentIds": [],
+      "edgeIds": [
+        "423335fa-5254-4b6d-acf8-7b01cb99eb66",
+        "c314a9f8-cb48-4cbd-beba-8e307e9f917b"
+      ],
+      "targetId": "primitive:storage_buildings",
+      "summary": "Добавлены физическая вместимость построек, общий склад и амбар, распределение запасов по помещениям, ускоренная порча на открытом воздухе, накопление практики хранения и решения совета о строительстве складов. Строительство и календарь стали исполняемыми предпосылками; каменная кладка оставлена необязательной поддержкой.",
+      "references": [
+        "src/WorldGen.Core/Simulation/SettlementStorage.cs",
+        "content/worlds/settlement-rules.json",
+        "content/worlds/primordial-rules.json",
+        "tests/WorldGen.Tests/SettlementStorageTests.cs",
+        "STORAGE_SYSTEM.md"
+      ],
+      "createdAt": "2026-08-29T09:31:48.4238835+00:00",
+      "commentProgress": []
+    },
+    {
+      "id": "review-granary-storage-stage-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:granary",
+      "summary": "Подключён первый физический этап амбара: вместимость, профиль хранения, замедление порчи, переполнение и решения поселения. Нереализованные риски и резерв сохранены в ручной части комментария.",
+      "references": [
+        "src/WorldGen.Core/Simulation/SettlementStorage.cs",
+        "src/WorldGen.Core/Simulation/SettlementCouncil.cs",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementStorageTests.cs",
+        "STORAGE_SYSTEM.md"
+      ],
+      "createdAt": "2026-08-29T09:32:02.0401438+00:00",
+      "commentProgress": [
+        {
+          "commentId": "implementation-primitive-granary-20260829",
+          "implemented": "Амбар получил физическую вместимость 10 условных м³ и специализацию по пище, урожаю и семенам: профильный запас портится с коэффициентом 0,18, прочий — 0,7. Потребность в амбаре возникает от еды вне специализированного хранения; совет выбирает место, строит и сохраняет реально используемое здание.",
+          "remaining": "Смоделировать влажность, вредителей и заражение партий; выделить защищённый семенной фонд и целевой двухлетний резерв; добавить труд обслуживания, тару и влияние доступности амбара."
+        }
+      ]
+    },
+    {
+      "id": "integrate-stone-road-20260829",
+      "nodeIds": [
+        "draft:3bd41871-c167-4927-af8f-9cfe5d6eabd2"
+      ],
+      "commentIds": [],
+      "edgeIds": [
+        "6cdbad4f-b72c-4c87-9afa-ae439f797e8e"
+      ],
+      "targetId": "primitive:stone_road",
+      "summary": "Каменный тракт внесён в единое дерево после строительства и составных каменных инструментов. Сохранено пользовательское положение ноды. Знание может возникать от длительной строительной практики; физический линейный проект дороги намеренно оставлен отдельным незавершённым этапом.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs",
+        "SETTLEMENT_PROCESSES.md"
+      ],
+      "createdAt": "2026-08-29T11:06:53.296815+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "implement-dairy-products-20260829",
+      "nodeIds": [],
+      "commentIds": [
+        "implementation-primitive-dairy-20260829"
+      ],
+      "edgeIds": [],
+      "targetId": "primitive:dairy",
+      "summary": "Молоко стало отдельным быстро портящимся запасом коров и коз. Надои требуют самок, недавнего приплода, знания молочного хозяйства и оплаченного труда; молоко входит в рацион без удвоения массы food.",
+      "references": [
+        "content/worlds/biosphere.json",
+        "src/WorldGen.Core/Simulation/SettlementHerds.cs",
+        "src/WorldGen.Core/Simulation/SettlementProcesses.cs",
+        "tests/WorldGen.Tests/BiosphereTests.cs",
+        "SETTLEMENT_PROCESSES.md"
+      ],
+      "createdAt": "2026-08-29T11:07:32.0858395+00:00",
+      "commentProgress": null
+    },
+    {
+      "id": "implement-pottery-process-stage1-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:pottery",
+      "summary": "Открытый обжиг переведён в общий ремесленный процесс и дал реальные партии посуды в десятилетнем мире.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Core/Simulation/SettlementProcesses.cs",
+        "tests/WorldGen.Tests/BiosphereTests.cs",
+        "TestResults/processes-10y-report.json",
+        "SETTLEMENT_PROCESSES.md"
+      ],
+      "createdAt": "2026-08-29T11:07:44.0239259+00:00",
+      "commentProgress": [
+        {
+          "commentId": "implementation-primitive-pottery-20260829",
+          "implemented": "Реализованы физические входы глины и топлива, нерасходуемый каменный комплект, оплаченный труд, отдельный запас посуды, целевой объём и наблюдаемое состояние процесса. В новом мире все шесть поселений произвели посуду.",
+          "remaining": "Добавить место открытого обжига, температурный режим, разброс качества, брак, назначение и жизненный цикл отдельных ёмкостей."
+        }
+      ]
+    },
+    {
+      "id": "implement-wool-clothing-stage1-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:wool_clothing",
+      "summary": "Добавлены видоспецифичная шерсть овец и материальный процесс изготовления одежды.",
+      "references": [
+        "content/worlds/biosphere.json",
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Core/Simulation/SettlementHerds.cs",
+        "src/WorldGen.Core/Simulation/SettlementProcesses.cs",
+        "tests/WorldGen.Tests/BiosphereTests.cs",
+        "SETTLEMENT_PROCESSES.md"
+      ],
+      "createdAt": "2026-08-29T11:07:55.1008803+00:00",
+      "commentProgress": [
+        {
+          "commentId": "implementation-primitive-wool_clothing-20260829",
+          "implemented": "Шерсть стала отдельным ресурсом, который дают овцы при знании технологии и оплаченном уходе; настраиваемый процесс расходует шерсть и труд и создаёт реальный запас одежды.",
+          "remaining": "Разделить стрижку, очистку, прядение, ткачество и шитьё; добавить оснащение стадий, качество и отдельное влияние шерстяной одежды на теплозащиту."
+        }
+      ]
+    },
+    {
+      "id": "implement-cheesemaking-stage1-20260829",
+      "nodeIds": [],
+      "commentIds": [
+        "c56c0100-d755-4c6a-97c3-cfb4c2965afd"
+      ],
+      "edgeIds": [],
+      "targetId": "primitive:cheesemaking",
+      "summary": "Сыроварение стало материальным процессом: молоко, посуда и общий труд дают отдельный более стойкий запас сыра.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Core/Simulation/SettlementProcesses.cs",
+        "tests/WorldGen.Tests/BiosphereTests.cs",
+        "SETTLEMENT_PROCESSES.md"
+      ],
+      "createdAt": "2026-08-29T11:08:08.1733205+00:00",
+      "commentProgress": [
+        {
+          "commentId": "implementation-primitive-cheesemaking-20260829",
+          "implemented": "Процесс списывает реальное молоко, требует наличия посуды, оплачивает человеко-часы и создаёт сыр с собственной скоростью порчи и пищевой ценностью.",
+          "remaining": "Добавить время и место созревания, занятость ёмкостей, качество партии и риск заражения или порчи при изготовлении."
+        }
+      ]
+    },
+    {
+      "id": "implement-charcoal-stage1-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:charcoal_burning",
+      "summary": "Углежжение подключено к общему процессу с реальной потерей древесной массы и оплатой труда.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Core/Simulation/SettlementProcesses.cs",
+        "tests/WorldGen.Tests/BiosphereTests.cs",
+        "SETTLEMENT_PROCESSES.md"
+      ],
+      "createdAt": "2026-08-29T11:08:19.7905939+00:00",
+      "commentProgress": [
+        {
+          "commentId": "implementation-primitive-charcoal_burning-20260829",
+          "implemented": "Одна партия расходует древесину и общий труд, требует каменного оснащения и даёт 45% массы отдельного запаса древесного угля; состояние и причина остановки сохраняются.",
+          "remaining": "Добавить пространственное место кучи или печи, дым, пожарный риск, длительность партии, объём при перевозке и обслуживание оборудования."
+        }
+      ]
+    },
+    {
+      "id": "implement-species-eggs-stage1-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:hunting",
+      "summary": "Начато видовое разделение продуктов животных без дублирования пищевой массы.",
+      "references": [
+        "content/worlds/biosphere.json",
+        "src/WorldGen.Core/Simulation/SettlementHerds.cs",
+        "src/WorldGen.Core/Simulation/Economy.cs",
+        "tests/WorldGen.Tests/BiosphereTests.cs",
+        "TECHNOLOGY_FIRST_PASS.md"
+      ],
+      "createdAt": "2026-08-29T11:08:30.6455106+00:00",
+      "commentProgress": [
+        {
+          "commentId": "b89707b7-9c58-416c-9c3f-298c875347ea",
+          "implemented": "Яйца домашних кур стали отдельным видоспецифичным портящимся ресурсом; их получение требует самок и труда, а употребление учитывается в рационе без второй массы в food. Шкуры уже остаются отдельным ресурсом.",
+          "remaining": "Добавить сбор яиц диких птиц, перья как материальный ресурс и сезонность выходов; разделить происхождение мяса внутри food без дублирования массы."
+        }
+      ]
+    }
+  ],
   "positions": {
     "primitive:grow_raspberry": {
-      "x": 1119.9543304992005,
-      "y": 249.2749745879645
+      "x": 1484.3963846754864,
+      "y": 2852.4725346780247
     },
     "primitive:stone_axes": {
-      "x": -5.535219478200597,
-      "y": 1200.5931640461174
+      "x": -14.5352194782006,
+      "y": 1427.5931640461176
     },
     "primitive:spears": {
-      "x": 326.5779492138352,
-      "y": 1109.6351165120955
+      "x": 346.57794921383527,
+      "y": 1176.6939400415074
     },
     "primitive:fire": {
-      "x": -23.985951072202624,
-      "y": 2336.0593047898155
+      "x": 45.952454800015566,
+      "y": 3838.246536846009
     },
     "primitive:stone_vessels": {
       "x": -14.943529529030643,
-      "y": 1603.4035358418469
+      "y": 1604.4035358418469
     },
     "primitive:gathering": {
       "x": -18.45073159400199,
@@ -39,196 +2005,196 @@
       "y": 1514.277658941772
     },
     "primitive:hide_clothing": {
-      "x": 760,
-      "y": 0
+      "x": 1057.7963311365622,
+      "y": 1110.3593742255612
     },
     "primitive:calendar": {
       "x": -20.295804753402187,
       "y": 1900.8187241605324
     },
     "primitive:fishing": {
-      "x": -23.98595107220258,
-      "y": 2248.7914035745944
+      "x": 34.623959082914915,
+      "y": 4137.285902528148
     },
     "primitive:gardening": {
       "x": 350.47882944959684,
       "y": 2088.819501430189
     },
     "primitive:archery": {
-      "x": 691.7322931021928,
-      "y": 1202.4382372055177
+      "x": 690.264837842295,
+      "y": 1201.0062839103389
     },
     "primitive:taming": {
-      "x": 760,
-      "y": 224
+      "x": 1058.0460240578423,
+      "y": 1034.22220132229
     },
     "primitive:chieftains": {
-      "x": 362.56588221613094,
-      "y": 1516.462361325691
+      "x": 350.41715294794693,
+      "y": 311.0384461603197
     },
     "primitive:woodworking": {
-      "x": 328.33795153679444,
-      "y": 1201.1426267695294
+      "x": 350.69089271326504,
+      "y": 1257.6132150048236
     },
     "primitive:weaving": {
       "x": 348.63375629019663,
       "y": 1992.1295494288026
     },
     "primitive:well": {
-      "x": 362.56588221613094,
-      "y": 1603.5564787773067
+      "x": 352.43990602289495,
+      "y": 1605.581674015954
     },
     "primitive:grow_wheat": {
-      "x": 1140,
-      "y": 672
+      "x": 680.7337581685845,
+      "y": 2824.81050858476
     },
     "primitive:grow_barley": {
-      "x": 1520,
-      "y": 560
+      "x": 680.7456176056872,
+      "y": 2971.1477696149313
     },
     "primitive:grow_buckwheat": {
       "x": 688.0421467833922,
       "y": 2307.4809669411525
     },
     "primitive:grow_rice": {
-      "x": 1140,
-      "y": 896
+      "x": 682.100621983559,
+      "y": 2681.1241423566325
     },
     "primitive:grow_cabbage": {
       "x": 689.8872199427923,
       "y": 2234.42418827772
     },
     "primitive:grow_carrot": {
-      "x": 800,
-      "y": 436
+      "x": 679.7624565620087,
+      "y": 3042.6011208133746
     },
     "primitive:grow_turnip": {
-      "x": 1140,
-      "y": 784
+      "x": 682.100621983559,
+      "y": 2752.283893563209
     },
     "primitive:grow_beet": {
-      "x": 1140,
-      "y": 1008
+      "x": 684.4674857985335,
+      "y": 2604.5975273350814
     },
     "primitive:grow_peas": {
       "x": 684.3520004645918,
       "y": 2454.340671980592
     },
     "primitive:grow_beans": {
-      "x": 760,
-      "y": 348
+      "x": 677.3909131293514,
+      "y": 3193.152810468292
     },
     "primitive:grow_cucumber": {
-      "x": 1140,
-      "y": 448
+      "x": 676.7505846000502,
+      "y": 3117.9106091868084
     },
     "primitive:grow_pumpkin": {
-      "x": 1520,
-      "y": 112
+      "x": 687.61966284919,
+      "y": 2378.658134318153
     },
     "primitive:grow_onion": {
-      "x": 1140,
-      "y": 112
+      "x": 676.44590272514,
+      "y": 3267.3108314904166
     },
     "primitive:grow_garlic": {
-      "x": 1520,
-      "y": 336
+      "x": 684.3013782591797,
+      "y": 2529.8488745731647
     },
     "primitive:grow_pepper": {
-      "x": 1140,
-      "y": 560
+      "x": 680.7337581685845,
+      "y": 2898.703987421285
     },
     "primitive:grow_apple": {
-      "x": 1520,
-      "y": 448
+      "x": 1487.2990797216435,
+      "y": 2303.2204088466383
     },
     "primitive:grow_pear": {
-      "x": 686.1970736239921,
-      "y": 2087.3677982491163
+      "x": 1487.6435856746707,
+      "y": 2371.6233842381007
     },
     "primitive:grow_plum": {
-      "x": 689.8021491063514,
-      "y": 2160.621261901712
+      "x": 1488.3095092565006,
+      "y": 2441.8739742516623
     },
     "primitive:grow_cherry": {
-      "x": 684.3520004645919,
-      "y": 2530.5381342394126
+      "x": 1486.7768380975094,
+      "y": 2232.743772052832
     },
     "primitive:grow_hazel": {
-      "x": 1140,
-      "y": 0
+      "x": 1487.9980561586583,
+      "y": 2508.6311597134895
     },
     "primitive:grow_walnut": {
-      "x": 686.1970736239921,
-      "y": 2381.833356040572
+      "x": 1484.0551415974269,
+      "y": 2786.011456263957
     },
     "primitive:grow_currant": {
-      "x": 1520,
-      "y": 0
+      "x": 1486.6886361928923,
+      "y": 2719.6765475823404
     },
     "primitive:grow_blueberry": {
-      "x": 1520,
-      "y": 224
+      "x": 1486.9095679874936,
+      "y": 2648.8889653006563
     },
     "primitive:herd_chicken": {
-      "x": 1900,
-      "y": 336
+      "x": 1433.474515077545,
+      "y": 854.4742091645443
     },
     "primitive:herd_pig": {
-      "x": 1900,
-      "y": 784
+      "x": 1433.392350085211,
+      "y": 924.1954739839118
     },
     "primitive:herd_cow": {
-      "x": 1900,
-      "y": 112
+      "x": 1438.3826059919074,
+      "y": 548.9130877204391
     },
     "primitive:herd_deer": {
-      "x": 1900,
-      "y": 672
+      "x": 1434.6676063884552,
+      "y": 367.63352225960284
     },
     "primitive:herd_horse": {
-      "x": 1900,
-      "y": 448
+      "x": 1435.717668589911,
+      "y": 434.70613621667417
     },
     "primitive:herd_rabbit": {
-      "x": 1900,
-      "y": 224
+      "x": 1431.5375328325072,
+      "y": 784.3319746319099
     },
     "primitive:herd_goat": {
-      "x": 1900,
-      "y": 0
+      "x": 1439.2276791513075,
+      "y": 618.6254976435563
     },
     "primitive:herd_sheep": {
-      "x": 1900,
-      "y": 560
+      "x": 1431.5369475535733,
+      "y": 1033.0875371819393
     },
     "primitive:crop_rotation": {
-      "x": 814.6541287482344,
-      "y": -186.0388244870836
+      "x": 1149.1097104882604,
+      "y": 2039.925961363988
     },
     "catalog:oral_accounting": {
-      "x": 0,
-      "y": 1400
+      "x": -12.231321816127496,
+      "y": 1352.4337484928376
     },
     "catalog:seed_selection": {
-      "x": 0,
-      "y": 1512
+      "x": 690.1986338876966,
+      "y": 2037.379209362161
     },
     "catalog:crop_rotation": {
       "x": 380,
       "y": 1400
     },
     "catalog:animal_husbandry": {
-      "x": 0,
-      "y": 1624
+      "x": 2114.3209507572706,
+      "y": 369.976805166061
     },
     "catalog:pottery": {
       "x": 0,
       "y": 1848
     },
     "catalog:masonry": {
-      "x": 0,
-      "y": 1736
+      "x": -15.188964289853994,
+      "y": 1739.0377928579708
     },
     "catalog:woodworking": {
       "x": 0,
@@ -243,28 +2209,236 @@
       "y": 1736
     },
     "catalog:iron_forging": {
-      "x": 760,
-      "y": 1400
+      "x": 1760.394035042482,
+      "y": 3561.8094947299414
     },
     "catalog:hand_tools": {
       "x": 380,
       "y": 1512
     },
     "catalog:water_mill": {
-      "x": 380,
-      "y": 1624
+      "x": 2510.498082935023,
+      "y": 2117.278355621423
     },
     "catalog:food_preservation": {
-      "x": 0,
-      "y": 2072
+      "x": 723.5656437411302,
+      "y": 3480.7483504976008
     },
     "catalog:river_navigation": {
-      "x": 0,
-      "y": 2408
+      "x": 350.5882352941184,
+      "y": 1338.5882352941153
     },
     "catalog:herbal_medicine": {
-      "x": 0,
-      "y": 2296
+      "x": 47.59208810820918,
+      "y": 3484.789605085906
+    },
+    "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121": {
+      "x": 1146.5854385391267,
+      "y": 2113.9206914774963
+    },
+    "draft:30eef327-5f80-4702-b369-11227277e978": {
+      "x": 382.1710710083771,
+      "y": 3838.3105579512267
+    },
+    "draft:72132855-9c7b-47da-8488-6c5a4798a988": {
+      "x": 1057.5912225757897,
+      "y": 1201.5980296929565
+    },
+    "draft:fc402b2d-a2fd-42fa-9983-7c0616a684b3": {
+      "x": 2135.7663811447023,
+      "y": 1119.831071345788
+    },
+    "draft:f5071f16-e2e2-4510-86c4-1253684e4c47": {
+      "x": 1781.828360127054,
+      "y": 549.4466157470929
+    },
+    "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f": {
+      "x": 2506.822579861766,
+      "y": 2041.2616072348906
+    },
+    "draft:145e0beb-7a73-4e8a-90bc-bb04c6b10384": {
+      "x": 2113.8104325041536,
+      "y": 548.736342792611
+    },
+    "draft:694eeaee-b0c0-4086-a3dc-995014cef737": {
+      "x": 1781.6376326004658,
+      "y": 436.39702199511896
+    },
+    "draft:86637bd2-be5c-442b-adce-18e7a7944975": {
+      "x": 1151.2580935359451,
+      "y": 1968.297571759585
+    },
+    "draft:3ef1d0f1-d615-4e85-8cb9-57cfc3c90260": {
+      "x": 687.0604414559278,
+      "y": 1288.6092942335708
+    },
+    "draft:6cfcc77d-13a2-4335-b96d-9387208d001d": {
+      "x": 718.3939163412667,
+      "y": 3838.1796186628644
+    },
+    "draft:9d5e54c7-0f89-467e-ba0e-710d1aed6b7f": {
+      "x": 1052.4990195300156,
+      "y": 3836.8318653048245
+    },
+    "draft:c480dea3-af29-408b-ae6d-1c2c60f983c1": {
+      "x": 687.1533590538829,
+      "y": 1382.7703847254686
+    },
+    "draft:2afbb125-70bc-4717-9380-799beb836148": {
+      "x": 718.7755992319769,
+      "y": 4137.572147683691
+    },
+    "draft:8d724c50-b61b-4675-9c19-b66f498bac66": {
+      "x": 1054.2000517668334,
+      "y": 1292.8091401421218
+    },
+    "draft:4a81aa5f-1209-49a5-8c1d-611ddb3f27d2": {
+      "x": 362.40591702570714,
+      "y": 1429.4902472975652
+    },
+    "draft:53c97cdf-eff4-4a5a-bf96-a5de5d3b592e": {
+      "x": 1487.0055631577652,
+      "y": 2579.6817906369856
+    },
+    "draft:0e258712-85bf-4ca1-9f69-bea4ffae90b9": {
+      "x": 1901.8045403756578,
+      "y": 2577.2358695205085
+    },
+    "draft:b1af8d43-817a-485d-b5c5-bc05d8a52429": {
+      "x": 1411.1599239724212,
+      "y": 3837.422139117809
+    },
+    "draft:7b2cd585-cd94-499a-b6d1-47120ca1e7e7": {
+      "x": 2076.6584772484,
+      "y": 3838.099024632415
+    },
+    "draft:9d4daa5c-541a-4b90-bb35-929c999e2af0": {
+      "x": 1756.4323002529347,
+      "y": 3731.685911725374
+    },
+    "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1": {
+      "x": 2137.122489599082,
+      "y": 1200.706143415472
+    },
+    "draft:8e2f3696-ff89-4afe-80de-3b464f3f96e1": {
+      "x": 1417.1490399928034,
+      "y": 3638.8036961496664
+    },
+    "draft:d00e460e-c149-4a4e-b930-ef49ae405cff": {
+      "x": 1755.1490399928034,
+      "y": 3636.8036961496664
+    },
+    "primitive:horticulture": {
+      "x": 1146.5854385391267,
+      "y": 2113.9206914774963
+    },
+    "primitive:pottery": {
+      "x": 382.1710710083771,
+      "y": 3838.3105579512267
+    },
+    "primitive:fletched_arrows": {
+      "x": 1057.5912225757897,
+      "y": 1201.5980296929565
+    },
+    "primitive:wool_clothing": {
+      "x": 2135.7663811447023,
+      "y": 1119.831071345788
+    },
+    "primitive:dairy": {
+      "x": 1781.828360127054,
+      "y": 549.4466157470929
+    },
+    "primitive:cheesemaking": {
+      "x": 2113.8104325041536,
+      "y": 548.736342792611
+    },
+    "primitive:draught_animals": {
+      "x": 2506.822579861766,
+      "y": 2041.2616072348906
+    },
+    "primitive:riding": {
+      "x": 1781.6376326004658,
+      "y": 436.39702199511896
+    },
+    "primitive:granary": {
+      "x": 1151.2580935359451,
+      "y": 1968.297571759585
+    },
+    "primitive:log_construction": {
+      "x": 687.0604414559278,
+      "y": 1288.6092942335708
+    },
+    "primitive:pottery_kiln": {
+      "x": 718.3939163412667,
+      "y": 3838.1796186628644
+    },
+    "primitive:charcoal_burning": {
+      "x": 1052.4990195300156,
+      "y": 3836.8318653048245
+    },
+    "primitive:rafts": {
+      "x": 687.1533590538829,
+      "y": 1382.7703847254686
+    },
+    "primitive:fishing_nets": {
+      "x": 718.7755992319769,
+      "y": 4137.572147683691
+    },
+    "primitive:mortar": {
+      "x": 351.81768173158946,
+      "y": 1416.549070826977
+    },
+    "primitive:composite_construction": {
+      "x": 1054.2000517668334,
+      "y": 1292.8091401421218
+    },
+    "primitive:grow_grape": {
+      "x": 1487.0055631577652,
+      "y": 2579.6817906369856
+    },
+    "primitive:winemaking": {
+      "x": 1901.8045403756578,
+      "y": 2577.2358695205085
+    },
+    "primitive:nonferrous_metallurgy": {
+      "x": 1411.1599239724212,
+      "y": 3837.422139117809
+    },
+    "primitive:alloying": {
+      "x": 2099.9482224928424,
+      "y": 3837.0864270130915
+    },
+    "primitive:copper_tools": {
+      "x": 1756.4323002529347,
+      "y": 3731.685911725374
+    },
+    "primitive:carpentry": {
+      "x": 2137.122489599082,
+      "y": 1200.706143415472
+    },
+    "primitive:bloomery_smelting": {
+      "x": 1420.1868328507742,
+      "y": 3637.791098530343
+    },
+    "primitive:hand_tools": {
+      "x": 2101.4574258014736,
+      "y": 3634.778500911019
+    },
+    "draft:6da3821d-b04a-49fd-bc28-344009a55e7e": {
+      "x": 349.79363757527034,
+      "y": 1738.7286140826134
+    },
+    "primitive:storage_buildings": {
+      "x": 349.79363757527034,
+      "y": 1738.7286140826134
+    },
+    "draft:3bd41871-c167-4927-af8f-9cfe5d6eabd2": {
+      "x": 350.96011151310216,
+      "y": 1515.8167591502388
+    },
+    "primitive:stone_road": {
+      "x": 350.96011151310216,
+      "y": 1515.8167591502388
     }
   }
 }

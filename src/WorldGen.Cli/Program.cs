@@ -89,6 +89,9 @@ if (sphereScenarioArgument is not null)
             var life = simulation.Development!.State.Cities[city.Id];
             if (life.LaborUsedHours > life.LaborAvailableHours + 1e-6 || city.Stocks.Values.Any(n => !double.IsFinite(n) || n < -1e-8))
                 throw new InvalidOperationException($"Нарушение бюджета труда/запасов: {city.Id}, день {day}");
+            if (life.Processes.Values.Any(process => !double.IsFinite(process.BatchesToday + process.LaborHoursToday + process.TotalBatches) ||
+                    process.BatchesToday < 0 || process.LaborHoursToday < 0 || process.TotalBatches < 0))
+                throw new InvalidOperationException($"Нарушение состояния ремесленного процесса: {city.Id}, день {day}");
             maximumLaborShare = Math.Max(maximumLaborShare, life.LaborUsedHours / Math.Max(1e-9, life.LaborAvailableHours));
             if(life.Biology is {} biology)
             {
@@ -110,6 +113,8 @@ if (sphereScenarioArgument is not null)
                 shortageDays = shortages[c.Id], life = JsonSerializer.SerializeToElement(simulation.Development!.State.Cities[c.Id].Primitive),
                 known = simulation.Development.State.Cities[c.Id].Discoveries.Order(StringComparer.Ordinal).ToArray()
                 ,biology=simulation.Development.State.Cities[c.Id].Biology,
+                processes=simulation.Development.State.Cities[c.Id].Processes,
+                stocks=c.Stocks.Where(pair=>pair.Value>1e-9).ToDictionary(),
                 timber=c.Stocks["timber"],fuel=c.Stocks["firewood"],
                 foodLabor=simulation.Development.State.Cities[c.Id].Food,
                 fields=simulation.Development.State.Buildings.Where(b=>b.CityId==c.Id&&b.Kind=="garden").Select(b=>new{b.Id,b.Status,Soil=simulation.World.Spatial.Territories[SphericalSimulation.ZoneId(b.Cell)].NaturalState.SoilQuality}).ToArray()
