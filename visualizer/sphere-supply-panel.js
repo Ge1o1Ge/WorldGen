@@ -35,9 +35,15 @@ export function renderSupplyPanel({city,day,rules,scout,onFocus}) {
   }
   if(scout&&scout.phase!=="returned"){
     const expedition=document.createElement("p");
-    expedition.textContent=`Наблюдатель · ${scout.people} разведчика: ${scout.phase==="returning"?"возвращаются":"обследуют направление"}, `+
+    const phase=scout.phase==="lost"?"группа пропала; поселение пока знает лишь о просрочке возвращения":scout.phase==="returning"?"возвращаются":"обследуют направление";
+    expedition.textContent=`Наблюдатель · ${scout.people}/${scout.initialPeople??scout.people} разведчика: ${phase}, `+
       `вышли в день ${scout.departureDay}; обследовано ${scout.traversedCells} участков. `+
       `В походе: ${(scout.food*1000).toFixed(1)} кг еды, ${(scout.water*1000).toFixed(0)} л воды. `+
+      `Поклажа ${((scout.cargoUsed??scout.food+scout.water)*1000).toFixed(0)}/${((scout.cargoCapacity??0)*1000).toFixed(0)} кг; `+
+      `план ${scout.provisionDays??"—"} дн.${scout.extensionDays?`, продлён на ${scout.extensionDays}`:""}; `+
+      `${scout.travelMode==="raft"?"движение на плоту":scout.speedMultiplier>1?"используются ездовые животные":"пеший ход"}. `+
+      `Текущий интерес: ${scout.currentInterest??"общий курс совета"}. `+
+      `Пополнено в пути: еда ${((scout.foragedFood??0)*1000).toFixed(1)} кг, вода ${((scout.refilledWater??0)*1000).toFixed(0)} л. `+
       `На группу выделено ${supply.scoutLaborHours.toFixed(0)} чел·ч сегодня. Отчёт ещё не доставлен.`;
     const focus=document.createElement("button");focus.type="button";focus.textContent="Место группы · наблюдатель";
     focus.addEventListener("click",()=>onFocus(scout));section.append(expedition,focus);
@@ -50,7 +56,8 @@ export function renderSupplyPanel({city,day,rules,scout,onFocus}) {
     // details element recreated on each day would continually lose user state.
     const report=reports.at(-1),text=document.createElement("p");
     text.textContent=`День ${report.receivedDay}, ${day-report.receivedDay} дн. назад: ${report.outcome}. `+
-      `Обследовано за пределами домашней окрестности: ${report.surveyedCells} участков.`;
+      `Обследовано за пределами домашней окрестности: ${report.surveyedCells} участков. `+
+      `Новых растений: ${report.plants?.length??0}, животных: ${report.animals?.length??0}, живьём доставлено: ${Object.values(report.capturedAnimals??{}).reduce((sum,n)=>sum+n,0)}, потери: ${report.casualties??0}.`;
     section.append(text);
     for(const candidate of report.candidates){
       const button=document.createElement("button");button.type="button";

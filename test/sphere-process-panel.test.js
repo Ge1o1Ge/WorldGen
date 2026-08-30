@@ -21,3 +21,10 @@ test("small equipment batches remain visible instead of rounding to zero",()=>{
   const [line]=processLines({pottery:{batchesToday:.0012,totalBatches:2,constraint:null}},catalog,{pottery_ware:"комплект"});
   assert.match(line,/посуда 0\.001 компл\./);
 });
+
+test("powered process shows its physical installation and alternative-building blockage",()=>{
+  const catalog=[{id:"mill",name:"Помол",outputs:{flour:.08}}];
+  assert.match(processLines({mill:{batchesToday:0,totalBatches:0,constraint:"building:any:water_mill|windmill"}},catalog,{})[0],/нет действующей установки: water_mill или windmill/);
+  const line=processLines({mill:{batchesToday:1,totalBatches:3,buildingId:"dwelling-42",laborMultiplier:.18}},catalog,{})[0];
+  assert.match(line,/установка dwelling-42/);assert.match(line,/труд ×0\.18/);
+});

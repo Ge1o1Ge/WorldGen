@@ -95,7 +95,7 @@
         "minForest": 0,
         "maxForest": 1
       },
-      "baseTemperature": 12,
+      "baseTemperature": 8,
       "frostTolerance": 1,
       "degreeDays": 1250,
       "seedTonnes": 0.04,
@@ -108,6 +108,34 @@
       "matureYears": 0,
       "storageDecay": 0.0008,
       "family": "cereal"
+    },
+    {
+      "id": "cotton",
+      "name": "Хлопок",
+      "group": "fiber_crop",
+      "symbol": "field",
+      "habitat": {
+        "minTemperature": 11,
+        "maxTemperature": 31,
+        "minMoisture": 0.3,
+        "maxMoisture": 0.85,
+        "minForest": 0,
+        "maxForest": 0.75
+      },
+      "baseTemperature": 12,
+      "frostTolerance": 4,
+      "degreeDays": 500,
+      "seedTonnes": 0.025,
+      "yieldTonnes": 0.7,
+      "plantHours": 18,
+      "careHours": 32,
+      "harvestTonnesPerHour": 0.018,
+      "seedShare": 0.12,
+      "foodValue": 0,
+      "matureYears": 0,
+      "storageDecay": 0.00035,
+      "family": "mallow",
+      "domain": "craft"
     },
     {
       "id": "cabbage",

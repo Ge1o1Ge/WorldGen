@@ -2,6 +2,13 @@ export const MIN_SPHERE_ZOOM = 0.68;
 export const MAX_SPHERE_ZOOM = 64;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+export function dampZoom(current,target,elapsedMs,responseMs=82){
+  if(current===target)return current;
+  if(current<=0||target<=0)return target;
+  const amount=1-Math.exp(-Math.max(0,elapsedMs)/Math.max(1,responseMs));
+  return Math.exp(Math.log(current)+(Math.log(target)-Math.log(current))*amount);
+}
 const normalize = q => {
   const length = Math.hypot(...q);
   return q.map(value => value / length);

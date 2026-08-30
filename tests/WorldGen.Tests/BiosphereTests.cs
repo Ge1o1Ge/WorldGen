@@ -14,7 +14,10 @@ public sealed class BiosphereTests
     public async Task CatalogExpandsMiniTechnologiesAndRejectsInvalidCoefficients()
     {
         var rules = await SettlementRulesLoader.LoadAsync(scenario: "primordial"); var bio = rules.Primitive!.Biosphere!;
-        Assert.Equal(24, bio.Crops.Length); Assert.Equal(8, bio.Animals.Length);
+        Assert.Equal(25, bio.Crops.Length); Assert.Equal(8, bio.Animals.Length);
+        var cotton = bio.Crops.Single(crop => crop.Id == "cotton");
+        Assert.Equal(0, cotton.FoodValue); Assert.Equal("craft", cotton.Domain);
+        Assert.Contains(bio.Resources(), resource => resource.Id == cotton.HarvestResource && resource.FoodValue == 0);
         Assert.All(bio.Crops, c => Assert.Contains(rules.Primitive.Technologies, t => t.Id == c.Technology &&
             t.Prerequisites.Contains(c.MatureYears > 0 ? "horticulture" : "gardening")));
         Assert.All(bio.Animals, a => Assert.Contains(rules.Primitive.Technologies, t => t.Id == a.Technology && t.Prerequisites.Contains("taming")));

@@ -76,13 +76,18 @@
     "siteMajority": 0.6, "siteMargin": 0.1,
     "minimumDiscussionDays": 2, "siteStableDays": 2, "expiryDays": 90,
     "evaluationDays": 30, "maximumEvaluationDays": 120, "retainedResults": 12,
-    "complexity": { "house": 1, "well": 1.5, "warehouse": 1.4, "granary": 1.8, "relocation": 1 }
+    "complexity": { "house": 1, "well": 1.5, "warehouse": 1.4, "granary": 1.8, "water_mill": 3.2, "windmill": 3.8, "animal_mill": 2.6, "relocation": 1 }
   },
   "exploration": {
     "windowDays": 14, "pressureDays": 7, "supplyRadiusCost": 12,
     "laborPressureShare": 0.65, "minimumRenewalCoverage": 1.15,
-    "cooldownDays": 90, "partySize": 2, "maximumLaborShare": 0.1,
-    "homeReserveDays": 2, "outboundDays": 2, "provisionDays": 6,
+    "cooldownDays": 60, "partySize": 2, "maximumLaborShare": 0.1,
+    "homeReserveDays": 2, "minimumProvisionDays": 4, "maximumProvisionDays": 14,
+    "baseCarryTonnesPerPerson": 0.04, "packAnimalCapacityMultiplier": 2.5,
+    "ridingSpeedMultiplier": 1.65, "raftSpeedMultiplier": 1.35,
+    "raftTimberTonnes": 0.025, "maximumExtensionDays": 14, "resupplyShare": 0.35,
+    "baseLiveCaptureChance": 0.05, "tamingCaptureMultiplier": 10,
+    "baseFatalityChancePerDay": 0.0005, "decisionComplexity": 1.4,
     "stepsPerDay": 24, "surveyHoursPerCell": 0.15, "maximumReports": 6
   },
   "trails": {
@@ -125,7 +130,13 @@
         "preferred": ["material", "fuel", "ore", "equipment", "household_equipment"] } },
     { "id": "granary", "laborHours": 240, "materials": { "timber": 0.35 }, "storageCapacity": 10,
       "storage": { "decayMultiplier": 0.18, "fallbackDecayMultiplier": 0.7,
-        "preferred": ["resource:food", "resource:winter_food", "food_raw", "food_intermediate", "food_direct", "food_preserved", "crop", "seed"] } }
+        "preferred": ["resource:food", "resource:winter_food", "food_raw", "food_intermediate", "food_direct", "food_preserved", "crop", "seed"] } },
+    { "id": "water_mill", "laborHours": 1200, "materials": { "timber": 0.8, "stone": 0.5, "mechanism_kit": 1, "millstone": 1 },
+      "technology": "water_mill", "site": "river" },
+    { "id": "windmill", "laborHours": 1800, "materials": { "timber": 1.2, "stone": 0.4, "mechanism_kit": 1, "millstone": 1, "sail": 1 },
+      "technology": "windmill", "site": "wind" },
+    { "id": "animal_mill", "laborHours": 700, "materials": { "timber": 0.6, "stone": 0.2, "mechanism_kit": 0.5, "millstone": 1 },
+      "technology": "animal_mill", "site": "ordinary" }
   ],
   "discoveries": [
     { "id": "weaving", "name": "Плетение и грубое ткачество", "practice": "fiber", "practiceHours": 80 },

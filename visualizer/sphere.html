@@ -3,141 +3,147 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WorldGen — живой сферический мир</title>
-  <link rel="stylesheet" href="/styles.css?v=topography1">
+  <title>WorldGen — живой мир</title>
+  <link rel="stylesheet" href="/styles.css?v=world-interface1">
 </head>
-<body>
-  <main class="app-shell sphere-shell">
-    <header class="topbar">
-      <div>
-        <h1>Топографическая карта мира</h1>
-        <p id="sphere-name">Загрузка cubed sphere…</p>
+<body class="sphere-page">
+  <main class="sphere-interface">
+    <section class="sphere-map-stage" aria-labelledby="sphere-title">
+      <h1 id="sphere-title" class="sr-only">Атлас живого мира</h1>
+      <div class="map-wrap sphere-map-wrap">
+        <canvas id="sphere-globe" aria-hidden="true"></canvas>
+        <canvas id="sphere-map" role="img" aria-label="Вращаемая сферическая топографическая карта мира"></canvas>
+        <canvas id="sphere-mobile-units" aria-label="Подвижные группы мира"></canvas>
+        <canvas id="sphere-weather-effects" aria-hidden="true"></canvas>
+        <div id="sphere-tooltip" class="map-tooltip" role="tooltip" hidden></div>
       </div>
-      <div class="controls">
-        <a class="nav-link" href="/technologies.html" target="_blank">Дерево технологий ↗</a>
-        <button id="sphere-zoom-out" type="button" aria-label="Уменьшить сферу">−</button>
-        <output id="sphere-zoom-level" aria-live="polite">1.0×</output>
-        <button id="sphere-reset" type="button">Исходный вид</button>
-        <button id="sphere-zoom-in" type="button" aria-label="Увеличить сферу">+</button>
-      </div>
-    </header>
-
-    <section class="statusbar">
-      <span>зон: <strong id="sphere-zones">—</strong></span>
-      <span>треугольников: <strong id="sphere-triangles">—</strong></span>
-      <span>чанков: <strong id="sphere-chunks">—</strong></span>
-      <span>чанк: <strong>32 × 32</strong></span>
-      <span>просмотр: <strong id="sphere-lod">—</strong></span>
-      <span>чанков в памяти: <strong id="sphere-loaded">0/192</strong></span>
-      <span>база рельефа: <strong id="sphere-memory">—</strong></span>
-      <span>кадр: <strong id="sphere-render-time">—</strong></span>
-      <span>геометрия рельефа: <strong id="sphere-geometry-builds">0</strong></span>
-      <span>геометрия среды: <strong id="sphere-land-builds">0</strong></span>
-      <span>запросов чанков: <strong id="sphere-chunk-requests">0</strong></span>
-      <span>пакетов изменений: <strong id="sphere-map-updates">0</strong></span>
-      <span>сборок подложки: <strong id="sphere-raster-builds">0</strong></span>
     </section>
 
-    <section class="sphere-sim-bar" aria-label="Сферическая симуляция">
-      <strong>День <span id="sphere-day">0</span></strong>
-      <button id="sphere-step-one" type="button" disabled>+1 день</button>
-      <button id="sphere-step-month" type="button" disabled>+30 дней</button>
-      <button id="sphere-play" type="button" disabled>Запустить</button>
-      <span id="sphere-playback-status" role="status">На паузе</span>
-      <span>активных зон: <span id="sphere-active-zones">—</span></span>
-      <label class="scale-control">Поселение <select id="sphere-home" aria-label="Приблизить жильё или колодец"><option value="">Загрузка…</option></select></label>
-      <label class="scale-control">Производство <select id="sphere-industry" aria-label="Приблизить производство"><option value="">Загрузка…</option></select></label>
-    </section>
-    <div class="sphere-workspace">
-      <section class="map-section" aria-labelledby="sphere-title">
-        <div class="map-heading">
-          <div class="map-title-row">
-            <h2 id="sphere-title">Атлас живого мира</h2>
-            <label class="scale-control">Слой
-              <select id="sphere-layer" aria-label="Слой сферической карты">
-                <option value="topographic">Топографический</option>
-                <option value="political">Влияние поселений</option>
-                <option value="biome">Биомы</option>
-                <option value="elevation">Высота</option>
-                <option value="moisture">Влажность</option>
-                <option value="forest">Лес</option>
+    <aside id="sphere-journal" class="sphere-journal" aria-label="Журнал просматриваемой области">
+      <header class="sphere-journal-header">
+        <div>
+          <span class="sphere-kicker">Журнал области</span>
+          <h2 id="sphere-area-title">Весь мир</h2>
+          <p id="sphere-area-context">Сводка меняется после перемещения камеры</p>
+        </div>
+        <button id="sphere-journal-toggle" class="sphere-icon-button" type="button" aria-expanded="true" aria-controls="sphere-journal-body" aria-label="Свернуть журнал">‹</button>
+      </header>
+
+      <div id="sphere-journal-body" class="sphere-journal-body">
+        <section class="sphere-journal-section sphere-overview" aria-labelledby="sphere-overview-title">
+          <h3 id="sphere-overview-title">Состояние области</h3>
+          <div id="sphere-area-resources" class="sphere-resource-grid" aria-live="polite"><span class="sphere-empty">Загрузка симуляции…</span></div>
+          <h4 class="sphere-overview-subtitle">Запасы</h4>
+          <div class="sphere-stock-key" aria-label="Обозначения оценки запасов"><span class="is-exact">точно</span><span class="is-min">минимум</span><span class="is-max">максимум</span></div>
+          <div id="sphere-area-stocks" class="sphere-stock-list"></div>
+          <h4 class="sphere-overview-subtitle">Знания</h4>
+          <div id="sphere-area-knowledge" class="sphere-knowledge-list"></div>
+          <h4 class="sphere-overview-subtitle">Труд за день</h4>
+          <div id="sphere-area-labor" class="sphere-labor-summary"></div>
+        </section>
+
+        <section class="sphere-journal-section" aria-labelledby="sphere-events-title">
+          <div class="sphere-section-heading">
+            <h3 id="sphere-events-title">События</h3>
+            <label class="sphere-compact-select">Период
+              <select id="sphere-event-window">
+                <option value="30">30 дней</option>
+                <option value="120">120 дней</option>
+                <option value="365" selected>1 год</option>
+                <option value="1095">3 года</option>
+                <option value="3650">10 лет</option>
               </select>
             </label>
           </div>
-          <label class="scale-control">К поселению
-            <select id="sphere-settlement" aria-label="Приблизить поселение">
-              <option value="">Выбрать…</option>
-            </select>
-          </label>
-          <label class="scale-control">Площадка
-            <select id="sphere-parcel" aria-label="Приблизить постройку или угодье">
-              <option value="">Выбрать…</option>
-            </select>
-          </label>
-          <label class="scale-control">Местность
-            <select id="sphere-nature" aria-label="Посмотреть речной бассейн" disabled>
-              <option value="">Речные бассейны…</option>
-            </select>
-          </label>
-        </div>
-        <div class="map-wrap sphere-map-wrap">
-          <canvas id="sphere-map" role="img" aria-label="Вращаемая сферическая карта примерно из миллиона зон"></canvas>
-          <canvas id="sphere-weather-effects" aria-hidden="true"></canvas>
-          <div id="sphere-tooltip" class="map-tooltip" role="tooltip" hidden></div>
-          <div class="map-hint">Тянуть — перемещать поверхность · колесо — зум под курсором · двойной клик — приблизить</div>
-        </div>
-      </section>
-      <aside class="events sphere-notes">
-        <h2>Условные обозначения</h2>
-        <fieldset class="topo-controls weather-controls"><legend>Погода поверх карты</legend>
-          <label>Окраска <select id="sphere-weather-layer" aria-label="Погодная окраска">
-            <option value="none">Без окраски</option>
-            <option value="temperature">Температура</option>
-            <option value="rain">Осадки</option>
-            <option value="wind">Ветер</option>
-          </select></label>
-          <label><input type="checkbox" id="sphere-weather-motion" checked> Дождь, снег и полоски ветра</label>
-          <label><input type="checkbox" id="sphere-show-winter" checked> Зимний покров и знаки</label>
-          <p id="sphere-weather-legend" class="muted" role="status">Загрузка погоды…</p>
-          <small>Эффекты: до 96 штрихов, 12 кадров/с. Погода не перестраивает рельеф.</small>
-        </fieldset>
-        <div id="sphere-map-legend" class="topo-legend"></div>
-        <a class="nav-link" href="/topographic-atlas.html">Полный атлас обозначений ↗</a>
-        <fieldset class="topo-controls"><legend>Состав карты</legend>
-          <label><input type="checkbox" id="sphere-show-contours" checked> Горизонтали</label>
-          <label><input type="checkbox" id="sphere-show-water" checked> Реки и озёра</label>
-          <label><input type="checkbox" id="sphere-show-symbols" checked> Условные знаки</label>
-          <label><input type="checkbox" id="sphere-show-wildlife" checked> Дичь · подвижные зоны (наблюдатель)</label>
-          <p id="sphere-wildlife-status" class="muted"></p>
-          <label><input type="checkbox" id="sphere-show-boundaries" checked> Границы влияния</label>
-        </fieldset>
-        <p>Сечение рельефа: <strong id="sphere-contour-interval">100 м</strong>. Каждая пятая горизонталь утолщена; высоты — в метрах, уровень моря этой модели — <span id="sphere-sea-level">—</span> м.</p>
-        <p id="sphere-hydrology-status" role="status">Загрузка речной сети…</p>
-        <p id="sphere-trail-status"></p>
-        <button id="sphere-hydrology-retry" type="button" hidden>Повторить загрузку рек</button>
-        <details><summary>Как читать карту</summary>
-          <p>Границы и берега сглажены для чтения. Выбор зоны и расчёты используют исходную сетку. Деревья обозначают тип растительности, не отдельные деревья.</p>
-          <p>Обзор — 1:4; от 3,5× загружаются точные чанки 1:1. Знаки привязаны к местности; их плотность меняется только при переходе масштаба.</p>
-          <p>Четыре жилые ячейки по 25 жителей дают до 100 человек на полностью жилой зоне. Штриховка — стройка, крест — заброшенное здание, круг с крестом — колодец. Тропы темнеют от реальных походов за водой и ресурсами. Мосты пока только в каталоге.</p>
-          <p>Водосбор рассчитан на сетке 1:1. Сезонный водный баланс ещё требует развития. Белёсая поверхность воды показывает лёд, но не обещает проходимость: она проверяется ядром отдельно.</p>
-        </details>
-        <p id="sphere-view-error" role="status"></p>
-        <button id="sphere-retry" type="button" hidden>Повторить загрузку чанков</button>
-        <div id="sphere-selection" class="sphere-selection">Наведите курсор на поверхность</div>
-        <div id="sphere-land-controls" class="controls" hidden>
-          <button id="sphere-land-toggle" type="button">Изменить использование</button>
-        </div>
-        <p id="sphere-land-status" role="status"></p>
-        <details id="sphere-economy" open><summary>Поселения: быт и развитие</summary>
-          <p>Режим наблюдателя: карта и общий журнал показывают весь мир. Сведения каждого поселения ограничены его наблюдениями и полученными вестями.</p>
+          <p class="sphere-section-note">На дальнем масштабе остаются только события, заметные для всей области.</p>
+          <ol id="sphere-sim-events" class="sphere-event-list"></ol>
+        </section>
+
+        <section class="sphere-journal-section" aria-labelledby="sphere-selection-title">
+          <h3 id="sphere-selection-title">Выбранная зона</h3>
+          <div id="sphere-selection" class="sphere-selection">Нажмите на поверхность для подробностей</div>
+          <div id="sphere-land-controls" class="controls" hidden><button id="sphere-land-toggle" type="button">Изменить использование</button></div>
+          <p id="sphere-land-status" role="status"></p>
+        </section>
+
+        <details id="sphere-economy" class="sphere-journal-section sphere-settlement-details">
+          <summary>Поселения в области</summary>
           <div id="sphere-economy-cities"></div>
-          <ul id="sphere-sim-events"></ul>
           <a class="nav-link" href="/api/sphere/simulation/snapshot" download="sphere-snapshot.json">Экспорт снимка</a>
         </details>
-        <p id="sphere-sim-status" role="status">Загрузка симуляции…</p>
-      </aside>
+
+        <details class="sphere-journal-section sphere-diagnostics">
+          <summary>Диагностика карты</summary>
+          <div class="statusbar">
+            <span>зон <strong id="sphere-zones">—</strong></span><span>треугольников <strong id="sphere-triangles">—</strong></span>
+            <span>чанков <strong id="sphere-chunks">—</strong></span><span>просмотр <strong id="sphere-lod">—</strong></span>
+            <span>в памяти <strong id="sphere-loaded">0/192</strong></span><span>рельеф <strong id="sphere-memory">—</strong></span>
+            <span>кадр <strong id="sphere-render-time">—</strong></span><span>геометрия <strong id="sphere-geometry-builds">0</strong></span>
+            <span>среда <strong id="sphere-land-builds">0</strong></span><span>чанк-запросы <strong id="sphere-chunk-requests">0</strong></span>
+            <span>обновления <strong id="sphere-map-updates">0</strong></span><span>подложка <strong id="sphere-raster-builds">0</strong></span>
+            <span>GPU <strong id="sphere-gpu-status">проверка…</strong></span>
+          </div>
+          <p id="sphere-hydrology-status" role="status">Загрузка речной сети…</p><p id="sphere-trail-status"></p>
+          <p id="sphere-wildlife-status"></p><p id="sphere-weather-legend" role="status">Загрузка погоды…</p>
+          <p id="sphere-view-error" role="status"></p>
+          <button id="sphere-hydrology-retry" type="button" hidden>Повторить загрузку рек</button>
+          <button id="sphere-retry" type="button" hidden>Повторить загрузку чанков</button>
+          <p id="sphere-sim-status" role="status">Загрузка симуляции…</p>
+          <p>Сечение рельефа: <strong id="sphere-contour-interval">100 м</strong>; море от <span id="sphere-sea-level">—</span> м.</p>
+        </details>
+      </div>
+    </aside>
+
+    <section class="sphere-time-deck" aria-label="Календарь и погода области">
+      <div class="sphere-time-row">
+        <div class="sphere-date"><span class="sphere-kicker">Время мира</span><strong>День <span id="sphere-day">0</span></strong><span id="sphere-calendar-date">год 1 · месяц 1</span></div>
+        <input id="sphere-time-progress" type="range" min="0" max="1" value="0" aria-label="Текущее положение времени мира" aria-readonly="true">
+        <div class="sphere-playback-controls" aria-label="Скорость симуляции">
+          <button class="sphere-speed is-active" data-speed="1" type="button" disabled aria-pressed="true">1×</button>
+          <button class="sphere-speed" data-speed="7" type="button" disabled aria-pressed="false">7×</button>
+          <button class="sphere-speed" data-speed="30" type="button" disabled aria-pressed="false">30×</button>
+          <button id="sphere-play" class="sphere-play-toggle" type="button" disabled aria-label="Запустить симуляцию" title="Запустить симуляцию">▶</button>
+        </div>
+      </div>
+      <div class="sphere-climate-row">
+        <span id="sphere-playback-status" role="status">На паузе</span><span id="sphere-weather-scope">Погода области</span>
+        <span><strong id="sphere-weather-temperature">—</strong> °C</span><span><strong id="sphere-weather-rain">—</strong> мм/сут</span>
+        <span>ветер <strong id="sphere-weather-wind">—</strong></span><span>снег <strong id="sphere-weather-snow">—</strong> мм</span>
+      </div>
+      <div id="sphere-climate-history" class="sphere-climate-history">
+        <button id="sphere-climate-toggle" class="sphere-climate-toggle" type="button" aria-expanded="true" aria-controls="sphere-climate-history-body"><span>Климатограмма</span><b aria-hidden="true">⌃</b></button>
+        <div id="sphere-climate-history-body" class="sphere-climate-history-body">
+        <div class="sphere-climate-tabs" role="tablist" aria-label="Показатель климатограммы">
+          <button type="button" role="tab" data-climate-field="temperature" aria-selected="true">Температура</button>
+          <button type="button" role="tab" data-climate-field="rain" aria-selected="false">Осадки</button>
+          <button type="button" role="tab" data-climate-field="wind" aria-selected="false">Ветер</button>
+          <span id="sphere-climate-note">Накопление наблюдений…</span>
+        </div>
+        <div id="sphere-climate-chart" class="sphere-climate-chart" aria-label="Средние наблюдения по месяцам"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="sphere-map-toolbar" aria-label="Инструменты карты">
+      <div class="sphere-brand"><strong id="sphere-name">Загрузка мира…</strong><span><span id="sphere-active-zones">—</span> активных зон</span></div>
+      <details id="sphere-layer-menu" class="sphere-layer-menu">
+        <summary>Слои</summary>
+        <div class="sphere-layer-popover">
+          <label>Срез карты<select id="sphere-layer" aria-label="Информационный срез карты"><option value="topographic">Топографический</option><option value="political">Влияние поселений</option><option value="biome">Биомы</option><option value="elevation">Высота</option><option value="moisture">Влажность</option><option value="forest">Лес</option></select></label>
+          <fieldset><legend>Топография</legend><label><input type="checkbox" id="sphere-show-contours" checked> Горизонтали</label><label><input type="checkbox" id="sphere-show-water" checked> Вода</label><label><input type="checkbox" id="sphere-show-symbols" checked> Знаки</label><label><input type="checkbox" id="sphere-show-wildlife" checked> Животные</label><label><input type="checkbox" id="sphere-show-boundaries" checked> Влияние</label></fieldset>
+          <fieldset><legend>Погода</legend><label>Окраска<select id="sphere-weather-layer"><option value="none">Нет</option><option value="temperature">Температура</option><option value="rain">Осадки</option><option value="wind">Ветер</option></select></label><label><input type="checkbox" id="sphere-weather-motion" checked> Явления и ветер</label><label><input type="checkbox" id="sphere-show-winter" checked> Зимний покров</label></fieldset>
+          <details><summary>Условные знаки</summary><div id="sphere-map-legend" class="topo-legend"></div><a class="nav-link" href="/topographic-atlas.html">Полный атлас ↗</a></details>
+          <a class="nav-link" href="/technologies.html" target="_blank">Дерево технологий ↗</a>
+        </div>
+      </details>
+      <details class="sphere-location-menu">
+        <summary>Перейти</summary>
+        <div class="sphere-layer-popover"><label>Поселение<select id="sphere-settlement"><option value="">Выбрать…</option></select></label><label>Площадка<select id="sphere-parcel"><option value="">Выбрать…</option></select></label><label>Местность<select id="sphere-nature" disabled><option value="">Речные бассейны…</option></select></label><label>Жильё<select id="sphere-home"><option value="">Загрузка…</option></select></label><label>Производство<select id="sphere-industry"><option value="">Загрузка…</option></select></label></div>
+      </details>
     </div>
+
+    <div class="sphere-camera-controls" aria-label="Масштаб карты"><button id="sphere-zoom-in" type="button" aria-label="Приблизить">+</button><output id="sphere-zoom-level" aria-live="polite">1.0×</output><button id="sphere-zoom-out" type="button" aria-label="Отдалить">−</button><button id="sphere-reset" type="button">Мир</button></div>
   </main>
-  <script type="module" src="/sphere.js?v=weather1"></script>
+  <script type="module" src="/sphere.js?v=batched-climate1"></script>
 </body>
 </html>

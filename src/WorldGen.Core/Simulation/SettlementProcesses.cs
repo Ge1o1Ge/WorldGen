@@ -17,8 +17,22 @@ public sealed partial class SettlementSimulation
         foreach (var rule in primitive.Processes.OrderByDescending(p => p.Priority).ThenBy(p => p.Id, StringComparer.Ordinal))
         {
             if (!life.Processes.TryGetValue(rule.Id, out var state)) life.Processes[rule.Id] = state = new();
-            state.LastDay = world.Day; state.BatchesToday = state.LaborHoursToday = 0; state.Constraint = null;
+            state.LastDay = world.Day; state.BatchesToday = state.LaborHoursToday = 0; state.Constraint = state.BuildingId = null; state.LaborMultiplier = 1;
             if (!Knows(city, rule.Technology)) { state.Constraint = "technology:" + rule.Technology; continue; }
+            var building = rule.BuildingRequirements.Length == 0 ? null : State.Buildings
+                .Where(candidate => candidate.CityId == city.Id && candidate.Status == "active" && rule.BuildingRequirements.Contains(candidate.Kind, StringComparer.Ordinal))
+                .OrderBy(candidate => rule.LaborMultipliers.GetValueOrDefault(candidate.Kind, 1) / Math.Max(.05, Efficiency(candidate)))
+                .ThenBy(candidate => candidate.Id, StringComparer.Ordinal).FirstOrDefault();
+            if (rule.BuildingRequirements.Length > 0 && building is null)
+            {
+                state.Constraint = "building:any:" + string.Join('|', rule.BuildingRequirements.Order(StringComparer.Ordinal));
+                continue;
+            }
+            if (building is not null)
+            {
+                state.BuildingId = building.Id;
+                state.LaborMultiplier = rule.LaborMultipliers.GetValueOrDefault(building.Kind, 1) / Math.Max(.05, Efficiency(building));
+            }
             var missingEquipment = rule.RequiredStocks.OrderBy(p => p.Key, StringComparer.Ordinal)
                 .FirstOrDefault(pair => city.Stocks.GetValueOrDefault(pair.Key) + 1e-9 < pair.Value);
             if (!string.IsNullOrEmpty(missingEquipment.Key)) { state.Constraint = "equipment:" + missingEquipment.Key; continue; }
@@ -27,7 +41,8 @@ public sealed partial class SettlementSimulation
             var missing = Math.Max(0, Population(city) * rule.TargetOutputPerPerson - city.Stocks.GetValueOrDefault(rule.TargetResource));
             if (missing <= 1e-9) continue;
             var planned = Math.Min(Population(city) * rule.MaximumBatchesPerPersonPerDay, missing / targetOutputPerBatch);
-            var laborLimit = Math.Max(0, available - spent) / rule.LaborHoursPerBatch;
+            var laborPerBatch = rule.LaborHoursPerBatch * state.LaborMultiplier;
+            var laborLimit = Math.Max(0, available - spent) / laborPerBatch;
             var inputLimit = rule.Inputs.Min(pair => city.Stocks.GetValueOrDefault(pair.Key) / pair.Value);
             var batches = SimulationMath.Quantize(Math.Max(0, Math.Min(planned, Math.Min(laborLimit, inputLimit))));
             if (batches <= 1e-9)
@@ -48,11 +63,11 @@ public sealed partial class SettlementSimulation
                 city.Stocks[produced.Key] = SimulationMath.Quantize(city.Stocks.GetValueOrDefault(produced.Key) + amount);
                 Add(life.Production, produced.Key, amount); Add(telemetry.ProductionByResource, produced.Key, amount);
             }
-            var labor = SimulationMath.Quantize(rule.LaborHoursPerBatch * batches);
+            var labor = SimulationMath.Quantize(laborPerBatch * batches);
             spent += labor; state.BatchesToday = batches; state.LaborHoursToday = labor;
             state.TotalBatches = SimulationMath.Quantize(state.TotalBatches + batches);
             Add(life.PracticeHours, rule.Practice, labor);
-            life.Tasks.Add(new("workshop:" + city.Id, "process:" + rule.Id, Anchor(city), labor, batches));
+            life.Tasks.Add(new(building?.Id ?? "workshop:" + city.Id, "process:" + rule.Id, building?.Cell ?? Anchor(city), labor, batches));
             if (batches + 1e-9 < planned)
                 state.Constraint = laborLimit <= inputLimit ? "labor" : "input:" + rule.Inputs.OrderBy(pair =>
                     city.Stocks.GetValueOrDefault(pair.Key) / pair.Value).ThenBy(pair => pair.Key, StringComparer.Ordinal).First().Key;

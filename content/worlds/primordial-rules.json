@@ -476,6 +476,106 @@
       "practice": "wood",
       "practiceHours": 18000,
       "staged": true
+    },
+    {
+      "id": "oral_accounting",
+      "name": "Устный счёт и меры",
+      "domain": "knowledge",
+      "baseline": false,
+      "prerequisites": ["calendar", "storage_buildings"],
+      "practice": "storage",
+      "practiceHours": 9000
+    },
+    {
+      "id": "textile_weaving",
+      "name": "Ткачество тканей",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["weaving"],
+      "anyPrerequisites": ["gathering", "grow_cotton", "herd_sheep"],
+      "practice": "weave",
+      "practiceHours": 900
+    },
+    {
+      "id": "woven_clothing",
+      "name": "Тканая одежда",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["textile_weaving"],
+      "practice": "fiber",
+      "practiceHours": 6200
+    },
+    {
+      "id": "primitive_sail",
+      "name": "Примитивный парус",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["rafts", "textile_weaving"],
+      "practice": "fiber",
+      "practiceHours": 7000
+    },
+    {
+      "id": "mechanics",
+      "name": "Механика рычагов и передач",
+      "domain": "knowledge",
+      "baseline": false,
+      "prerequisites": ["oral_accounting", "carpentry", "hand_tools"],
+      "practice": "construction",
+      "practiceHours": 24000
+    },
+    {
+      "id": "millstone",
+      "name": "Жернов",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["stone_axes", "masonry"],
+      "practice": "construction",
+      "practiceHours": 8000
+    },
+    {
+      "id": "water_power",
+      "name": "Энергия воды",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["mechanics"],
+      "practice": "water",
+      "practiceHours": 14000
+    },
+    {
+      "id": "wind_power",
+      "name": "Энергия ветра",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["mechanics", "primitive_sail"],
+      "practice": "construction",
+      "practiceHours": 16000
+    },
+    {
+      "id": "water_mill",
+      "name": "Водяная мельница",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["mechanics", "water_power", "millstone", "carpentry"],
+      "practice": "construction",
+      "practiceHours": 22000
+    },
+    {
+      "id": "windmill",
+      "name": "Ветряная мельница",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["mechanics", "wind_power", "millstone", "carpentry"],
+      "practice": "construction",
+      "practiceHours": 26000
+    },
+    {
+      "id": "animal_mill",
+      "name": "Мельница с животным приводом",
+      "domain": "craft",
+      "baseline": false,
+      "prerequisites": ["mechanics", "millstone", "draught_animals"],
+      "practice": "construction",
+      "practiceHours": 18000
     }
   ],
   "relations": [
@@ -490,6 +590,10 @@
     { "from": "seed_selection", "to": "granary", "type": "supports" },
     { "from": "herbal_medicine", "to": "gardening", "type": "supports" },
     { "from": "masonry", "to": "storage_buildings", "type": "supports" }
+    ,{ "from": "grow_cotton", "to": "textile_weaving", "type": "industrial" }
+    ,{ "from": "herd_sheep", "to": "textile_weaving", "type": "industrial" }
+    ,{ "from": "gathering", "to": "textile_weaving", "type": "industrial" }
+    ,{ "from": "water_power", "to": "windmill", "type": "supports" }
   ],
   "resources": [
     {
@@ -548,6 +652,38 @@
       "baseValue": 2.2,
       "decayPerDay": 0.002,
       "foodValue": 0.95
+    },
+    {
+      "id": "woven_cloth",
+      "name": "Тканое полотно",
+      "unit": "условная тонна",
+      "category": "material",
+      "baseValue": 3.5,
+      "decayPerDay": 0.0001
+    },
+    {
+      "id": "sail",
+      "name": "Парусное оснащение",
+      "unit": "комплект",
+      "category": "equipment",
+      "baseValue": 5,
+      "decayPerDay": 0.0006
+    },
+    {
+      "id": "mechanism_kit",
+      "name": "Комплект механизмов и передач",
+      "unit": "комплект",
+      "category": "equipment",
+      "baseValue": 12,
+      "decayPerDay": 0.00025
+    },
+    {
+      "id": "millstone",
+      "name": "Пара жерновов",
+      "unit": "комплект",
+      "category": "equipment",
+      "baseValue": 8,
+      "decayPerDay": 0.00005
     }
   ],
   "activities": [
@@ -645,6 +781,166 @@
       "targetOutputPerPerson": 1.05,
       "maximumBatchesPerPersonPerDay": 0.02,
       "priority": 20
+    },
+    {
+      "id": "weave_cotton_textile",
+      "name": "Очистка хлопка, прядение и ткачество",
+      "technology": "textile_weaving",
+      "practice": "fiber",
+      "inputs": { "harvest_cotton": 0.012 },
+      "requiredStocks": { "stone_kit": 0.05 },
+      "outputs": { "woven_cloth": 0.009 },
+      "targetResource": "woven_cloth",
+      "laborHoursPerBatch": 10,
+      "targetOutputPerPerson": 0.006,
+      "maximumBatchesPerPersonPerDay": 0.02,
+      "priority": 23
+    },
+    {
+      "id": "weave_wool_textile",
+      "name": "Прядение шерсти и ткачество",
+      "technology": "textile_weaving",
+      "practice": "fiber",
+      "inputs": { "wool": 0.01 },
+      "requiredStocks": { "stone_kit": 0.05 },
+      "outputs": { "woven_cloth": 0.008 },
+      "targetResource": "woven_cloth",
+      "laborHoursPerBatch": 9,
+      "targetOutputPerPerson": 0.006,
+      "maximumBatchesPerPersonPerDay": 0.02,
+      "priority": 22
+    },
+    {
+      "id": "weave_wild_fiber_textile",
+      "name": "Прядение дикого волокна и ткачество",
+      "technology": "textile_weaving",
+      "practice": "fiber",
+      "inputs": { "fiber": 0.014 },
+      "requiredStocks": { "stone_kit": 0.05 },
+      "outputs": { "woven_cloth": 0.007 },
+      "targetResource": "woven_cloth",
+      "laborHoursPerBatch": 12,
+      "targetOutputPerPerson": 0.006,
+      "maximumBatchesPerPersonPerDay": 0.02,
+      "priority": 21
+    },
+    {
+      "id": "sew_woven_clothing",
+      "name": "Раскрой и шитьё тканой одежды",
+      "technology": "woven_clothing",
+      "practice": "fiber",
+      "inputs": { "woven_cloth": 0.004 },
+      "requiredStocks": { "stone_kit": 0.05 },
+      "outputs": { "garments": 1 },
+      "targetResource": "garments",
+      "laborHoursPerBatch": 6,
+      "targetOutputPerPerson": 1.05,
+      "maximumBatchesPerPersonPerDay": 0.025,
+      "priority": 26
+    },
+    {
+      "id": "make_primitive_sail",
+      "name": "Раскрой паруса и оснастка плота",
+      "technology": "primitive_sail",
+      "practice": "fiber",
+      "inputs": { "woven_cloth": 0.035, "timber": 0.015 },
+      "requiredStocks": { "stone_kit": 0.05 },
+      "outputs": { "sail": 1 },
+      "targetResource": "sail",
+      "laborHoursPerBatch": 18,
+      "targetOutputPerPerson": 0.01,
+      "maximumBatchesPerPersonPerDay": 0.003,
+      "priority": 12
+    },
+    {
+      "id": "make_mechanism_kit",
+      "name": "Изготовление рычагов, осей и зубчатых передач",
+      "technology": "mechanics",
+      "practice": "mechanics",
+      "inputs": { "timber": 0.08, "stone": 0.025 },
+      "requiredStocks": { "stone_kit": 0.1 },
+      "outputs": { "mechanism_kit": 1 },
+      "targetResource": "mechanism_kit",
+      "laborHoursPerBatch": 90,
+      "targetOutputPerPerson": 0.02,
+      "maximumBatchesPerPersonPerDay": 0.002,
+      "priority": 15
+    },
+    {
+      "id": "shape_millstone",
+      "name": "Выбор камня и насечка жерновов",
+      "technology": "millstone",
+      "practice": "construction",
+      "inputs": { "stone": 0.35 },
+      "requiredStocks": { "stone_kit": 0.1 },
+      "outputs": { "millstone": 1 },
+      "targetResource": "millstone",
+      "laborHoursPerBatch": 180,
+      "targetOutputPerPerson": 0.012,
+      "maximumBatchesPerPersonPerDay": 0.0015,
+      "priority": 16
+    },
+    {
+      "id": "mill_wheat",
+      "name": "Помол пшеницы",
+      "technology": "millstone",
+      "practice": "milling",
+      "inputs": { "harvest_wheat": 0.1 },
+      "requiredStocks": {},
+      "outputs": { "flour": 0.085 },
+      "targetResource": "flour",
+      "laborHoursPerBatch": 8,
+      "targetOutputPerPerson": 0.04,
+      "maximumBatchesPerPersonPerDay": 0.04,
+      "priority": 35,
+      "requiredBuildings": ["water_mill", "windmill", "animal_mill"],
+      "buildingLaborMultipliers": { "water_mill": 0.18, "windmill": 0.22, "animal_mill": 0.4 }
+    },
+    {
+      "id": "mill_barley",
+      "name": "Помол ячменя",
+      "technology": "millstone",
+      "practice": "milling",
+      "inputs": { "harvest_barley": 0.1 },
+      "requiredStocks": {},
+      "outputs": { "flour": 0.08 },
+      "targetResource": "flour",
+      "laborHoursPerBatch": 8,
+      "targetOutputPerPerson": 0.04,
+      "maximumBatchesPerPersonPerDay": 0.04,
+      "priority": 34,
+      "requiredBuildings": ["water_mill", "windmill", "animal_mill"],
+      "buildingLaborMultipliers": { "water_mill": 0.18, "windmill": 0.22, "animal_mill": 0.4 }
+    },
+    {
+      "id": "mill_buckwheat",
+      "name": "Помол гречихи",
+      "technology": "millstone",
+      "practice": "milling",
+      "inputs": { "harvest_buckwheat": 0.1 },
+      "requiredStocks": {},
+      "outputs": { "flour": 0.078 },
+      "targetResource": "flour",
+      "laborHoursPerBatch": 8,
+      "targetOutputPerPerson": 0.04,
+      "maximumBatchesPerPersonPerDay": 0.04,
+      "priority": 33,
+      "requiredBuildings": ["water_mill", "windmill", "animal_mill"],
+      "buildingLaborMultipliers": { "water_mill": 0.18, "windmill": 0.22, "animal_mill": 0.4 }
+    },
+    {
+      "id": "prepare_milled_food",
+      "name": "Приготовление пищи из муки",
+      "technology": "millstone",
+      "practice": "milling",
+      "inputs": { "flour": 0.08, "firewood": 0.006 },
+      "requiredStocks": { "pottery_ware": 0.02 },
+      "outputs": { "food": 0.075 },
+      "targetResource": "food",
+      "laborHoursPerBatch": 2,
+      "targetOutputPerPerson": 0.03,
+      "maximumBatchesPerPersonPerDay": 0.05,
+      "priority": 36
     },
     {
       "id": "burn_charcoal",

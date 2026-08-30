@@ -130,7 +130,13 @@ public sealed partial class SettlementSimulation
         var rule = BuildingRule(kind);
         if (Rules.Lifecycle is null || kind == "garden") return rule;
         var m = ChooseMaterial(city, kind);
-        return new(kind, rule.LaborHours * m.LaborMultiplier * PrimitiveMaterialLabor(city, m.Id), m.Materials.ToDictionary(p => p.Key, p => p.Value * MaterialFactor(kind), StringComparer.Ordinal));
+        var structural = new HashSet<string>(["timber", "stone", "clay", "fiber"], StringComparer.Ordinal);
+        var materials = m.Materials.ToDictionary(p => p.Key, p => p.Value * MaterialFactor(kind), StringComparer.Ordinal);
+        // A lifecycle material replaces the structural shell, but cannot erase
+        // machinery, vessels or other functional components from a specialised building.
+        foreach (var component in rule.Materials.Where(pair => !structural.Contains(pair.Key)))
+            materials[component.Key] = materials.GetValueOrDefault(component.Key) + component.Value;
+        return rule with { LaborHours = rule.LaborHours * m.LaborMultiplier * PrimitiveMaterialLabor(city, m.Id), Materials = materials };
     }
 
     private double MaintenanceTarget(CityState city, string resource)
@@ -139,7 +145,12 @@ public sealed partial class SettlementSimulation
         var repair = State.Buildings.Where(b => b.CityId == city.Id && b.Status == "active" && b.Lifecycle is not null && !b.Lifecycle.Retiring)
             .Sum(b => Math.Max(.03, b.Lifecycle!.RepairableWear) * Material(b).Materials.GetValueOrDefault(resource) * Material(b).RepairMaterialMultiplier * MaterialFactor(b.Kind));
         // Accumulate only materials for known, currently discussed projects, not every possible recipe.
-        var kinds = State.Cities[city.Id].Council?.Proposals.Where(p => p.Available && CollectiveDecisions.Pending(p)).Select(p => p.Kind).Distinct().ToArray() ?? [];
+        // Council proposals are no longer synonymous with construction: scouting is
+        // an executable expedition and has no building recipe or material reserve.
+        var buildingKinds = Rules.Buildings.Select(rule => rule.Id).Append("garden").ToHashSet(StringComparer.Ordinal);
+        var kinds = State.Cities[city.Id].Council?.Proposals
+            .Where(p => p.Available && CollectiveDecisions.Pending(p) && buildingKinds.Contains(p.Kind))
+            .Select(p => p.Kind).Distinct().ToArray() ?? [];
         return repair + kinds.Select(kind => ProjectRule(city, kind).Materials.GetValueOrDefault(resource)).DefaultIfEmpty().Max();
     }
 

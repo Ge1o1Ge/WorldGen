@@ -42,17 +42,21 @@ public sealed partial class SettlementSimulationTests
         sim.Advance(7); Assert.Empty(state.Scouting!.Expeditions);
         Assert.Contains(state.Cities.Values, life => life.Supply!.PressureStreak == 7);
         Assert.All(state.Cities.Values, life => Assert.InRange(life.Supply!.PressureStreak, 0, 7));
-        sim.Advance(1);
+        for (var day = 0; day < 20 && state.Scouting.Expeditions.Count == 0; day++) sim.Advance(1);
         Assert.NotEmpty(state.Scouting.Expeditions);
+        Assert.True(state.Scouting.Expeditions.Select(e => (Math.Round(e.Direction.X, 2), Math.Round(e.Direction.Y, 2), Math.Round(e.Direction.Z, 2))).Distinct().Count() > 1,
+            "Первые советы разных поселений выбрали одно глобальное направление");
         Assert.All(state.Scouting.Expeditions, e =>
         {
             Assert.Equal("outbound", e.Phase); Assert.NotEqual(e.Home, e.Current);
             Assert.True(e.Food > 0 && e.Water > 0);
+            Assert.InRange(e.ProvisionDays, 4, 14); Assert.True(e.CargoUsed <= e.CargoCapacity + 1e-9);
+            Assert.NotNull(e.DecisionId);
             Assert.NotEmpty(e.Observations); Assert.Empty(state.Cities[e.CityId].Supply!.Reports);
             Assert.Equal(e.People * sim.Development.Rules.WorkHoursPerDay, state.Cities[e.CityId].Supply!.ScoutLaborHours);
         });
         var topology = new CubeSphereTopology(sim.World.Spatial.Grid.Height);
-        for (var day = 0; day < 5; day++) sim.Advance(1);
+        for (var day = 0; day < 40 && state.Scouting.Expeditions.Any(e => e.Phase is "outbound" or "returning"); day++) sim.Advance(1);
         Assert.All(state.Scouting.Expeditions, e =>
         {
             Assert.Equal("returned", e.Phase); Assert.Equal(e.Home, e.Current);
@@ -60,6 +64,7 @@ public sealed partial class SettlementSimulationTests
             var report = Assert.Single(state.Cities[e.CityId].Supply!.Reports);
             Assert.Equal(e.ReturnDay, report.ReceivedDay);
             Assert.True(report.ReceivedDay > report.DepartureDay);
+            Assert.NotNull(report.Plants); Assert.NotNull(report.Animals); Assert.NotNull(report.CapturedAnimals);
             Assert.All(report.Candidates, candidate =>
             {
                 Assert.True(candidate.ObservedDay < report.ReceivedDay);
@@ -74,11 +79,45 @@ public sealed partial class SettlementSimulationTests
         Assert.All(state.Trails, edge => Assert.Contains(edge.To, topology.GetNeighbors(edge.From)));
         Assert.Contains(sim.World.Journal, e => e.Type == "supply_pressure");
         Assert.Contains(sim.World.Journal, e => e.Type == "scouting_returned");
+        var returned = sim.World.Journal.First(e => e.Type == "scouting_returned");
+        Assert.True(returned.Details!["durationDays"]!.GetValue<int>() > 0);
+        Assert.True(returned.Details["routeCells"]!.GetValue<int>() > 0);
+        Assert.NotNull(returned.Details["territorySample"]);
         foreach (var e in state.Scouting.Expeditions)
         {
             var departure = sim.World.Journal.Single(evt => evt.Id == e.CauseEventId);
             Assert.Contains(departure.CauseIds, id => sim.World.Journal.Any(evt => evt.Id == id && evt.Type == "supply_pressure"));
         }
+    }
+
+    [Fact]
+    public async Task ExpeditionTransportNeedsBothKnowledgeAndARealAnimalWhileRaftsReserveTimber()
+    {
+        var sim = await CreateScouting(); var development = sim.Development!;
+        var city = sim.World.Cities.Values.OrderBy(city => city.Id, StringComparer.Ordinal).First();
+        var life = development.State.Cities[city.Id];
+        life.Discoveries.Add("draught_animals"); life.Discoveries.Add("riding");
+        object Plan(string key) => typeof(SettlementSimulation).GetMethod("PlanExpedition",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(development, [city, key])!;
+        static double Number(object plan, string property) => Convert.ToDouble(plan.GetType().GetProperty(property)!.GetValue(plan));
+        static bool Flag(object plan, string property) => (bool)plan.GetType().GetProperty(property)!.GetValue(plan)!;
+
+        var knowledgeOnly = Plan("transport-test");
+        Assert.Equal(development.Rules.Exploration!.PartySize * development.Rules.Exploration.BaseCarryTonnesPerPerson,
+            Number(knowledgeOnly, "Capacity"), 10);
+        Assert.Equal(1, Number(knowledgeOnly, "SpeedMultiplier"));
+
+        life.Biology ??= new();
+        life.Biology.Herds["horse"] = new HerdState { Females = 1 };
+        var equipped = Plan("transport-test");
+        Assert.Equal(Number(knowledgeOnly, "Capacity") * development.Rules.Exploration.PackAnimalCapacityMultiplier,
+            Number(equipped, "Capacity"), 10);
+        Assert.Equal(development.Rules.Exploration.RidingSpeedMultiplier, Number(equipped, "SpeedMultiplier"));
+
+        life.Discoveries.Add("rafts"); city.Stocks["timber"] = 10;
+        var waterReady = Plan("transport-test");
+        Assert.True(Flag(waterReady, "RaftReady"));
+        Assert.Equal(development.Rules.Exploration.RaftTimberTonnes, Number(waterReady, "RaftTimber"), 10);
     }
 
     [Fact]
@@ -109,11 +148,12 @@ public sealed partial class SettlementSimulationTests
     }
 
     [Theory]
-    [InlineData(8, "outbound")]
-    [InlineData(10, "returning")]
-    public async Task MidJourneySaveContinuesIdentically(int day, string phase)
+    [InlineData("outbound")]
+    [InlineData("returning")]
+    public async Task MidJourneySaveContinuesIdentically(string phase)
     {
-        var original = await CreateScouting(); original.Advance(day);
+        var original = await CreateScouting();
+        for (var day = 0; day < 50 && !original.Development!.State.Scouting!.Expeditions.Any(e => e.Phase == phase); day++) original.Advance(1);
         Assert.Contains(original.Development!.State.Scouting!.Expeditions, e => e.Phase == phase);
         var restored = await CreateScouting(snapshot: WorldSnapshot.Create(original.World));
         Assert.Equal(WorldSnapshot.Hash(original.World), WorldSnapshot.Hash(restored.World));
@@ -160,12 +200,24 @@ public sealed partial class SettlementSimulationTests
         for (var year = 0; year < 3; year++) sim.Advance(365);
         var state = sim.Development!.State; var rules = sim.Development.Rules.Exploration!;
         Assert.Equal(3, state.Scouting!.Expeditions.Count);
+        Assert.All(state.Scouting.RecentDirections.Values, directions =>
+        {
+            Assert.InRange(directions.Count, 2, 6);
+            for (var i = 1; i < directions.Count; i++)
+                Assert.True(directions[i - 1].Dot(directions[i]) < .92, "Совет повторно утвердил почти тот же сектор разведки");
+        });
+        foreach (var departures in sim.World.Journal.Where(e => e.Type == "scouting_departed").GroupBy(e => e.SubjectId))
+        {
+            var days = departures.Select(e => e.Day).Order().ToArray();
+            for (var i = 1; i < days.Length; i++) Assert.True(days[i] - days[i - 1] >= rules.CooldownDays);
+        }
         Assert.All(state.Cities.Values, life =>
         {
             Assert.Equal(rules.MaximumReports, life.Supply!.Reports.Count);
             Assert.Equal(rules.WindowDays, life.Supply.History.Count);
         });
-        Assert.All(state.Scouting.Expeditions, e => Assert.InRange(e.Path.Count, 1, rules.StepsPerDay * rules.OutboundDays + 1));
+        Assert.All(state.Scouting.Expeditions, e => Assert.InRange(e.Path.Count, 1,
+            Math.Min(64, (int)Math.Ceiling(rules.StepsPerDay * e.SpeedMultiplier)) * (e.PlannedOutboundDays + e.ExtensionDays) + 1));
         foreach (var life in state.Cities.Values)
         {
             var council = life.Council!; var decisionRules = sim.Development.Rules.Decisions!;
@@ -181,10 +233,10 @@ public sealed partial class SettlementSimulationTests
     public void ScoutingRulesRejectUnsafeBudgets()
     {
         var rules = new SettlementExplorationRules(); rules.Validate();
-        Assert.Throws<InvalidOperationException>(() => (rules with { ProvisionDays = 2 }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (rules with { MinimumProvisionDays = 2 }).Validate());
         Assert.Throws<InvalidOperationException>(() => (rules with { MaximumLaborShare = .8 }).Validate());
         Assert.Throws<InvalidOperationException>(() => (rules with { LaborPressureShare = double.NaN }).Validate());
         Assert.Throws<InvalidOperationException>(() => (rules with { PressureDays = 100 }).Validate());
-        Assert.Throws<InvalidOperationException>(() => (rules with { OutboundDays = int.MaxValue }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (rules with { MaximumProvisionDays = int.MaxValue }).Validate());
     }
 }

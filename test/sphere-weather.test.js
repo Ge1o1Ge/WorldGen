@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {FACE_NAMES,facePoint,locateFace} from '../visualizer/sphere-cartography.js';
-import {createWeatherSampler,winterSymbol,weatherText,WeatherTint,WeatherEffects,weatherEffectSites,WEATHER_EFFECT_LIMIT} from '../visualizer/sphere-weather.js';
+import {createWeatherSampler,createClimateSampler,climateSeries,winterSymbol,weatherText,WeatherTint,WeatherEffects,weatherEffectSites,WEATHER_EFFECT_LIMIT} from '../visualizer/sphere-weather.js';
 
 function data(n=4){
   const values={resolution:n,revision:0,local:{indices:[],temperature:[],snow:[],ice:[],walking:[]}};
@@ -35,6 +35,20 @@ test('winter switches only the glyph and keeps evergreens distinct',()=>{
   assert.equal(winterSymbol('deciduous',{leafOff:0,snow:0}),'deciduous');
   assert.equal(winterSymbol('conifer',{leafOff:1,snow:9}),'snow_conifer');
   assert.equal(winterSymbol('house',{leafOff:1,snow:9}),'house');
+});
+test('monthly climate uses observed coarse history and preserves missing months',()=>{
+  const d=data(),n=2,cells=6*n*n,missing=-2147483648;
+  d.climate={resolution:n,months:12,sampleDays:[30,20,...Array(10).fill(0)],
+    temperature:Array(12*cells).fill(missing),rain:Array(12*cells).fill(missing),wind:Array(12*cells).fill(missing)};
+  for(let cell=0;cell<cells;cell++){
+    d.climate.temperature[cell]=100;d.climate.rain[cell]=20;d.climate.wind[cell]=8;
+    d.climate.temperature[cells+cell]=140;d.climate.rain[cells+cell]=50;d.climate.wind[cells+cell]=12;
+  }
+  const sample=createClimateSampler(d),locations=[locateFace(facePoint('PositiveX',1,1,8)),locateFace(facePoint('NegativeY',2,3,8))];
+  const series=climateSeries(sample,locations);
+  assert.deepEqual(series[0],{month:0,sampleDays:30,temperature:10,rain:2,wind:.08});
+  assert.deepEqual(series[1],{month:1,sampleDays:20,temperature:14,rain:5,wind:.12});
+  assert.equal(series[2].temperature,null);assert.equal(series[2].sampleDays,0);
 });
 function fakeCanvas(){const ctx=new Proxy({createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)})},{get:(o,k)=>o[k]??(()=>{})});return {width:0,height:0,dataset:{},getContext:()=>ctx};}
 test('tint cache is bounded, reused and costs nothing when all tint is off',()=>{

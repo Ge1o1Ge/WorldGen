@@ -86,6 +86,8 @@ public sealed class PrimitiveProcessState
     public double LaborHoursToday { get; set; }
     public double TotalBatches { get; set; }
     public string? Constraint { get; set; }
+    public string? BuildingId { get; set; }
+    public double LaborMultiplier { get; set; } = 1;
 }
 
 public sealed class SettlementStorageState
@@ -138,6 +140,10 @@ public sealed record SupplyDay(int Day, double FoodReserveDays, double LaborShar
 public sealed class ScoutingState
 {
     public int NextId { get; set; } = 1;
+    public Dictionary<string, HashSet<string>> KnownCells { get; set; } = new(StringComparer.Ordinal);
+    // Council sectors from recent departures. They are bounded and used to
+    // prevent a settlement from repeatedly approving the same bearing.
+    public Dictionary<string, List<UnitVector3>> RecentDirections { get; set; } = new(StringComparer.Ordinal);
     // Only the current/latest expedition of each city. Long paths do not accumulate forever.
     public List<ScoutExpedition> Expeditions { get; set; } = [];
 }
@@ -150,24 +156,48 @@ public sealed class ScoutExpedition
     public required CellAddress Home { get; init; }
     public required CellAddress Current { get; set; }
     public required UnitVector3 Direction { get; init; }
-    public int People { get; init; }
+    public int People { get; set; }
+    public int InitialPeople { get; init; }
     public int DepartureDay { get; init; }
     public int LastStepDay { get; set; } = -1;
     public int? ReturnDay { get; set; }
     public string Phase { get; set; } = "outbound";
+    public string TravelMode { get; set; } = "foot";
+    public string CurrentInterest { get; set; } = "Общий курс совета";
     public string Reason { get; init; } = "";
     public string? CauseEventId { get; set; }
+    public string? DecisionId { get; set; }
+    public int ProvisionDays { get; init; }
+    public int PlannedOutboundDays { get; set; }
+    public int ExtensionDays { get; set; }
+    public double CargoCapacity { get; init; }
+    public double RaftTimber { get; set; }
+    public bool RaftReady { get; init; }
+    public double SpeedMultiplier { get; init; } = 1;
     public double Food { get; set; }
     public double Water { get; set; }
+    public double ForagedFood { get; set; }
+    public double RefilledWater { get; set; }
+    public int LastResupplyDay { get; set; } = -1;
+    public double HazardExposure { get; set; }
+    public int Casualties { get; set; }
+    public int? LostDay { get; set; }
     public List<CellAddress> Path { get; set; } = [];
     public List<CellAddress> LastLeg { get; set; } = [];
     public List<ScoutObservation> Observations { get; set; } = [];
+    public Dictionary<string, double> SeedSamples { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, int> CapturedAnimals { get; set; } = new(StringComparer.Ordinal);
+    public HashSet<string> CaptureAttempts { get; set; } = new(StringComparer.Ordinal);
     public int ReturnIndex { get; set; }
+    public double CargoUsed => Food + Water + RaftTimber + SeedSamples.Values.Sum();
 }
-public sealed record ScoutTerrain(bool Water, bool FreshWater, double Elevation, double Moisture, double Forest, double FoodRenewalPerDay);
-public sealed record ScoutObservation(CellAddress Cell, int ObservedDay, bool FreshWater, double FoodRenewalPerDay);
+public sealed record ScoutTerrain(bool Water, bool FreshWater, double Elevation, double Temperature, double Moisture, double Forest, double FoodRenewalPerDay);
+public sealed record ScoutObservation(CellAddress Cell, int ObservedDay, bool FreshWater, double FoodRenewalPerDay,
+    IReadOnlyList<string>? Plants = null, IReadOnlyList<string>? Animals = null, string? ObservedClaim = null);
 public sealed record ScoutReport(string ExpeditionId, int DepartureDay, int ReceivedDay, int SurveyedCells,
-    IReadOnlyList<ScoutObservation> Candidates, string Outcome);
+    IReadOnlyList<ScoutObservation> Candidates, string Outcome, IReadOnlyList<string>? Plants = null,
+    IReadOnlyList<string>? Animals = null, IReadOnlyDictionary<string, int>? CapturedAnimals = null, int Casualties = 0,
+    IReadOnlyDictionary<string, int>? ForeignClaims = null);
 
 public sealed class DwellingState
 {

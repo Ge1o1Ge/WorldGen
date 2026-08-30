@@ -288,6 +288,12 @@ public sealed partial class SettlementSimulation
                         (life.Processes.GetValueOrDefault(process.Id)?.TotalBatches ?? 0) * process.Outputs[process.TargetResource]) /
                     Math.Max(1, Population(city) * processes.Sum(process => process.TargetOutputPerPerson)), 0, 1);
             }
+            var technologyBuildings = Rules.Buildings.Where(building => building.Technology == tech.Id).Select(building => building.Id).ToHashSet(StringComparer.Ordinal);
+            if (technologyBuildings.Count > 0)
+            {
+                var active = State.Buildings.Count(building => building.CityId == city.Id && building.Status == "active" && technologyBuildings.Contains(building.Kind));
+                knowledge.Capability = knowledge.Adoption = Math.Clamp(active, 0, 1);
+            }
             if(BiologyRules is {} biology)
             {
                 var crop=biology.Crops.FirstOrDefault(c=>c.Technology==tech.Id);

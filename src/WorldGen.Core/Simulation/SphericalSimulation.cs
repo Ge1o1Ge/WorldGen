@@ -25,11 +25,12 @@ public sealed class SphericalSimulation
         Dictionary<string, SphericalIndustrySite> sites, Dictionary<string, CellAddress> addresses, List<string> warnings)
     { Content = content; World = world; this.settlements = settlements; Sites = sites; Addresses = addresses; Warnings = warnings; }
 
-    public void Advance(int days)
+    public void Advance(int days, CancellationToken cancellationToken = default)
     {
         if (days is < 1 or > 365) throw new ArgumentOutOfRangeException(nameof(days));
         for (var day = 0; day < days; day++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var usage = Sites.ToDictionary(pair => pair.Key, pair => pair.Value.BlockedReason is not null ? 0d :
                 pair.Value.LandId is { } id ? settlements.UsedLands.First(land => land.Id == id).Usage : 1d, StringComparer.Ordinal);
             SimulationEngine.Step(World, Content, usage, Development);
@@ -331,7 +332,7 @@ public sealed class SphericalSimulation
                     naturalRules[id].RecoveryPerDay * (rules.Subsistence?.RecoveryScale(id) ?? 1);
                 var renewal = (s.Wet ? 0 : Renewal("forage", value.Fertility * (.4 + value.ForestCover * .6)) + Renewal("game", value.ForestCover)) +
                     Renewal("fish", s.Potentials["fish"]);
-                return new(s.Wet, s.FreshWater, value.ElevationMeters, value.Moisture, value.ForestCover, renewal);
+                return new(s.Wet, s.FreshWater, value.ElevationMeters, value.TemperatureC, value.Moisture, value.ForestCover, renewal);
             }
             Territory Materialize(CellAddress cell)
             {

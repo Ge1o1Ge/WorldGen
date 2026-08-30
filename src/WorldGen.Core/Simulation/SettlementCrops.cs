@@ -16,9 +16,15 @@ public sealed partial class SettlementSimulation
     private CropRule[] WildCrops(CellAddress cell)
     {
         if (wildCrops.TryGetValue(cell, out var cached)) return cached;
-        var t = terrain[cell]; var p = topology.ToUnitVector(cell);
-        var found = BiologyRules!.Crops.Where(c => t.Terrain != "water" && Biosphere.WildScore(c.Id, c.Habitat, world.Spatial.Grid.Seed, p, t.TemperatureC, t.Moisture, t.ForestCover) > .22)
-            .OrderByDescending(c => Biosphere.WildScore(c.Id, c.Habitat, world.Spatial.Grid.Seed, p, t.TemperatureC, t.Moisture, t.ForestCover)).ToArray();
+        var p = topology.ToUnitVector(cell);
+        var local = terrain.GetValueOrDefault(cell);
+        var surface = local is null ? planetTerrain?.SampleSurface(p) : null;
+        var water = local?.Terrain == "water" || surface?.Biome == SphericalBiome.Ocean;
+        var temperature = local?.TemperatureC ?? surface?.TemperatureC ?? 0;
+        var moisture = local?.Moisture ?? surface?.Moisture ?? 0;
+        var forest = local?.ForestCover ?? surface?.ForestCover ?? 0;
+        var found = BiologyRules!.Crops.Where(c => !water && Biosphere.WildScore(c.Id, c.Habitat, world.Spatial.Grid.Seed, p, temperature, moisture, forest) > .22)
+            .OrderByDescending(c => Biosphere.WildScore(c.Id, c.Habitat, world.Spatial.Grid.Seed, p, temperature, moisture, forest)).ToArray();
         wildCrops[cell] = found; return found;
     }
     private double CropSuitability(CropRule crop, CellAddress cell)
@@ -27,12 +33,23 @@ public sealed partial class SettlementSimulation
     }
     private bool CanSow(CropRule crop, CellAddress cell)
     {
-        var w = dailyWeather[cell]; if (w.Snow > 2 || w.TemperatureC < crop.BaseTemperature + 2 || CropSuitability(crop, cell) <= 0) return false;
+        var w = dailyWeather[cell]; if (w.Snow > 2 || w.TemperatureC < crop.BaseTemperature + 2 || !CanSupportCropCycle(crop, cell)) return false;
         var future = 0d; var point = topology.ToUnitVector(cell);
         // Calendar knowledge of the seasonal cycle, not access to future storms.
         for (var offset = 0; offset < 180; offset += 10)
             future += Math.Max(0, SphericalWeather.SeasonalTemperature(terrain[cell].TemperatureC, point, Rules.Primitive!.SeasonalAmplitudeC, world.Day + offset, world.Calendar.DaysPerYear) - crop.BaseTemperature) * 10;
         return future >= crop.DegreeDays || crop.MatureYears > 0;
+    }
+    private bool CanSupportCropCycle(CropRule crop, CellAddress cell)
+    {
+        if (CropSuitability(crop, cell) <= 0) return false;
+        if (crop.MatureYears > 0) return true;
+        var annual = 0d; var point = topology.ToUnitVector(cell); var step = 10;
+        for (var offset = 0; offset < world.Calendar.DaysPerYear; offset += step)
+            annual += Math.Max(0, SphericalWeather.SeasonalTemperature(terrain[cell].TemperatureC, point,
+                Rules.Primitive!.SeasonalAmplitudeC, world.Day + offset, world.Calendar.DaysPerYear) - crop.BaseTemperature) *
+                Math.Min(step, world.Calendar.DaysPerYear - offset);
+        return annual >= crop.DegreeDays;
     }
     private IEnumerable<CropRule> CropChoices(CityState city, CellAddress cell)
     {
@@ -45,6 +62,16 @@ public sealed partial class SettlementSimulation
             .Where(c => bio.HarvestedCrops.Contains(c.Id) || !active.Any(p => p!.CropId == c.Id))
             .Where(c => c.MatureYears == 0 || perennials < Math.Max(1, (active.Length + 1) * .25));
     }
+    private CropRule[] PendingTechnicalCropTrials(CityState city)
+    {
+        if (BiologyRules is null) return [];
+        var bio = State.Cities[city.Id].Biology!;
+        var planted = State.Buildings.Where(b => b.CityId == city.Id && b.Kind == "garden" && Standing(b))
+            .Select(b => bio.Plots.GetValueOrDefault(b.Id)?.CropId).Where(id => id is not null).ToHashSet(StringComparer.Ordinal);
+        return BiologyRules.Crops.Where(c => c.FoodValue <= 0 && Knows(city, c.Technology) &&
+                city.Stocks[c.SeedResource] >= c.SeedTonnes * .015 && !bio.HarvestedCrops.Contains(c.Id) && !planted.Contains(c.Id))
+            .OrderBy(c => c.Id, StringComparer.Ordinal).ToArray();
+    }
     private bool CanStartCropPlot(CityState city, CellAddress cell) => BiologyRules is null || CropChoices(city, cell).Any();
     private double CropExpectedDailyYield(CellAddress cell)
     {
@@ -52,6 +79,18 @@ public sealed partial class SettlementSimulation
         var state = building is null ? null : State.Cities[building.CityId].Biology?.Plots.GetValueOrDefault(building.Id);
         var crop = BiologyRules?.Crops.FirstOrDefault(c => c.Id == state?.CropId);
         return crop is null ? 0 : crop.YieldTonnes * crop.FoodValue * Math.Max(.1, state!.Area) * terrain[cell].NaturalState.SoilQuality / Math.Max(120, crop.DegreeDays / Math.Max(2, terrain[cell].TemperatureC - crop.BaseTemperature));
+    }
+    private double CropUtility(CityState city, CropRule crop, CellAddress cell)
+    {
+        var suitability = CropSuitability(crop, cell);
+        if (crop.FoodValue > 0)
+        {
+            var pressure = Math.Clamp((Target(city, "food") - city.Stocks["food"]) / Math.Max(.001, Target(city, "food")), 0, 1);
+            return crop.YieldTonnes * crop.FoodValue * suitability * (.5 + pressure);
+        }
+        var demanded = Rules.Primitive?.Processes.Any(process => Knows(city, process.Technology) && process.Inputs.ContainsKey(crop.HarvestResource) &&
+            city.Stocks.GetValueOrDefault(process.TargetResource) < Population(city) * process.TargetOutputPerPerson) == true;
+        return crop.YieldTonnes * suitability * (demanded ? 2 : .2);
     }
     private double SearchSeeds(CityState city, double available, DailyTelemetry telemetry)
     {
@@ -104,10 +143,13 @@ public sealed partial class SettlementSimulation
             {
                 var options = CropChoices(city, b.Cell).Where(c => CanSow(c, b.Cell))
                     .OrderBy(c => Knows(city, "crop_rotation") && c.Family == plot.LastFamily ? 1 : 0)
+                    // A known technical crop receives one experimental plot before
+                    // ordinary food expansion. Once planted it leaves this priority.
+                    .ThenBy(c => c.FoodValue <= 0 && !bio.HarvestedCrops.Contains(c.Id) ? 0 : 1)
                     .ThenBy(c => bio.HarvestedCrops.Contains(c.Id) ? 1 : 0)
                     .ThenBy(c => c.MatureYears > 0 ? 1 : 0)
                     .ThenBy(c => buildings.Count(b => bio.Plots.GetValueOrDefault(b.Id)?.CropId == c.Id))
-                    .ThenByDescending(c => c.YieldTonnes * c.FoodValue * CropSuitability(c, b.Cell) / c.DegreeDays).ToArray();
+                    .ThenByDescending(c => CropUtility(city, c, b.Cell) / c.DegreeDays).ToArray();
                 if (options.Length > 0)
                 {
                     var selected = options[0]; var area = Math.Min(1, Math.Min(city.Stocks[selected.SeedResource] / selected.SeedTonnes, (budget - travel) / selected.PlantHours));
@@ -181,7 +223,7 @@ public sealed partial class SettlementSimulation
     {
         if (BiologyRules is not { } r || available <= 0) return 0;
         var life = State.Cities[city.Id]; var hours = 0d; var prepared = 0d;
-        foreach (var crop in r.Crops.OrderByDescending(c => c.StorageDecay))
+        foreach (var crop in r.Crops.Where(c => c.FoodValue > 0).OrderByDescending(c => c.StorageDecay))
         {
             var missing = Math.Max(0, Target(city, "food") - city.Stocks["food"]); if (missing <= 0) break;
             var raw = Math.Min(city.Stocks[crop.HarvestResource], Math.Min(missing / crop.FoodValue, (available - hours) * r.FoodProcessingTonnesPerHour));

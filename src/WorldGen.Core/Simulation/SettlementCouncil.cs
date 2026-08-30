@@ -48,12 +48,14 @@ public sealed partial class SettlementSimulation
         foreach (var p in council.Proposals.Where(CollectiveDecisions.Pending))
         {
             p.Available = ideas.Any(i => i.Key == p.Key);
-            foreach (var site in p.Sites) site.Available = ValidCouncilSite(city, p.Kind, site.Cell) && groups.Any(h => Routes(h.Cell).Cost.ContainsKey(site.Cell));
+            foreach (var site in p.Sites) site.Available = ValidCouncilSite(city, p.Kind, site.Cell) &&
+                (p.Kind == "scouting" || groups.Any(h => Routes(h.Cell).Cost.ContainsKey(site.Cell)));
             p.Available &= p.Sites.Any(s => s.Available);
         }
         foreach (var idea in ideas)
         {
-            if (council.Proposals.Any(p => p.Key == idea.Key && p.Phase is "idea" or "site" or "approved" or "executing" or "observing")) continue;
+            if (council.Proposals.Any(p => (p.Key == idea.Key || idea.Kind == "scouting" && p.Kind == "scouting") &&
+                p.Phase is "idea" or "site" or "approved" or "executing" or "observing")) continue;
             var budget = groups.Sum(g => g.Residents) * rules.DailyPointsPerPerson;
             var p = new CollectiveProposal
             {
@@ -76,15 +78,18 @@ public sealed partial class SettlementSimulation
         var pending = council.Proposals.Where(p => p.Available && p.Phase is "idea" or "site").ToArray();
         var electors = groups.Select(g => new DecisionElector(g.Id, city.Id, g.Residents,
             pending.Select(p => p.Id).ToHashSet(StringComparer.Ordinal),
-            pending.SelectMany(p => p.Sites).Where(s => s.Available && Routes(g.Cell).Cost.ContainsKey(s.Cell)).Select(s => s.Id).ToHashSet(StringComparer.Ordinal))).ToArray();
+            pending.SelectMany(p => p.Sites).Where(s => s.Available &&
+                (pending.Any(p => p.Kind == "scouting" && p.Sites.Contains(s)) || Routes(g.Cell).Cost.ContainsKey(s.Cell))).Select(s => s.Id).ToHashSet(StringComparer.Ordinal))).ToArray();
         var ballots = new List<DecisionBallot>();
         foreach (var group in groups)
         {
             double Preference(CollectiveProposal p) => WellbeingProjectPreference(city, group.Id, p) + (p.Key.StartsWith("replace-worn:", StringComparison.Ordinal) ? 3.5 :
+                p.Kind == "scouting" ? 2.5 + (life.Supply?.PressureStreak ?? 0) / Math.Max(1d, Rules.Exploration?.PressureDays ?? 1) * 2 :
                 p.Kind == "garden" ? 1.5 + (life.Food?.LaborHours ?? 0) / Math.Max(1, life.LaborAvailableHours) * 3 :
                 p.Kind == "well" ? Math.Min(3, WaterDistance(group.Cell, city.Id) / 3) :
                 p.Kind == "granary" ? 1.5 + Math.Min(4, FoodStorageNeedVolume(city)) :
                 p.Kind == "warehouse" ? 1.2 + Math.Min(4, OutdoorStorageVolume(city, false) * .5) :
+                BuildingRule(p.Kind).Technology is not null ? 2 + (life.Processes.Values.Any(process => process.Constraint?.StartsWith("building:any:", StringComparison.Ordinal) == true) ? 2 : 0) :
                 p.Replaces is not null ? (HouseholdIdentity(p.Replaces) == group.Id ? 3 : .35) : life.Unhoused > 0 ? 4 : 1.2);
             var preferred = pending.OrderByDescending(Preference).ThenBy(p => p.CreatedDay).ThenBy(p => p.Id, StringComparer.Ordinal).FirstOrDefault();
             if (preferred is null || Preference(preferred) <= 0) continue;
@@ -93,9 +98,10 @@ public sealed partial class SettlementSimulation
             {
                 // Shared access matters as well as a household's own journey.
                 // Only known, reachable sites enter this comparison.
-                var site = preferred.Sites.Where(s => s.Available && Routes(group.Cell).Cost.ContainsKey(s.Cell))
+                var site = preferred.Sites.Where(s => s.Available && (preferred.Kind == "scouting" || Routes(group.Cell).Cost.ContainsKey(s.Cell)))
                     .OrderBy(s => preferred.Kind == "garden" ?
                         (1 + groups.Sum(g => Routes(g.Cell).Cost.GetValueOrDefault(s.Cell, 1000) * g.Residents) / Math.Max(1, Population(city)) * .08) / Math.Max(.01, terrain[s.Cell].NaturalState.SoilQuality) :
+                        preferred.Kind == "scouting" ? 0 :
                         Routes(group.Cell).Cost[s.Cell] * .5 + groups.Sum(g => Routes(g.Cell).Cost.GetValueOrDefault(s.Cell, 1000) * g.Residents) / Math.Max(1, Population(city)) * .5)
                     .ThenBy(s => s.Id, StringComparer.Ordinal).FirstOrDefault();
                 if (site is null) continue;
@@ -121,6 +127,7 @@ public sealed partial class SettlementSimulation
         if (construction is not null) return construction;
         foreach (var p in council.Proposals.Where(p => p.Phase == "approved").OrderBy(p => p.CreatedDay).ThenBy(p => p.Id, StringComparer.Ordinal))
         {
+            if (p.Kind == "scouting") { life.Decision = "Совет одобрил сбор разведывательной группы; готовятся припасы"; continue; }
             var site = p.Sites.Single(s => s.Id == p.SelectedSite);
             if (!p.Available || !ValidCouncilSite(city, p.Kind, site.Cell)) continue;
             var project = StartProject(city, p.Kind, site.Cell, telemetry, p.Reason, p.Replaces, p.CauseEventId);
@@ -135,12 +142,18 @@ public sealed partial class SettlementSimulation
         return null;
     }
 
-    private bool ValidCouncilSite(CityState city, string kind, CellAddress cell) => terrain.TryGetValue(cell, out var t) &&
-        t.AssignedCityId == city.Id && Free(cell) &&
+    private bool ValidCouncilSite(CityState city, string kind, CellAddress cell)
+    {
+        if (kind == "scouting") return SurveyTerrain(cell) is { } scout && (!scout.Water || Knows(city, "rafts"));
+        return terrain.TryGetValue(cell, out var t) &&
+        t.AssignedCityId == city.Id && t.Terrain != "water" && Free(cell) &&
         (kind != "garden" || Rules.Subsistence is not null && State.Cities[city.Id].Discoveries.Contains("gardening") &&
             layer.Construction.GetOccupiedCapacity(cell) == 0 && t.Fertility >= .35 && CanCultivate(cell) && CanStartCropPlot(city,cell)) &&
         (kind != "well" || State.Cities[city.Id].Discoveries.Contains("well") && t.Moisture >= .42 && t.ElevationMeters < 450 &&
-            (Rules.Lifecycle is null || t.Water.DistanceToRiver != 0 && !State.Buildings.Any(b => b.Cell == cell && b.Kind == "well" && Standing(b))));
+            (Rules.Lifecycle is null || t.Water.DistanceToRiver != 0 && !State.Buildings.Any(b => b.Cell == cell && b.Kind == "well" && Standing(b)))) &&
+        (BuildingRule(kind).Site != "river" || t.Water.DistanceToRiver == 0) &&
+        (BuildingRule(kind).Site != "wind" || t.ForestCover <= .3 && t.ElevationMeters >= 20);
+    }
 
     private List<BuildingIdea> BuildingIdeas(CityState city, DwellingState[] homes)
     {
@@ -149,13 +162,23 @@ public sealed partial class SettlementSimulation
         CellAddress[] Sites(string kind) => Routes(anchor).Cost.Keys.Where(c => ValidCouncilSite(city, kind, c))
             .OrderBy(c => Routes(anchor).Cost[c] + terrain[c].ForestCover * .1).ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal).Take(3).ToArray();
         var ordinary = Sites("house");
+        if (Rules.Exploration is { } exploration && life.Supply is { } supply && IsForager &&
+            supply.PressureStreak >= exploration.PressureDays && world.Day - supply.LastDepartureDay >= exploration.CooldownDays &&
+            !(State.Scouting?.Expeditions.Any(e => e.CityId == city.Id && ActiveScout(e)) ?? false))
+        {
+            var direction = ScoutDirection(city, life.Council?.NextId ?? State.Scouting?.NextId ?? 1, Knows(city, "rafts"));
+            ideas.Add(new($"scouting:{supply.PressureEventId ?? "supply"}", "scouting", "organization",
+                $"Собрать разведывательную группу: {supply.Reason}", exploration.DecisionComplexity, [direction]));
+        }
         if (Rules.Lifecycle is not null)
             foreach (var old in State.Buildings.Where(b => b.CityId == city.Id && (NeedsReplacement(b) || WantsHousingImprovement(b)) && (b.Kind != "house" || b.Residents > 0))
                 .Where(b => !State.Buildings.Any(next => next.Replaces == b.Id && Standing(next))).OrderBy(b => b.Id, StringComparer.Ordinal))
             {
                 var sites = Sites(old.Kind);
                 if (sites.Length > 0) ideas.Add(new($"replace-worn:{old.Id}", old.Kind, old.Kind == "well" ? "water" : "construction",
-                    old.Kind == "house" ? NeedsReplacement(old) ? "Заменить ветхий дом до потери жилья" : "Качество жилья ниже привычного; ремонт уже не восстановит удобство" : "Заменить изношенный колодец", Rules.Decisions!.Complexity[old.Kind], sites, old.Id));
+                    old.Kind == "house" ? NeedsReplacement(old) ? "Заменить ветхий дом до потери жилья" : "Качество жилья ниже привычного; ремонт уже не восстановит удобство" :
+                    old.Kind == "well" ? "Заменить изношенный колодец" : "Заменить изношенную производственную установку",
+                    Rules.Decisions!.Complexity[old.Kind], sites, old.Id));
             }
         if (Rules.Subsistence is { } subsistence && life.Discoveries.Contains("gardening") &&
             ((life.Food?.LaborHours ?? 0) > life.LaborAvailableHours * subsistence.FoodLaborPressure || life.Supply?.RenewalCoverage < .85 || WantsLaborSavingGarden(city)))
@@ -169,6 +192,17 @@ public sealed partial class SettlementSimulation
                     .ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal).Take(3).ToArray();
                 if (sites.Length > 0) ideas.Add(new($"prepare-garden:{gardens.Length}", "garden", "food", "Освоить огород: дикая пища обходится всё дороже", 2, sites));
             }
+        }
+        if (Rules.Subsistence is not null && life.Discoveries.Contains("gardening") && PendingTechnicalCropTrials(city) is { Length: > 0 } trials)
+        {
+            var crop = trials[0];
+            // Land preparation may start before the sowing window; the crop
+            // simulation itself will wait for viable temperature and season.
+            var sites = Routes(anchor).Cost.Keys.Where(c => ValidCouncilSite(city, "garden", c) && CanSupportCropCycle(crop, c))
+                .OrderByDescending(c => CropSuitability(crop, c) / (1 + Routes(anchor).Cost[c] * .08 + terrain[c].NaturalState.ForestBiomass))
+                .ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal).Take(3).ToArray();
+            if (sites.Length > 0) ideas.Add(new($"technical-crop:{crop.Id}", "garden", "craft",
+                $"Опытный участок: проверить пользу культуры «{crop.Name}» вне пищевого хозяйства", 2, sites));
         }
         if (ordinary.Length > 0 && life.HousingCapacity - Population(city) < Math.Ceiling(Population(city) * .05))
             ideas.Add(new("housing-reserve", "house", "construction", "Нехватка жилья или резерв для роста", Rules.Decisions!.Complexity["house"], ordinary));
@@ -191,6 +225,19 @@ public sealed partial class SettlementSimulation
             var sites = Sites("well");
             if (sites.Length > 0) ideas.Add(new("well", "well", "water", "Сократить труд на доставку воды", Rules.Decisions!.Complexity["well"], sites));
         }
+        if (Rules.Primitive is { } primitive)
+            foreach (var rule in Rules.Buildings.Where(rule => rule.Technology is not null).OrderBy(rule => rule.Id, StringComparer.Ordinal))
+            {
+                if (!life.Discoveries.Contains(rule.Technology!) || State.Buildings.Any(building => building.CityId == city.Id && building.Kind == rule.Id && Standing(building))) continue;
+                var blockedProcesses = primitive.Processes.Where(process => process.BuildingRequirements.Contains(rule.Id, StringComparer.Ordinal) &&
+                    life.Discoveries.Contains(process.Technology) && !process.BuildingRequirements.Any(kind => State.Buildings.Any(building => building.CityId == city.Id && building.Kind == kind && Standing(building))) &&
+                    city.Stocks.GetValueOrDefault(process.TargetResource) + 1e-9 < Population(city) * process.TargetOutputPerPerson).ToArray();
+                if (blockedProcesses.Length == 0) continue;
+                var sites = Sites(rule.Id); if (sites.Length == 0) continue;
+                ideas.Add(new($"production:{rule.Id}", rule.Id, "construction",
+                    $"Механизированный процесс «{blockedProcesses[0].Name}» упирается в отсутствие подходящей установки",
+                    Rules.Decisions!.Complexity[rule.Id], sites));
+            }
         if (world.Day >= 30 && world.Day - life.LastRelocationDay >= Rules.RelocationCooldownDays && !State.Buildings.Any(b => b.CityId == city.Id && Moving(b)))
         {
             var worst = homes.Where(h => h.Residents > 0).OrderByDescending(h => WaterDistance(h.Cell, city.Id)).FirstOrDefault();
@@ -209,6 +256,7 @@ public sealed partial class SettlementSimulation
         var life = State.Cities[city.Id];
         foreach (var p in council.Proposals.Where(p => p.Phase is "executing" or "observing"))
         {
+            if (p.Kind == "scouting") { ObserveScoutDecision(city, council, p, rules); continue; }
             var building = State.Buildings.FirstOrDefault(b => b.Id == p.BuildingId);
             if (p.Phase == "executing" && building?.Status == "active")
             { p.Phase = "observing"; p.FinishedDay = world.Day; }
@@ -242,6 +290,11 @@ public sealed partial class SettlementSimulation
                     var delivered = life.Tasks.Where(t => t.Activity == "water" && t.Destination == building.Cell).Sum(t => t.Output);
                     benefit = Math.Clamp((delivered / Math.Max(.001, life.WaterCollected) - .1) / .3, -1, 1);
                 }
+                else if (building is { Status: "active" } && BuildingRule(building.Kind).Technology is not null)
+                {
+                    var batches = life.Tasks.Where(task => task.HomeId == building.Id && task.Activity.StartsWith("process:", StringComparison.Ordinal)).Sum(task => task.Output);
+                    benefit = batches > 0 ? Math.Clamp(.35 + batches, .35, 1) : -.5;
+                }
                 p.ObservedDays++; p.ObservedBenefit += benefit;
             }
             if (CollectiveDecisions.Assess(council, p, rules, world.Day, p.ObservedBenefit / Math.Max(1, p.ObservedDays), 1,
@@ -251,5 +304,31 @@ public sealed partial class SettlementSimulation
             else if (world.Day - p.FinishedDay >= rules.MaximumEvaluationDays)
             { p.Phase = "uncertain"; p.OutcomeNote = "Недостаточно однозначных наблюдений для оценки"; }
         }
+    }
+
+    private void ObserveScoutDecision(CityState city, CollectiveDecisionState council, CollectiveProposal proposal, DecisionRules rules)
+    {
+        var expedition = State.Scouting?.Expeditions.FirstOrDefault(e => e.Id == proposal.BuildingId);
+        if (proposal.Phase == "executing")
+        {
+            if (expedition?.Phase == "returned") { proposal.Phase = "observing"; proposal.FinishedDay = expedition.ReturnDay ?? world.Day; }
+            else if (expedition?.Phase == "lost" && world.Day - expedition.DepartureDay > expedition.ProvisionDays + expedition.ExtensionDays + 3)
+            {
+                proposal.Phase = "observing"; proposal.FinishedDay = world.Day;
+                proposal.OutcomeNote = "Группа не вернулась после исчерпания расчётного срока; точная причина неизвестна";
+            }
+            else return;
+        }
+        if (proposal.Phase != "observing" || expedition is null) return;
+        var report = State.Cities[city.Id].Supply?.Reports.LastOrDefault(r => r.ExpeditionId == expedition.Id);
+        var discoveries = (report?.Plants?.Count ?? 0) + (report?.Animals?.Count ?? 0);
+        var benefit = expedition.Phase == "lost" ? -1 : Math.Clamp((report?.SurveyedCells ?? 0) / 24d + discoveries * .08 - expedition.Casualties * .35, -1, 1);
+        proposal.ObservedDays++; proposal.ObservedBenefit += benefit;
+        if (CollectiveDecisions.Assess(council, proposal, rules, world.Day, proposal.ObservedBenefit / Math.Max(1, proposal.ObservedDays),
+            expedition.Phase == "lost" ? .75 : 1, expedition.Phase == "lost" ?
+                "Возвращения не было; поселение оценивает решение по истечению ожидаемого срока" :
+                "Оценка по доставленному маршруту, новым видам, пригодным участкам и потерям группы"))
+            Journal.Record(world, "decision_assessed", proposal.Id, [proposal.CauseEventId, expedition.CauseEventId], new JsonObject
+            { ["cityId"] = city.Id, ["outcome"] = proposal.Outcome, ["observedDays"] = proposal.ObservedDays, ["reason"] = proposal.Reason });
     }
 }

@@ -14,7 +14,14 @@ public sealed record PrimitiveTechnologyRule(string Id, string Name, string Doma
 public sealed record PrimitiveProcessRule(string Id, string Name, string Technology, string Practice,
     IReadOnlyDictionary<string, double> Inputs, IReadOnlyDictionary<string, double> RequiredStocks,
     IReadOnlyDictionary<string, double> Outputs, string TargetResource, double LaborHoursPerBatch, double TargetOutputPerPerson,
-    double MaximumBatchesPerPersonPerDay, int Priority = 0);
+    double MaximumBatchesPerPersonPerDay, int Priority = 0,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string[]? RequiredBuildings = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, double>? BuildingLaborMultipliers = null)
+{
+    [System.Text.Json.Serialization.JsonIgnore] public string[] BuildingRequirements => RequiredBuildings ?? [];
+    [System.Text.Json.Serialization.JsonIgnore] public IReadOnlyDictionary<string, double> LaborMultipliers => BuildingLaborMultipliers ?? EmptyMultipliers;
+    private static readonly IReadOnlyDictionary<string, double> EmptyMultipliers = new Dictionary<string, double>();
+}
 
 public sealed record PrimitiveWorldRules
 {
@@ -70,6 +77,8 @@ public sealed record PrimitiveWorldRules
                 string.IsNullOrWhiteSpace(p.TargetResource) || !p.Outputs.ContainsKey(p.TargetResource) ||
                 p.Inputs.Keys.Concat(p.RequiredStocks.Keys).Concat(p.Outputs.Keys).Any(string.IsNullOrWhiteSpace) ||
                 p.Inputs.Values.Concat(p.RequiredStocks.Values).Concat(p.Outputs.Values).Any(n => !double.IsFinite(n) || n <= 0) ||
+                p.BuildingRequirements.Any(string.IsNullOrWhiteSpace) || p.BuildingRequirements.Distinct(StringComparer.Ordinal).Count() != p.BuildingRequirements.Length ||
+                p.LaborMultipliers.Any(pair => !p.BuildingRequirements.Contains(pair.Key, StringComparer.Ordinal) || !double.IsFinite(pair.Value) || pair.Value <= 0 || pair.Value > 4) ||
                 !double.IsFinite(p.LaborHoursPerBatch) || p.LaborHoursPerBatch <= 0 ||
                 !double.IsFinite(p.TargetOutputPerPerson) || p.TargetOutputPerPerson <= 0 ||
                 !double.IsFinite(p.MaximumBatchesPerPersonPerDay) || p.MaximumBatchesPerPersonPerDay <= 0))

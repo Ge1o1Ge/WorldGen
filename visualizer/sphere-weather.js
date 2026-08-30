@@ -36,6 +36,39 @@ export function createWeatherSampler(data, faceSize) {
   };
 }
 
+const CLIMATE_MISSING=-2147483648;
+export function createClimateSampler(data) {
+  const climate=data?.climate;
+  if(!climate?.resolution||climate.months!==12)return null;
+  const n=climate.resolution,cellCount=6*n*n,faces=new Map(FACE_NAMES.map((face,index)=>[face,index]));
+  const scales={temperature:10,rain:10,wind:100};
+  return location=>{
+    const face=faces.get(location.face);if(face===undefined)return [];
+    const x=clamp(Math.floor((location.u+1)*n/2),0,n-1),y=clamp(Math.floor((location.v+1)*n/2),0,n-1);
+    const cell=(face*n+y)*n+x;
+    return Array.from({length:12},(_,month)=>{
+      const index=month*cellCount+cell,result={month,sampleDays:climate.sampleDays[month]??0};
+      for(const [field,scale] of Object.entries(scales)){
+        const value=climate[field]?.[index];result[field]=value===undefined||value===CLIMATE_MISSING?null:value/scale;
+      }
+      return result;
+    });
+  };
+}
+
+export function climateSeries(sample,locations) {
+  if(!sample||!locations.length)return [];
+  const series=Array.from({length:12},(_,month)=>({month,sampleDays:0,temperature:0,rain:0,wind:0,count:0}));
+  for(const location of locations)for(const item of sample(location)){
+    if(item.temperature===null)continue;
+    const target=series[item.month];target.sampleDays=Math.max(target.sampleDays,item.sampleDays);target.count++;
+    for(const field of ['temperature','rain','wind'])target[field]+=item[field];
+  }
+  return series.map(item=>item.count?{month:item.month,sampleDays:item.sampleDays,
+    temperature:item.temperature/item.count,rain:item.rain/item.count,wind:item.wind/item.count}:
+    {month:item.month,sampleDays:0,temperature:null,rain:null,wind:null});
+}
+
 export function winterSymbol(kind, weather) {
   if(!weather)return kind;
   if(['deciduous','fruit_tree','nut_tree'].includes(kind)&&weather.leafOff>.5)return 'bare_tree';

@@ -35,6 +35,13 @@ public static class SettlementRulesLoader
                 Discoveries = era.Technologies.Select(t => new SettlementDiscoveryRule(t.Id, t.Name, t.Practice, t.PracticeHours)).ToArray()
             };
         }
+        else
+        {
+            // Technology-bound installations belong to the primitive scenario
+            // that supplies their component resources and knowledge. The older
+            // isolated settlement fixtures keep only the shared buildings.
+            rules = rules with { Buildings = rules.Buildings.Where(building => building.Technology is null).ToArray() };
+        }
         rules.Validate();
         return rules;
     }

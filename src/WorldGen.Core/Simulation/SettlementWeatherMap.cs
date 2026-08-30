@@ -4,10 +4,16 @@ namespace WorldGen.Core.Simulation;
 
 public sealed partial class SettlementSimulation
 {
+    private const int ClimateMonths = 12;
+    private const int ClimateMaximumResolution = 8;
     private UnitVector3[] weatherPoints = [];
     private double[] weatherMeans = [];
     private LocalWeather[] surfaceWeather = [];
     private UnitVector3[] surfaceWind = [];
+    private double[] climateDayTemperature = [];
+    private double[] climateDayRain = [];
+    private double[] climateDayWind = [];
+    private int[] climateDayCounts = [];
     private object? cachedWeatherMap;
 
     private void InitializeWeatherSurface()
@@ -21,15 +27,39 @@ public sealed partial class SettlementSimulation
         if (grid.Resolution != resolution || grid.Snow.Length != count || grid.Ice.Length != count || grid.LeafOff.Length != count ||
             grid.Snow.Any(v => !double.IsFinite(v) || v < 0 || v > 500) || grid.Ice.Any(v => !double.IsFinite(v) || v < 0 || v > 2))
             throw new InvalidOperationException("Некорректная зимняя поверхность в снимке");
+        InitializeClimateHistory(grid, resolution);
         var mesh = new CubeSphereTopology(resolution);
         weatherPoints = new UnitVector3[count]; weatherMeans = new double[count];
         surfaceWeather = new LocalWeather[count]; surfaceWind = new UnitVector3[count];
+        var climateCells = 6 * grid.ClimateResolution * grid.ClimateResolution;
+        climateDayTemperature = new double[climateCells]; climateDayRain = new double[climateCells];
+        climateDayWind = new double[climateCells]; climateDayCounts = new int[climateCells];
         for (var i = 0; i < count; i++)
         {
             weatherPoints[i] = mesh.ToUnitVector(new((CubeFace)(i / (resolution * resolution)), i % resolution, i / resolution % resolution));
             weatherMeans[i] = planetTerrain!.SampleSurface(weatherPoints[i]).TemperatureC;
         }
         SampleWeatherSurface(advance: false);
+    }
+    private static void InitializeClimateHistory(WeatherSurfaceGrid grid, int weatherResolution)
+    {
+        var resolution = Math.Min(ClimateMaximumResolution, weatherResolution);
+        var length = ClimateMonths * 6 * resolution * resolution;
+        if (grid.ClimateResolution == 0 && grid.ClimateSampleDays.Length == 0 &&
+            grid.ClimateTemperatureSum.Length == 0 && grid.ClimateRainSum.Length == 0 && grid.ClimateWindSum.Length == 0)
+        {
+            grid.ClimateResolution = resolution;
+            grid.ClimateSampleDays = new int[ClimateMonths];
+            grid.ClimateTemperatureSum = new double[length];
+            grid.ClimateRainSum = new double[length];
+            grid.ClimateWindSum = new double[length];
+            return;
+        }
+        if (grid.ClimateResolution != resolution || grid.ClimateSampleDays.Length != ClimateMonths ||
+            grid.ClimateTemperatureSum.Length != length || grid.ClimateRainSum.Length != length || grid.ClimateWindSum.Length != length ||
+            grid.ClimateSampleDays.Any(n => n < 0) ||
+            grid.ClimateTemperatureSum.Concat(grid.ClimateRainSum).Concat(grid.ClimateWindSum).Any(v => !double.IsFinite(v)))
+            throw new InvalidOperationException("Некорректная история климата в снимке");
     }
     private void AdvanceWeatherSurface()
     {
@@ -40,6 +70,11 @@ public sealed partial class SettlementSimulation
     private void SampleWeatherSurface(bool advance)
     {
         var sky = State.Atmosphere!; var grid = sky.Surface!; var rules = Rules.Primitive!;
+        if (advance)
+        {
+            Array.Clear(climateDayTemperature); Array.Clear(climateDayRain);
+            Array.Clear(climateDayWind); Array.Clear(climateDayCounts);
+        }
         for (var i = 0; i < weatherPoints.Length; i++)
         {
             var w = SphericalWeather.Sample(sky, rules, weatherPoints[i], weatherMeans[i], Math.Max(0, sky.LastDay), world.Calendar.DaysPerYear);
@@ -52,8 +87,34 @@ public sealed partial class SettlementSimulation
             }
             surfaceWeather[i] = w with { Snow = grid.Snow[i] };
             surfaceWind[i] = WinterWeather.WindVector(sky, weatherPoints[i]);
+            if (advance) AccumulateClimateCell(grid, i, surfaceWeather[i], surfaceWind[i]);
         }
+        if (advance) FinishClimateDay(grid, sky.LastDay);
         cachedWeatherMap = null;
+    }
+    private void AccumulateClimateCell(WeatherSurfaceGrid grid, int source, LocalWeather weather, UnitVector3 wind)
+    {
+        var sourceResolution = grid.Resolution;
+        var resolution = grid.ClimateResolution;
+        var face=source/(sourceResolution*sourceResolution);var local=source%(sourceResolution*sourceResolution);
+        var x=local%sourceResolution;var y=local/sourceResolution;
+        var target=(face*resolution+Math.Min(resolution-1,y*resolution/sourceResolution))*resolution+Math.Min(resolution-1,x*resolution/sourceResolution);
+        climateDayTemperature[target]+=weather.TemperatureC;climateDayRain[target]+=weather.RainMm;
+        climateDayWind[target]+=Math.Sqrt(wind.X*wind.X+wind.Y*wind.Y+wind.Z*wind.Z);climateDayCounts[target]++;
+    }
+    private void FinishClimateDay(WeatherSurfaceGrid grid, int day)
+    {
+        var cellCount = climateDayCounts.Length;
+        var yearDay = ((day % world.Calendar.DaysPerYear) + world.Calendar.DaysPerYear) % world.Calendar.DaysPerYear;
+        var month = Math.Min(ClimateMonths - 1, yearDay * ClimateMonths / world.Calendar.DaysPerYear);
+        var offset = month * cellCount;
+        for (var i = 0; i < cellCount; i++)
+        {
+            grid.ClimateTemperatureSum[offset + i] += climateDayTemperature[i] / climateDayCounts[i];
+            grid.ClimateRainSum[offset + i] += climateDayRain[i] / climateDayCounts[i];
+            grid.ClimateWindSum[offset + i] += climateDayWind[i] / climateDayCounts[i];
+        }
+        grid.ClimateSampleDays[month]++;
     }
     public object? WeatherMap()
     {
@@ -74,6 +135,17 @@ public sealed partial class SettlementSimulation
             windX = surfaceWind.Select(v => Q(v.X, 10000)).ToArray(),
             windY = surfaceWind.Select(v => Q(v.Y, 10000)).ToArray(),
             windZ = surfaceWind.Select(v => Q(v.Z, 10000)).ToArray(),
+            climate = new
+            {
+                resolution = grid.ClimateResolution,
+                months = ClimateMonths,
+                sampleDays = grid.ClimateSampleDays,
+                // Missing months use a sentinel instead of pretending that a
+                // seasonal model is historical observation.
+                temperature = ClimateValues(grid.ClimateTemperatureSum, grid.ClimateSampleDays, grid.ClimateResolution, 10),
+                rain = ClimateValues(grid.ClimateRainSum, grid.ClimateSampleDays, grid.ClimateResolution, 10),
+                wind = ClimateValues(grid.ClimateWindSum, grid.ClimateSampleDays, grid.ClimateResolution, 100)
+            },
             local = new
             {
                 indices = local.Select(p => ((int)p.Key.Face * topology.FaceSize + p.Key.Y) * topology.FaceSize + p.Key.X).ToArray(),
@@ -85,5 +157,16 @@ public sealed partial class SettlementSimulation
             }
         };
         return cachedWeatherMap;
+    }
+    private static int[] ClimateValues(double[] sums, int[] days, int resolution, double scale)
+    {
+        const int missing = int.MinValue;
+        var cellCount = 6 * resolution * resolution;
+        var result = new int[sums.Length];
+        for (var month = 0; month < ClimateMonths; month++)
+        for (var cell = 0; cell < cellCount; cell++)
+            result[month * cellCount + cell] = days[month] == 0 ? missing :
+                (int)Math.Round(sums[month * cellCount + cell] / days[month] * scale);
+        return result;
     }
 }

@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddResponseCompression();
 var app = builder.Build();
 app.UseResponseCompression();
+app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(15) });
 var content = await ContentLoader.LoadAsync();
 var sphereScenario = builder.Configuration["sphere-scenario"] ?? "primordial";
 var sphericalDefinition = await SphericalWorldLoader.LoadAsync(fileName: sphereScenario == "primordial" ? "spherical-primordial-world.json" : "cube-sphere-prototype.json");
@@ -25,7 +26,11 @@ var sphericalSettlementIndex = sphericalDefinition.Settlements
     .Select((settlement, index) => (settlement.Id, Index: index))
     .ToDictionary(item => item.Id, item => item.Index, StringComparer.Ordinal);
 var spherePreviewCache = new System.Collections.Concurrent.ConcurrentDictionary<int, Lazy<object>>();
+var sphereGpuSurface = new Lazy<byte[]>(BuildGpuSurface, LazyThreadSafetyMode.ExecutionAndPublication);
 var sphereLock = new object();
+// Only one browser tab may own the simulation clock. Other tabs may still
+// observe and inspect the same world, but cannot accidentally advance it too.
+var sphereLiveRunner = new SemaphoreSlim(1, 1);
 var sphericalHydrology = new Lazy<SphericalHydrology>(() => startupHydrology ?? SphericalHydrology.Build(sphericalDefinition, sphericalTerrain));
 // Explicit startup restore lets a renderer/server update preserve the running world.
 var sphereSnapshotPath = builder.Configuration["sphere-snapshot"];
@@ -114,6 +119,7 @@ app.MapGet("/api/sphere", () =>
         sphericalDefinition.Terrain.SeaLevelMeters,
         biosphere = settlementRules.Primitive?.Biosphere,
         processes = settlementRules.Primitive?.Processes,
+        activities = settlementRules.Activities,
         zones = sphericalTopology.CellCount,
         triangles = sphericalTopology.TriangleCount,
         chunks = sphericalLayout.ChunkCount,
@@ -284,7 +290,64 @@ app.MapGet("/api/sphere/preview", (int? stride) =>
     }
 });
 
+app.MapGet("/api/sphere/gpu-surface", (string? worldId) =>
+{
+    if (!StringComparer.Ordinal.Equals(worldId, sphereWorldId))
+        return Results.Conflict(new { error = "Запрошена поверхность другого мира" });
+    return Results.File(sphereGpuSurface.Value, "application/octet-stream");
+});
+
+byte[] BuildGpuSurface()
+{
+    var size = sphericalDefinition.FaceSize;
+    var faceLength = checked(size * size);
+    var pixels = new byte[checked(faceLength * 6 * 4)];
+    foreach (var face in Enum.GetValues<CubeFace>())
+    {
+        for (var chunkY = 0; chunkY < sphericalLayout.ChunksPerFaceAxis; chunkY++)
+        {
+            for (var chunkX = 0; chunkX < sphericalLayout.ChunksPerFaceAxis; chunkX++)
+            {
+                var chunk = sphericalTerrain.GenerateChunk(new ChunkAddress(face, chunkX, chunkY));
+                var originX = chunkX * sphericalDefinition.ChunkSize;
+                var originY = chunkY * sphericalDefinition.ChunkSize;
+                for (var localY = 0; localY < chunk.Height; localY++)
+                {
+                    for (var localX = 0; localX < chunk.Width; localX++)
+                    {
+                        var source = chunk.Index(localX, localY);
+                        var target = (((int)face * faceLength) + (originY + localY) * size + originX + localX) * 4;
+                        var forest = Math.Clamp((chunk.ForestCover[source] - .3f) / .25f, 0, 1);
+                        var r = 244f - 40f * forest;
+                        var g = 240f - 20f * forest;
+                        var b = 223f - 36f * forest;
+                        if (chunk.ElevationMeters[source] <= sphericalDefinition.Terrain.SeaLevelMeters)
+                        {
+                            var amount = (float)Math.Clamp((sphericalDefinition.Terrain.SeaLevelMeters - chunk.ElevationMeters[source]) / 240f, 0, 1);
+                            r = 195 - 42 * amount; g = 220 - 26 * amount; b = 226 - 17 * amount;
+                        }
+                        else if (chunk.Biome[source] == SphericalBiome.Tundra)
+                        { r += (229 - r) * .55f; g += (231 - g) * .55f; b += (224 - b) * .55f; }
+                        else if (chunk.Biome[source] == SphericalBiome.DryGrassland)
+                        { r += (238 - r) * .3f; g += (223 - g) * .3f; b += (184 - b) * .3f; }
+                        else if (chunk.Biome[source] == SphericalBiome.Wetland)
+                        { r += (200 - r) * .45f; g += (220 - g) * .45f; b += (211 - b) * .45f; }
+                        pixels[target] = (byte)Math.Clamp((int)r, 0, 255);
+                        pixels[target + 1] = (byte)Math.Clamp((int)g, 0, 255);
+                        pixels[target + 2] = (byte)Math.Clamp((int)b, 0, 255);
+                        pixels[target + 3] = 255;
+                    }
+                }
+            }
+        }
+    }
+    return pixels;
+}
+
 app.MapGet("/api/sphere/hydrology", () => Results.Ok(hydrologyView.Value));
+
+double ScoutCargoUsed(ScoutExpedition expedition) => expedition.CargoUsed + expedition.CapturedAnimals.Sum(pair => pair.Value *
+    (settlementRules.Primitive?.Biosphere?.Animals.FirstOrDefault(animal => animal.Id == pair.Key)?.BodyTonnes ?? 0));
 
 object SphereSimulationView(string? mapWorldId = null, long? mapClaimsRevision = null)
 {
@@ -307,6 +370,7 @@ object SphereSimulationView(string? mapWorldId = null, long? mapClaimsRevision =
         activityNames = settlementRules.Activities.ToDictionary(a => a.Id, a => a.Name),
         discoveryNames = settlementRules.Discoveries.ToDictionary(a => a.Id, a => a.Name),
         resourceUnits = sphericalSimulation.Content.Resources.Resources.ToDictionary(r => r.Id, r => r.Unit),
+        resourceNames = sphericalSimulation.Content.Resources.Resources.ToDictionary(r => r.Id, r => r.Name),
         atmosphere = sphericalSimulation.Development!.State.Atmosphere is { } atmosphere ? new
         {
             atmosphere.LastDay, systems = atmosphere.Systems.Count, atmosphere.Ignitions, atmosphere.BurnedTimber,
@@ -337,16 +401,32 @@ object SphereSimulationView(string? mapWorldId = null, long? mapClaimsRevision =
             e.Id,
             e.CityId,
             e.People,
+            e.InitialPeople,
             e.Phase,
             e.DepartureDay,
             e.ReturnDay,
+            e.LostDay,
             e.LastStepDay,
             face = e.Current.Face.ToString(),
             e.Current.X,
             e.Current.Y,
+            routeIndex = e.Phase == "outbound" ? e.Path.Count - 1 : e.ReturnIndex,
+            path = e.Path.Select(cell => new { face = cell.Face.ToString(), cell.X, cell.Y }).ToArray(),
             traversedCells = e.Path.Count - 1,
+            e.ProvisionDays,
+            e.PlannedOutboundDays,
+            e.ExtensionDays,
+            e.CargoCapacity,
+            cargoUsed = ScoutCargoUsed(e),
+            e.TravelMode,
+            e.CurrentInterest,
+            e.SpeedMultiplier,
             e.Food,
-            e.Water
+            e.Water,
+            e.ForagedFood,
+            e.RefilledWater,
+            e.Casualties,
+            capturedAnimals = e.CapturedAnimals
         }).ToArray(),
         trailSummary = new
         {
@@ -399,6 +479,14 @@ object SphereSimulationView(string? mapWorldId = null, long? mapClaimsRevision =
                 }).ToArray()
             },
             technologyCount = city.TechnologyState.Count,
+            technology = new
+            {
+                total = city.TechnologyState.Count,
+                known = city.TechnologyState.Values.Count(value => value.Knowledge > .01),
+                competent = city.TechnologyState.Values.Count(value => value.Competence > .01),
+                capable = city.TechnologyState.Values.Count(value => value.Capability > .01),
+                adopted = city.TechnologyState.Values.Count(value => value.Adoption > .01)
+            },
             council = sphericalSimulation.Development!.State.Cities[city.Id].Council is { } council ? new
             {
                 council.LastDay,
@@ -445,6 +533,11 @@ object SphereSimulationView(string? mapWorldId = null, long? mapClaimsRevision =
                 report.ReceivedDay,
                 report.SurveyedCells,
                 report.Outcome,
+                report.Plants,
+                report.Animals,
+                report.CapturedAnimals,
+                report.Casualties,
+                report.ForeignClaims,
                 candidates = report.Candidates.Select(c => new
                 {
                     face = c.Cell.Face.ToString(),
@@ -452,7 +545,9 @@ object SphereSimulationView(string? mapWorldId = null, long? mapClaimsRevision =
                     c.Cell.Y,
                     c.ObservedDay,
                     c.FreshWater,
-                    c.FoodRenewalPerDay
+                    c.FoodRenewalPerDay,
+                    c.Plants,
+                    c.Animals
                 }).ToArray()
             }).ToArray(),
             adoption = city.TechnologyState.Values.Average(technology => technology.Adoption),
@@ -505,7 +600,9 @@ object SphereSimulationView(string? mapWorldId = null, long? mapClaimsRevision =
         wellbeingRules = settlementRules.Wellbeing,
         lastDay = simulation.Telemetry.Daily.LastOrDefault(),
         shipments = simulation.Shipments.Count,
-        events = simulation.Journal.TakeLast(12).Reverse().ToArray()
+        // The client performs scale- and time-aware decluttering. Keep a bounded
+        // history window here so the journal can change scope without another request.
+        events = simulation.Journal.TakeLast(240).Reverse().ToArray()
     };
 }
 app.MapGet("/api/sphere/simulation", (string? mapWorldId, long? mapClaimsRevision) => { lock (sphereLock) return Results.Ok(SphereSimulationView(mapWorldId, mapClaimsRevision)); });
@@ -513,10 +610,255 @@ app.MapPost("/api/sphere/step", (int? days, string? mapWorldId, long? mapClaimsR
 {
     var count = days ?? 1;
     if (count is < 1 or > 365) return Results.BadRequest(new { error = "days должно быть от 1 до 365" });
-    lock (sphereLock)
+    if (!sphereLiveRunner.Wait(0)) return Results.Conflict(new { error = "Симуляцией управляет открытый WebSocket" });
+    try
     {
-        sphericalSimulation.Advance(count);
-        return Results.Ok(SphereSimulationView(mapWorldId, mapClaimsRevision));
+        lock (sphereLock)
+        {
+            sphericalSimulation.Advance(count);
+            return Results.Ok(SphereSimulationView(mapWorldId, mapClaimsRevision));
+        }
+    }
+    finally { sphereLiveRunner.Release(); }
+});
+app.MapPost("/api/sphere/run", (int? speed, int? cycles, string? mapWorldId, long? mapClaimsRevision, CancellationToken requestAborted) =>
+{
+    var multiplier = speed ?? 1;
+    var batchCycles = cycles ?? 10;
+    if (multiplier is not (1 or 7 or 30)) return Results.BadRequest(new { error = "speed должен быть 1, 7 или 30" });
+    if (batchCycles is < 1 or > 10) return Results.BadRequest(new { error = "cycles должно быть от 1 до 10" });
+    if (!sphereLiveRunner.Wait(0)) return Results.Conflict(new { error = "Симуляцией управляет открытый WebSocket" });
+    try
+    {
+        lock (sphereLock)
+        {
+            var completed = 0;
+            for (; completed < batchCycles; completed++)
+            {
+                requestAborted.ThrowIfCancellationRequested();
+                sphericalSimulation.Advance(multiplier, requestAborted);
+            }
+            return Results.Ok(new { completedCycles = completed, advancedDays = completed * multiplier,
+                state = SphereSimulationView(mapWorldId, mapClaimsRevision) });
+        }
+    }
+    catch (OperationCanceledException) when (requestAborted.IsCancellationRequested)
+    {
+        // The tab disappeared. No background runner survives this bounded request.
+        return Results.StatusCode(499);
+    }
+    finally { sphereLiveRunner.Release(); }
+});
+object SphereLiveView(long previousClaimsRevision, bool includeMap)
+{
+    var simulation = sphericalSimulation.World;
+    return new
+    {
+        type = "state",
+        revision = SphereRevision(),
+        simulation.Day,
+        // Structural map data is pushed only when buildings, fields or claims
+        // actually changed. Natural terrain remains a paused full-sync concern.
+        map = includeMap ? SphereMapView(sphereWorldId, previousClaimsRevision) : null,
+        weatherMap = sphericalSimulation.Development?.WeatherMap(),
+        atmosphere = sphericalSimulation.Development!.State.Atmosphere is { } atmosphere ? new
+        {
+            atmosphere.LastDay, systems = atmosphere.Systems.Count, atmosphere.Ignitions, atmosphere.BurnedTimber,
+            burningCells = atmosphere.Ground.Count(g => g.Value.Fire > 0)
+        } : null,
+        scouts = (sphericalSimulation.Development.State.Scouting?.Expeditions ?? []).Select(e => new
+        {
+            e.Id, e.CityId, e.People, e.InitialPeople, e.Phase, e.TravelMode, e.CurrentInterest,
+            e.DepartureDay, e.ReturnDay, e.LostDay, e.LastStepDay,
+            face = e.Current.Face.ToString(), e.Current.X, e.Current.Y,
+            routeIndex = e.Phase == "outbound" ? e.Path.Count - 1 : e.ReturnIndex,
+            path = e.Path.Select(cell => new { face = cell.Face.ToString(), cell.X, cell.Y }).ToArray(),
+            traversedCells = e.Path.Count - 1, e.ProvisionDays, e.PlannedOutboundDays, e.ExtensionDays,
+            e.CargoCapacity, cargoUsed = ScoutCargoUsed(e), e.SpeedMultiplier, e.Food, e.Water,
+            e.ForagedFood, e.RefilledWater, e.Casualties, capturedAnimals = e.CapturedAnimals
+        }).ToArray(),
+        cities = simulation.Cities.Values.Select(city =>
+        {
+            var life = sphericalSimulation.Development.State.Cities[city.Id];
+            var population = simulation.Spatial.Nodes[city.SpatialNodeId].Aggregate.Population;
+            return new
+            {
+                city.Id,
+                population,
+                stocks = city.Stocks.ToDictionary(),
+                health = city.Demography.Health,
+                foodDays = city.Stocks["food"] / Math.Max(.001, population * city.FoodPerPersonPerDay),
+                shortage = city.Shortage.Active,
+                technology = new
+                {
+                    total = city.TechnologyState.Count,
+                    known = city.TechnologyState.Values.Count(value => value.Knowledge > .01),
+                    competent = city.TechnologyState.Values.Count(value => value.Competence > .01),
+                    capable = city.TechnologyState.Values.Count(value => value.Capability > .01),
+                    adopted = city.TechnologyState.Values.Count(value => value.Adoption > .01)
+                },
+                settlement = new
+                {
+                    life.HousingCapacity, life.Unhoused, life.WaterCoverage, life.LaborAvailableHours,
+                    life.LaborUsedHours, life.IndustryLaborHours, life.WaterTravelHours,
+                    life.Tasks,
+                    wellbeing = life.Wellbeing is null ? null : new { life.Wellbeing.Satisfaction }
+                },
+                homes = sphericalSimulation.Development.State.Buildings.Where(building => building.CityId == city.Id && building.Status != "demolished")
+                    .Select(building => new { building.Id, building.Status, building.Residents }).ToArray()
+            };
+        }).ToArray(),
+        events = simulation.Journal.TakeLast(48).Reverse().ToArray()
+    };
+}
+
+app.Map("/api/sphere/live", async context =>
+{
+    if (!context.WebSockets.IsWebSocketRequest) { context.Response.StatusCode = StatusCodes.Status400BadRequest; return; }
+    using var socket = await context.WebSockets.AcceptWebSocketAsync();
+    using var stopped = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
+    var commands = System.Threading.Channels.Channel.CreateUnbounded<(string Type, int Speed)>();
+    async Task ReceiveCommands()
+    {
+        var buffer = new byte[1024];
+        try
+        {
+            while (socket.State == System.Net.WebSockets.WebSocketState.Open && !stopped.IsCancellationRequested)
+            {
+                using var message = new MemoryStream();
+                System.Net.WebSockets.WebSocketReceiveResult result;
+                do
+                {
+                    result = await socket.ReceiveAsync(buffer, stopped.Token);
+                    if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Close) { stopped.Cancel(); return; }
+                    message.Write(buffer, 0, result.Count);
+                } while (!result.EndOfMessage);
+                if (result.MessageType != System.Net.WebSockets.WebSocketMessageType.Text) continue;
+                using var json = System.Text.Json.JsonDocument.Parse(message.ToArray());
+                var root = json.RootElement;
+                var type = root.TryGetProperty("type", out var kind) ? kind.GetString() ?? "" : "";
+                var speed = root.TryGetProperty("speed", out var value) ? value.GetInt32() : 1;
+                if (type is "run" or "pause" or "ack" && (type != "run" || speed is 1 or 7 or 30))
+                    await commands.Writer.WriteAsync((type, speed), stopped.Token);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (System.Net.WebSockets.WebSocketException) { stopped.Cancel(); }
+        finally { commands.Writer.TryComplete(); }
+    }
+    async Task Send(object value)
+    {
+        // Match ASP.NET's HTTP JSON contract. Anonymous projections contain
+        // inferred PascalCase members such as Day and HousingCapacity.
+        var json = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        await socket.SendAsync(json, System.Net.WebSockets.WebSocketMessageType.Text, true, stopped.Token);
+    }
+    var receiver = ReceiveCommands();
+    var playing = false; var ownsRunner = false; var speed = 1;
+    var nextAdvanceAt = DateTimeOffset.MaxValue;
+    var lastClaimsRevision = sphericalSettlements.Revision;
+    var lastMapDay = sphericalSimulation.World.Day;
+    async Task<bool> TryStart(int requestedSpeed)
+    {
+        if (!ownsRunner)
+        {
+            ownsRunner = await sphereLiveRunner.WaitAsync(0, stopped.Token);
+            if (!ownsRunner)
+            {
+                await Send(new { type = "busy", day = sphericalSimulation.World.Day,
+                    message = "Симуляцией уже управляет другая вкладка" });
+                return false;
+            }
+        }
+        var wasPlaying = playing;
+        speed = requestedSpeed;
+        playing = true;
+        if (!wasPlaying) nextAdvanceAt = DateTimeOffset.UtcNow.AddSeconds(5);
+        return true;
+    }
+    void Pause()
+    {
+        playing = false;
+        if (!ownsRunner) return;
+        ownsRunner = false;
+        sphereLiveRunner.Release();
+    }
+    async Task WaitForNextAdvance()
+    {
+        while (playing && DateTimeOffset.UtcNow < nextAdvanceAt)
+        {
+            var remaining = nextAdvanceAt - DateTimeOffset.UtcNow;
+            await Task.Delay(remaining > TimeSpan.FromMilliseconds(100) ? 100 : Math.Max(1, (int)remaining.TotalMilliseconds), stopped.Token);
+            while (commands.Reader.TryRead(out var command))
+            {
+                if (command.Type == "pause") Pause();
+                else if (command.Type == "run") await TryStart(command.Speed);
+                // An acknowledgement belongs to an already completed frame.
+            }
+        }
+    }
+    try
+    {
+        await Send(new { type = "ready", day = sphericalSimulation.World.Day });
+        while (!stopped.IsCancellationRequested && socket.State == System.Net.WebSockets.WebSocketState.Open)
+        {
+            if (!playing)
+            {
+                var command = await commands.Reader.ReadAsync(stopped.Token);
+                if (command.Type == "run") await TryStart(command.Speed);
+                continue;
+            }
+            while (commands.Reader.TryRead(out var command))
+            {
+                if (command.Type == "pause") Pause();
+                else if (command.Type == "run") await TryStart(command.Speed);
+            }
+            if (!playing)
+            {
+                await Send(new { type = "paused", day = sphericalSimulation.World.Day });
+                continue;
+            }
+            await WaitForNextAdvance();
+            if (!playing)
+            {
+                await Send(new { type = "paused", day = sphericalSimulation.World.Day });
+                continue;
+            }
+            object update;
+            lock (sphereLock)
+            {
+                sphericalSimulation.Advance(speed, stopped.Token);
+                var currentClaimsRevision = sphericalSettlements.Revision;
+                var includeMap = currentClaimsRevision != lastClaimsRevision || sphericalSimulation.World.Day - lastMapDay >= 30;
+                update = SphereLiveView(lastClaimsRevision, includeMap);
+                lastClaimsRevision = sphericalSettlements.Revision;
+                if (includeMap) lastMapDay = sphericalSimulation.World.Day;
+            }
+            await Send(update);
+            // Explicit client acknowledgement provides backpressure. The server
+            // never builds an unbounded queue while rendering is busy.
+            var acknowledged = false;
+            while (!acknowledged && playing && !stopped.IsCancellationRequested)
+            {
+                var command = await commands.Reader.ReadAsync(stopped.Token);
+                if (command.Type == "ack") acknowledged = true;
+                else if (command.Type == "pause") Pause();
+                else if (command.Type == "run") await TryStart(command.Speed);
+            }
+            if (!playing) await Send(new { type = "paused", day = sphericalSimulation.World.Day });
+            else nextAdvanceAt = DateTimeOffset.UtcNow.AddSeconds(5);
+        }
+    }
+    catch (OperationCanceledException) { }
+    catch (System.Net.WebSockets.WebSocketException) { }
+    finally
+    {
+        Pause();
+        stopped.Cancel();
+        try { await receiver; } catch (OperationCanceledException) { }
+        if (socket.State == System.Net.WebSockets.WebSocketState.Open)
+            await socket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "stopped", CancellationToken.None);
     }
 });
 app.MapGet("/api/sphere/simulation/snapshot", () =>

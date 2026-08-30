@@ -73,7 +73,12 @@ public sealed partial class SettlementSimulation
         if (rules.Exploration is not null)
         {
             State.Scouting ??= new();
-            foreach (var life in State.Cities.Values) life.Supply ??= new();
+            foreach (var city in world.Cities.Values)
+            {
+                State.Cities[city.Id].Supply ??= new();
+                if (!State.Scouting.KnownCells.TryGetValue(city.Id, out var known)) State.Scouting.KnownCells[city.Id] = known = new(StringComparer.Ordinal);
+                known.UnionWith(terrain.Where(pair => pair.Value.AssignedCityId == city.Id).Select(pair => SphericalSimulation.ZoneId(pair.Key)));
+            }
         }
         if (rules.Decisions is not null)
             foreach (var life in State.Cities.Values) life.Council ??= new();
@@ -412,7 +417,7 @@ public sealed partial class SettlementSimulation
             var used = building.Kind == "house" ? building.Residents > 0 || Moving(building) || life.HousingCapacity - Rules.ResidentsPerHouse < Population(city) * 1.05 :
                 building.Kind == "garden" ? world.Day < building.ReadyDay || FieldDormant(building.Cell) || life.Tasks.Any(task => task.Activity == "cultivate" && task.Destination == building.Cell) :
                 (building.Kind is "warehouse" or "granary") ? storageUsed :
-                life.Tasks.Any(task => task.Activity == "water" && task.Destination == building.Cell);
+                life.Tasks.Any(task => task.Destination == building.Cell && (task.HomeId == building.Id || task.Activity == "water"));
             building.UnusedDays = used ? 0 : building.UnusedDays + 1;
         }
         var project = State.Buildings.FirstOrDefault(b => b.CityId == city.Id && b.Status == "building");

@@ -13,10 +13,21 @@ public static class TechnologyEditorEndpoints
             await File.ReadAllTextAsync(Path.Combine(root, "content/editor/technology-annotations.json")), TechnologyEditorStore.JsonOptions);
         var catalogue = TechnologyEditorCatalog.Build(content, primitive, annotations);
         var store = new TechnologyEditorStore(Path.Combine(root, app.Configuration["technology-workspace"] ?? "content/editor/technology-workspace.json"), catalogue);
-        app.MapGet("/api/technology-editor", async () => Results.Ok(new
+        app.MapGet("/api/technology-editor", async () =>
         {
-            catalog = store.Catalog, catalogVersion = store.CatalogVersion, workspace = await store.ReadAsync()
-        }));
+            try
+            {
+                return Results.Ok(new
+                {
+                    catalog = store.Catalog, catalogVersion = store.CatalogVersion, workspace = await store.ReadAsync()
+                });
+            }
+            catch (Exception exception) when (exception is JsonException or InvalidDataException or ArgumentException or IOException)
+            {
+                return Results.Problem("Рабочий файл дерева технологий не соответствует текущей схеме: " + exception.Message,
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        });
         app.MapGet("/api/technology-editor/pending", async () => Results.Ok(new
         {
             catalogVersion = store.CatalogVersion, pending = TechnologyEditorStore.Pending(await store.ReadAsync())

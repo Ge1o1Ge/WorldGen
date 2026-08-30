@@ -9,8 +9,9 @@ function resourceAmount(id,value,units){
 
 function constraintText(value){
   if(!value)return "цель достигнута";
+  if(value.startsWith("building:any:"))return `нет действующей установки: ${value.slice(13).split("|").join(" или ")}`;
   const [kind,id]=value.split(":");
-  return ({technology:"нет знания",equipment:"нет оснащения",input:"нет сырья",labor:"нет свободного труда"})[kind]+(id?`: ${fallbackNames[id]??id}`:"");
+  return (({technology:"нет знания",equipment:"нет оснащения",input:"нет сырья",labor:"нет свободного труда"})[kind]??value)+(id?`: ${fallbackNames[id]??id}`:"");
 }
 
 export function processSummary(states){
@@ -26,7 +27,8 @@ export function processLines(states,catalog,units){
   return Object.entries(states??{}).sort(([a],[b])=>a.localeCompare(b,"ru")).map(([id,state])=>{
     const rule=rules.get(id),outputs=Object.entries(rule?.outputs??{}).map(([resource,value])=>
       `${fallbackNames[resource]??resource} ${resourceAmount(resource,value*(state.batchesToday??0),units)}`).join(" · ");
-    return `${rule?.name??id}: ${(state.batchesToday??0).toFixed(3)} партий сегодня${outputs?` (${outputs})`:""}; всего ${(state.totalBatches??0).toFixed(2)} · ${constraintText(state.constraint)}.`;
+    const drive=state.buildingId?` · установка ${state.buildingId}${state.laborMultiplier&&state.laborMultiplier!==1?` (труд ×${state.laborMultiplier.toFixed(2)})`:""}`:"";
+    return `${rule?.name??id}: ${(state.batchesToday??0).toFixed(3)} партий сегодня${outputs?` (${outputs})`:""}; всего ${(state.totalBatches??0).toFixed(2)}${drive} · ${constraintText(state.constraint)}.`;
   });
 }
 

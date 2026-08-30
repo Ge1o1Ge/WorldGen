@@ -71,12 +71,19 @@ public sealed class PrimitiveWorldTests(ITestOutputHelper output)
         var grid = d.State.Atmosphere!.Surface!;
         Assert.InRange(grid.Snow.Length, 24, 6 * 32 * 32);
         Assert.Equal(d.State.Atmosphere.LastDay, grid.LastDay);
+        Assert.Equal(8, grid.ClimateResolution);
+        Assert.Equal(3, grid.ClimateSampleDays.Sum());
+        Assert.Equal(12 * 6 * 8 * 8, grid.ClimateTemperatureSum.Length);
         var restored = await Create(WorldSnapshot.Create(original.World));
         Assert.Equal(before, WorldSnapshot.Hash(restored.World));
         Assert.Equal(JsonSerializer.Serialize(first), JsonSerializer.Serialize(restored.Development!.WeatherMap()));
         original.Advance(2); restored.Advance(2);
         Assert.NotSame(first, d.WeatherMap());
         Assert.Equal(WorldSnapshot.Hash(original.World), WorldSnapshot.Hash(restored.World));
+        using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
+        var day = original.World.Day;
+        Assert.Throws<OperationCanceledException>(() => original.Advance(30, cancelled.Token));
+        Assert.Equal(day, original.World.Day);
     }
     [Fact]
     public async Task PreciseHydrologyKeepsAllNewHomesOnDryCellsAndRejectsCoarseSnapshots()
@@ -112,6 +119,25 @@ public sealed class PrimitiveWorldTests(ITestOutputHelper output)
         Assert.DoesNotContain("gardening", simulation.Development.State.Cities["grass_camp"].Discoveries);
         Assert.Equal(0, simulation.Development.State.Cities["grass_camp"].Primitive!.HerdBiomass);
         Assert.All(simulation.World.Cities.Values, c => Assert.Equal(0, c.TechnologyState["water_mill"].Knowledge));
+    }
+    [Fact]
+    public async Task AtLeastOneStartingCultureCanPhysicallyReachWildCotton()
+    {
+        var simulation = await Create(); var b = await Base.Value;
+        var cotton = b.Rules.Primitive!.Biosphere!.Crops.Single(crop => crop.Id == "cotton");
+        var topology = new CubeSphereTopology(b.Definition.FaceSize);
+        var reachable = simulation.World.Spatial.Territories.Values.Where(territory => territory.AssignedCityId is not null && territory.Terrain != "water")
+            .Where(territory => Biosphere.WildScore(cotton.Id, cotton.Habitat, simulation.World.Spatial.Grid.Seed,
+                topology.ToUnitVector(simulation.Addresses[territory.Id]), territory.TemperatureC, territory.Moisture, territory.ForestCover) > .22).ToArray();
+        Assert.NotEmpty(reachable);
+        foreach (var territory in reachable)
+        {
+            var point = topology.ToUnitVector(simulation.Addresses[territory.Id]);
+            var bestWindow = Enumerable.Range(0, simulation.World.Calendar.DaysPerYear).Max(start =>
+                Enumerable.Range(0, 18).Sum(step => Math.Max(0, SphericalWeather.SeasonalTemperature(territory.TemperatureC, point,
+                    b.Rules.Primitive!.SeasonalAmplitudeC, start + step * 10, simulation.World.Calendar.DaysPerYear) - cotton.BaseTemperature) * 10));
+            Assert.True(bestWindow + 1e-6 >= cotton.DegreeDays, $"Дикий хлопок в {territory.Id} не может созреть на поле: {bestWindow:F0} < {cotton.DegreeDays:F0}");
+        }
     }
     [Fact]
     public async Task DependentTechnologyStartsPracticeAfterItsPrerequisiteAndStagedMechanicsStayInactive()

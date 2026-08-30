@@ -7,10 +7,14 @@ namespace WorldGen.Tests;
 
 public sealed partial class SettlementSimulationTests
 {
-    private static async Task<SphericalSimulation> CreateWellbeing(JsonObject? snapshot = null, bool legacy = false)
+    private static async Task<SphericalSimulation> CreateWellbeing(JsonObject? snapshot = null, bool legacy = false, bool scoutingPressure = false)
     {
         var (content, definition, economy, rules, hydro) = await Base.Value;
-        rules = rules with { Wellbeing = legacy ? null : rules.Wellbeing };
+        rules = rules with
+        {
+            Wellbeing = legacy ? null : rules.Wellbeing,
+            Exploration = scoutingPressure ? rules.Exploration! with { LaborPressureShare = .05 } : rules.Exploration
+        };
         var topology = new CubeSphereTopology(definition.FaceSize); var generator = new SphericalTerrainGenerator(definition);
         return SphericalSimulation.Create(content, definition, economy, topology, generator, hydro,
             SphericalSettlementLayer.Build(definition, topology, generator), rules, snapshot);
@@ -254,7 +258,7 @@ public sealed partial class SettlementSimulationTests
     [Fact]
     public async Task WellbeingScoutProvisionsKeepTheirCompositionThroughReturnAndResume()
     {
-        var sim = await CreateWellbeing(); sim.Advance(20);
+        var sim = await CreateWellbeing(scoutingPressure: true);
         foreach (var city in sim.World.Cities.Values)
         {
             var life = sim.Development!.State.Cities[city.Id];
@@ -263,16 +267,24 @@ public sealed partial class SettlementSimulationTests
             city.Stocks["water"] = 5; city.Stocks["food"] = 3;
             life.Wellbeing!.FoodStock.Amounts = new() { ["fish"] = 1, ["wild_plants"] = 2 };
         }
-        sim.Advance(1); var state = sim.Development!.State;
-        Assert.Contains(state.Scouting!.Expeditions, e => e.Phase != "returned");
+        var launchWait = 0;
+        while (!(sim.Development!.State.Scouting?.Expeditions.Any(e => e.Phase is "outbound" or "returning") ?? false) && launchWait++ < 20)
+            sim.Advance(1);
+        var state = sim.Development!.State;
+        Assert.Contains(state.Scouting!.Expeditions, e => e.Phase is "outbound" or "returning");
         Assert.All(state.Scouting.Expeditions, e =>
         { Assert.Equal(e.Food, e.ProvisionComposition!.Amounts.Values.Sum(), 10); Assert.True(e.ProvisionComposition.Amounts.GetValueOrDefault("fish") > 0); });
-        var restored = await CreateWellbeing(WorldSnapshot.Create(sim.World));
+        var restored = await CreateWellbeing(WorldSnapshot.Create(sim.World), scoutingPressure: true);
         Assert.Equal(WorldSnapshot.Hash(sim.World), WorldSnapshot.Hash(restored.World));
-        sim.Advance(7); restored.Advance(7); Assert.Equal(WorldSnapshot.Hash(sim.World), WorldSnapshot.Hash(restored.World));
+        var returnWait = 0;
+        while (state.Scouting.Expeditions.Any(e => e.Phase is "outbound" or "returning") && returnWait++ < 40)
+        {
+            sim.Advance(1); restored.Advance(1);
+        }
+        Assert.Equal(WorldSnapshot.Hash(sim.World), WorldSnapshot.Hash(restored.World));
         Assert.All(state.Scouting.Expeditions, e =>
         { Assert.Equal("returned", e.Phase); Assert.Equal(0, e.Food); Assert.Equal(0, e.ProvisionComposition!.Amounts.Values.Sum()); });
-        var afterReturn = await CreateWellbeing(WorldSnapshot.Create(sim.World));
+        var afterReturn = await CreateWellbeing(WorldSnapshot.Create(sim.World), scoutingPressure: true);
         Assert.Equal(WorldSnapshot.Hash(sim.World), WorldSnapshot.Hash(afterReturn.World));
     }
 

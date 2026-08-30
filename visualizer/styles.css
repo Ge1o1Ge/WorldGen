@@ -279,3 +279,183 @@ h2 { font-size: 14px; font-weight: 650; }
 .weather-controls p { margin: 0; }
 .weather-controls small { line-height: 1.45; opacity: .7; }
 .tooltip-weather { display: block; margin-top: 6px; max-width: 310px; color: #b7d8e3; }
+
+/* Full-screen living-world interface. The map remains the primary surface;
+   panels float over it and do not participate in canvas sizing. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sphere-page { overflow: hidden; background: #e8e5d6; }
+.sphere-interface { position: relative; width: 100vw; height: 100dvh; overflow: hidden; }
+.sphere-map-stage,
+.sphere-map-wrap { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sphere-map-wrap { border: 0; border-radius: 0; background: #e8e5d6; }
+#sphere-globe,
+#sphere-map,
+#sphere-mobile-units { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+#sphere-globe { z-index: 0; pointer-events: none; }
+#sphere-map { z-index: 1; background: transparent; }
+#sphere-mobile-units { z-index: 2; pointer-events: none; }
+#sphere-weather-effects { z-index: 3; }
+
+.sphere-journal,
+.sphere-time-deck,
+.sphere-map-toolbar,
+.sphere-camera-controls {
+  position: absolute;
+  z-index: 5;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  background: light-dark(rgb(255 253 247 / .94), rgb(25 32 30 / .94));
+  box-shadow: 0 10px 32px light-dark(rgb(50 58 52 / .16), rgb(0 0 0 / .34));
+  backdrop-filter: blur(12px);
+}
+
+.sphere-journal {
+  inset: 12px auto 12px 12px;
+  width: min(370px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  border-radius: 11px;
+  transition: width 160ms ease;
+}
+.sphere-journal.is-collapsed { width: 56px; }
+.sphere-journal.is-collapsed .sphere-journal-header > div,
+.sphere-journal.is-collapsed .sphere-journal-body { display: none; }
+.sphere-journal.is-collapsed .sphere-journal-header { justify-content: center; padding: 8px; }
+.sphere-journal.is-collapsed .sphere-icon-button { transform: rotate(180deg); }
+
+.sphere-journal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 15px 14px 12px; border-bottom: 1px solid var(--border); }
+.sphere-journal-header h2 { margin-top: 2px; font-size: 18px; }
+.sphere-journal-header p { margin-top: 3px; color: var(--muted); font-size: 11px; }
+.sphere-kicker { display: block; color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; }
+.sphere-icon-button { flex: 0 0 auto; width: 32px; height: 32px; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--text); cursor: pointer; font-size: 23px; line-height: 1; }
+.sphere-journal-body { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.sphere-journal-section { display: block; margin: 0; padding: 13px 14px; border: 0; border-bottom: 1px solid var(--border); }
+.sphere-journal-section h3 { margin: 0 0 9px; font-size: 12px; font-weight: 650; }
+.sphere-journal-section > summary { cursor: pointer; font-size: 12px; font-weight: 650; }
+.sphere-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sphere-section-heading h3 { margin: 0; }
+.sphere-compact-select { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; }
+.sphere-compact-select select { min-height: 25px; padding: 2px 5px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); font-size: 10px; }
+.sphere-section-note { margin-top: 7px !important; color: var(--muted); font-size: 10px !important; line-height: 1.35 !important; }
+
+.sphere-resource-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.sphere-resource { min-width: 0; padding: 8px 9px; border-radius: 7px; background: light-dark(rgb(226 229 211 / .72), rgb(39 50 46 / .72)); }
+.sphere-resource span { display: block; overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.sphere-resource strong { display: block; margin-top: 2px; font-size: 16px; font-variant-numeric: tabular-nums; }
+.sphere-resource small { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
+.sphere-resource.is-warning strong { color: var(--shortage); }
+.sphere-resource.is-crisis strong { color: var(--crisis); }
+.sphere-empty { color: var(--muted); font-size: 11px; }
+.sphere-overview-subtitle { margin: 13px 0 6px; color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
+.sphere-stock-key { display: flex; gap: 10px; margin: -2px 0 8px; color: var(--muted); font-size: 8px; }
+.sphere-stock-key span::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; background: #5e9fd1; }
+.sphere-stock-key .is-min::before { background: #c45f58; }.sphere-stock-key .is-max::before { background: #63a470; }
+.sphere-stock-list { display: grid; gap: 7px; }
+.sphere-stock-row { display: grid; grid-template-columns: minmax(72px,.9fr) minmax(115px,1.35fr); gap: 7px; align-items: center; }
+.sphere-stock-label { min-width: 0; }.sphere-stock-label strong,.sphere-stock-label small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sphere-stock-label strong { font-size: 10px; }.sphere-stock-label small { margin-top: 1px; color: var(--muted); font-size: 8px; font-variant-numeric: tabular-nums; }
+.sphere-stock-ruler { position: relative; height: 17px; border-bottom: 1px solid rgb(137 155 144 / .35); background: repeating-linear-gradient(90deg,transparent 0,transparent calc(14.285% - 1px),rgb(137 155 144 / .16) calc(14.285% - 1px),rgb(137 155 144 / .16) 14.285%); }
+.sphere-stock-range { position: absolute; top: 7px; height: 3px; border-radius: 3px; background: rgb(125 151 141 / .42); }
+.sphere-stock-marker { position: absolute; top: 4px; width: 7px; height: 7px; margin-left: -3px; border: 1px solid var(--surface); border-radius: 50%; background: #5e9fd1; box-shadow: 0 0 0 1px rgb(0 0 0 / .18); }
+.sphere-stock-marker.is-min { background: #c45f58; }.sphere-stock-marker.is-max { background: #63a470; }.sphere-stock-marker.is-infinite::after { content: "›"; position: absolute; top: -7px; left: 5px; color: #63a470; font-size: 12px; }
+.sphere-stock-ticks { display: grid; grid-template-columns: repeat(5,1fr); margin-top: 1px; color: var(--muted); font-size: 6px; text-align: right; }
+.sphere-knowledge-list { display: grid; gap: 5px; }.sphere-knowledge-row { display: grid; grid-template-columns: 66px 1fr 38px; gap: 6px; align-items: center; font-size: 9px; }
+.sphere-knowledge-track { height: 5px; overflow: hidden; border-radius: 4px; background: rgb(137 155 144 / .17); }.sphere-knowledge-track i { display: block; height: 100%; border-radius: inherit; background: #779f88; }
+.sphere-knowledge-row strong { text-align: right; font-size: 8px; font-variant-numeric: tabular-nums; }
+.sphere-labor-summary { display: grid; grid-template-columns: 74px 1fr; gap: 10px; align-items: center; }
+.sphere-labor-donut { width: 70px; aspect-ratio: 1; border-radius: 50%; background: conic-gradient(var(--labor-gradient)); box-shadow: inset 0 0 0 17px var(--surface); }
+.sphere-labor-legend { display: grid; gap: 3px; }.sphere-labor-row { display: grid; grid-template-columns: 7px 1fr auto; gap: 5px; align-items: center; color: var(--muted); font-size: 8px; }
+.sphere-labor-row i { width: 7px; height: 7px; border-radius: 2px; background: var(--labor-color); }.sphere-labor-row strong { color: var(--text); font-size: 8px; font-variant-numeric: tabular-nums; }
+
+.sphere-event-list { margin: 8px 0 0; padding: 0; list-style: none; }
+.sphere-event-list li { padding: 7px 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent); font-size: 11px; line-height: 1.35; }
+.sphere-event-list li:last-child { border-bottom: 0; }
+.sphere-event-list time { display: block; margin-bottom: 2px; color: var(--muted); font-size: 9px; }
+.sphere-event-list .empty { color: var(--muted); }
+.sphere-journal .sphere-selection { margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; line-height: 1.5; }
+.sphere-journal .sphere-city-economy { padding: 11px 0; }
+.sphere-settlement-details[open] > summary { margin-bottom: 8px; }
+.sphere-diagnostics .statusbar { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; margin-top: 10px; padding: 0; border: 0; min-height: 0; font-size: 10px; }
+.sphere-diagnostics p { margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+
+.sphere-time-deck { top: 12px; left: 398px; right: 172px; min-width: 390px; border-radius: 11px; }
+.sphere-time-row { display: grid; grid-template-columns: auto minmax(140px, 1fr) auto; align-items: center; gap: 15px; min-height: 54px; padding: 8px 12px; }
+.sphere-date { display: grid; grid-template-columns: auto auto; gap: 0 8px; min-width: 132px; }
+.sphere-date .sphere-kicker { grid-column: 1 / -1; }
+.sphere-date strong { font-size: 13px; }
+.sphere-date > span:last-child { color: var(--muted); font-size: 11px; }
+#sphere-time-progress { width: 100%; accent-color: #65836a; pointer-events: none; }
+.sphere-playback-controls { display: flex; gap: 5px; }
+.sphere-playback-controls button,
+.sphere-camera-controls button { min-height: 30px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); cursor: pointer; font-size: 11px; }
+.sphere-playback-controls button:disabled { opacity: .48; cursor: default; }
+.sphere-playback-controls .sphere-speed.is-active { border-color: #829a83; background: rgba(113,145,116,.28); color: #f4f6ee; }
+.sphere-play-toggle { width: 32px; padding-inline: 0 !important; font-size: 12px; }
+.sphere-climate-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; min-height: 30px; padding: 5px 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 10px; }
+.sphere-climate-row strong { color: var(--text); font-variant-numeric: tabular-nums; }
+#sphere-playback-status { margin-right: auto; }
+#sphere-weather-scope { color: var(--text); font-weight: 650; }
+.sphere-climate-history { padding: 4px 12px 8px; border-top: 1px solid var(--border); }
+.sphere-climate-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; padding: 1px 0 3px; border: 0; background: transparent; color: var(--muted); font-size: 8px; text-transform: uppercase; cursor: pointer; }
+.sphere-climate-toggle b { color: var(--text); font-size: 12px; font-weight: 400; transition: transform .16s ease; }
+.sphere-climate-history.is-collapsed { padding-bottom: 3px; }.sphere-climate-history.is-collapsed .sphere-climate-history-body { display: none; }.sphere-climate-history.is-collapsed .sphere-climate-toggle b { transform: rotate(180deg); }
+.sphere-climate-tabs { display: flex; align-items: center; gap: 5px; min-height: 22px; }
+.sphere-climate-tabs button { padding: 2px 6px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--muted); font-size: 9px; }
+.sphere-climate-tabs button[aria-selected="true"] { border-bottom-color: #d8b742; color: var(--text); }
+#sphere-climate-note { margin-left: auto; color: var(--muted); font-size: 8px; }
+.sphere-climate-chart { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); align-items: end; gap: 3px; height: 58px; margin-top: 3px; }
+.sphere-climate-month { display: grid; grid-template-rows: 12px 34px 10px; align-items: end; height: 100%; min-width: 0; text-align: center; }
+.sphere-climate-month strong { overflow: hidden; color: var(--muted); font-size: 7px; font-weight: 500; font-variant-numeric: tabular-nums; text-overflow: clip; white-space: nowrap; }
+.sphere-climate-track { position: relative; height: 32px; border-bottom: 1px solid rgba(198,213,201,.16); }
+.sphere-climate-bar { position: absolute; right: 18%; bottom: 0; left: 18%; min-height: 2px; border-radius: 2px 2px 0 0; background: linear-gradient(#d7b93e,#877a37); opacity: .9; }
+.sphere-climate-chart[data-field="rain"] .sphere-climate-bar { background: linear-gradient(#72a9c5,#446f8a); }
+.sphere-climate-chart[data-field="wind"] .sphere-climate-bar { background: linear-gradient(#7bb1a7,#456f69); }
+.sphere-climate-month small { overflow: hidden; color: var(--muted); font-size: 7px; text-transform: uppercase; }
+.sphere-climate-month.is-missing .sphere-climate-track::after { content: ""; position: absolute; right: 35%; bottom: 2px; left: 35%; height: 1px; background: rgba(198,213,201,.22); }
+
+.sphere-map-toolbar { top: 12px; right: 12px; display: flex; align-items: center; gap: 5px; padding: 6px; border-radius: 10px; }
+.sphere-brand { display: none; }
+.sphere-map-toolbar > details { position: relative; }
+.sphere-map-toolbar > details > summary { min-height: 34px; padding: 8px 10px; border-radius: 6px; cursor: pointer; list-style: none; font-size: 11px; }
+.sphere-map-toolbar > details > summary::-webkit-details-marker { display: none; }
+.sphere-map-toolbar > details[open] > summary { background: var(--surface-raised); }
+.sphere-layer-popover { position: absolute; top: calc(100% + 10px); right: 0; width: 278px; max-height: calc(100vh - 100px); overflow: auto; padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); box-shadow: 0 12px 30px rgb(0 0 0 / .22); }
+.sphere-layer-popover > label { display: grid; gap: 5px; margin-bottom: 10px; color: var(--muted); font-size: 10px; }
+.sphere-layer-popover select { width: 100%; min-height: 32px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-raised); color: var(--text); }
+.sphere-layer-popover fieldset { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; padding: 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 10px; }
+.sphere-layer-popover fieldset label { display: flex; align-items: center; gap: 5px; }
+.sphere-layer-popover details { margin: 10px 0; font-size: 11px; }
+.sphere-layer-popover .topo-legend { margin-top: 8px; max-height: 210px; overflow: auto; }
+.sphere-layer-popover .nav-link { min-height: 30px; padding: 5px 7px; font-size: 10px; }
+
+.sphere-camera-controls { right: 12px; bottom: 18px; display: grid; grid-template-columns: 40px; justify-items: stretch; gap: 4px; padding: 5px; border-radius: 10px; }
+.sphere-camera-controls button { min-height: 36px; padding: 4px; font-size: 15px; }
+.sphere-camera-controls output { padding: 3px 0; color: var(--muted); font-size: 10px; text-align: center; }
+.sphere-camera-controls button:last-child { font-size: 10px; }
+
+@media (max-width: 980px) {
+  .sphere-time-deck { left: 80px; right: 146px; }
+  .sphere-journal { top: 92px; }
+  .sphere-journal:not(.is-collapsed) { width: min(350px, calc(100vw - 24px)); }
+}
+
+@media (max-width: 700px) {
+  .sphere-time-deck { left: 8px; right: 8px; top: 8px; min-width: 0; }
+  .sphere-time-row { grid-template-columns: 1fr auto; gap: 8px; }
+  #sphere-time-progress { grid-column: 1 / -1; grid-row: 2; }
+  .sphere-climate-row { display: none; }
+  .sphere-climate-history { display: none; }
+  .sphere-journal { top: 112px; left: 8px; bottom: 8px; }
+  .sphere-map-toolbar { top: 112px; right: 8px; }
+  .sphere-camera-controls { right: 8px; bottom: 12px; }
+}

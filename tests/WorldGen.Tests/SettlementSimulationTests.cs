@@ -30,6 +30,14 @@ public sealed partial class SettlementSimulationTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task EarlierScenarioDoesNotLoadInstallationsWhoseEraResourcesAreAbsent()
+    {
+        var rules = await SettlementRulesLoader.LoadAsync();
+        Assert.DoesNotContain(rules.Buildings, building => building.Technology is not null);
+        Assert.DoesNotContain(rules.Buildings, building => building.Id is "water_mill" or "windmill" or "animal_mill");
+    }
+
+    [Fact]
     public async Task SphericalStartupRestorePreservesWorldAndSubsequentSteps()
     {
         var (original, _, _) = await Create();

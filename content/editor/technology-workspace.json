@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": 497,
+  "revision": 801,
   "nodes": [
     {
       "id": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
@@ -287,6 +287,116 @@
       "symbol": "road",
       "status": "adapted",
       "targetId": "primitive:stone_road"
+    },
+    {
+      "id": "draft:0f477dcc-f79b-4a2a-ab5c-86ee24f648b3",
+      "title": "Механика",
+      "description": "Создание механизмов преобразования энергии\n\nШестерни, рычаги\n\nНе создает само по себе новых ресурсов или построек, выступает в роли знания \n\nоткрывает улучшения некоторых существующих построек \nаля польемник в колодце\n\nпоявляются модульные постройки",
+      "conditions": "",
+      "effects": "",
+      "domain": "knowledge",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:mechanics"
+    },
+    {
+      "id": "draft:d47560c0-0fec-4a22-b9f5-c26c6eb42242",
+      "title": "Примитивный парус",
+      "description": "",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:primitive_sail"
+    },
+    {
+      "id": "draft:47d87345-0be5-4b10-a5e9-68c00b6936bf",
+      "title": "Выращивание хдлпка",
+      "description": "И других плетеных культур",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:grow_cotton"
+    },
+    {
+      "id": "draft:0d6ae09e-57c1-4ddd-aecd-fad5d3f70b34",
+      "title": "Ткачество тканей",
+      "description": "",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:textile_weaving"
+    },
+    {
+      "id": "draft:027ca62c-1fd1-4b83-8709-bc02e4a1a265",
+      "title": "тканная одежда",
+      "description": "",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:woven_clothing"
+    },
+    {
+      "id": "draft:84f6c5eb-fa84-4199-9aa7-e182205a3d16",
+      "title": "Энергия воды",
+      "description": "",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:water_power"
+    },
+    {
+      "id": "draft:689c4a32-b45a-489c-8373-28df8e57c0f5",
+      "title": "Жернов",
+      "description": "",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:millstone"
+    },
+    {
+      "id": "draft:5260d774-901d-4779-9dfb-0975f950e671",
+      "title": "Ветряная мельница",
+      "description": "",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:windmill"
+    },
+    {
+      "id": "draft:5e85f42b-e09b-46f0-bd25-1c8aadad778f",
+      "title": "Энергия ветра",
+      "description": "",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:wind_power"
+    },
+    {
+      "id": "draft:2d8e76ac-c8c5-4b00-a6d4-702e5386c64e",
+      "title": "Мельница на валах",
+      "description": "",
+      "conditions": "",
+      "effects": "",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:animal_mill"
     }
   ],
   "edges": [
@@ -337,7 +447,7 @@
       "from": "primitive:stone_axes",
       "to": "primitive:gardening",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "e146c21e-8f41-488a-b15f-3a3e383a5ca6",
@@ -386,35 +496,35 @@
       "from": "primitive:herd_cow",
       "to": "draft:f5071f16-e2e2-4510-86c4-1253684e4c47",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "e18fd609-ba80-4ab7-ad03-448f461c5abc",
       "from": "primitive:herd_goat",
       "to": "draft:f5071f16-e2e2-4510-86c4-1253684e4c47",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "e938f5f5-0c79-4b1b-952f-9c4cb8075a1c",
       "from": "primitive:herd_horse",
       "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "01b13a7a-51bc-490b-b361-83a7fbe0be1e",
       "from": "primitive:herd_deer",
       "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "36727a7a-f939-4e44-af07-c007a8e09244",
       "from": "primitive:herd_cow",
       "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "68ef2ff9-09b0-4287-b57d-a02b995d2ee4",
@@ -428,21 +538,21 @@
       "from": "primitive:herd_deer",
       "to": "draft:694eeaee-b0c0-4086-a3dc-995014cef737",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "af7601b0-018f-4b7d-8871-35b7cb45556f",
       "from": "primitive:herd_horse",
       "to": "draft:694eeaee-b0c0-4086-a3dc-995014cef737",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "bb8c54ac-43cb-40ea-84b0-7ae23bd5c60f",
       "from": "primitive:herd_cow",
       "to": "draft:694eeaee-b0c0-4086-a3dc-995014cef737",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "664fb919-b267-4d7f-b217-e448791ad077",
@@ -575,7 +685,7 @@
       "from": "draft:9d4daa5c-541a-4b90-bb35-929c999e2af0",
       "to": "draft:fc402b2d-a2fd-42fa-9983-7c0616a684b3",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "973335ad-b302-4561-bcca-10d81d870bd1",
@@ -589,7 +699,7 @@
       "from": "draft:9d4daa5c-541a-4b90-bb35-929c999e2af0",
       "to": "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "4cd0c038-0e48-4ad1-9189-3dc91e9591e3",
@@ -610,119 +720,119 @@
       "from": "draft:d00e460e-c149-4a4e-b930-ef49ae405cff",
       "to": "draft:fc402b2d-a2fd-42fa-9983-7c0616a684b3",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "ebe77432-f8b5-46dd-9b2b-dc9aae5ede76",
       "from": "draft:d00e460e-c149-4a4e-b930-ef49ae405cff",
       "to": "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "b15d1f36-5779-496d-912a-46a5a7b9c055",
       "from": "draft:d00e460e-c149-4a4e-b930-ef49ae405cff",
       "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "bdd6b710-daef-4d64-a7dd-6f7f9d4bf6bb",
       "from": "primitive:crop_rotation",
       "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "8c5cfef1-2dd6-4e4b-a3f8-75602ba6da7a",
       "from": "draft:c8d1c589-6a11-4d72-9694-465273ff5dc1",
       "to": "draft:4224aa4c-f194-483f-b783-6f9d7ba5745f",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "f7c70a47-3d22-4e60-9a07-c3556f99b10b",
       "from": "primitive:herd_deer",
       "to": "catalog:animal_husbandry",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "6c86df18-67e7-4c4b-bbd0-b81b28fa1522",
       "from": "primitive:herd_horse",
       "to": "catalog:animal_husbandry",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "18ddfa73-f5cb-4c84-bdee-d4993680b998",
       "from": "primitive:herd_cow",
       "to": "catalog:animal_husbandry",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "f3d73ed6-67cb-4b40-ae43-8746a780451b",
       "from": "primitive:herd_goat",
       "to": "catalog:animal_husbandry",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "06c788dd-f0fc-4e92-b72a-be3dcf683350",
       "from": "primitive:herd_rabbit",
       "to": "catalog:animal_husbandry",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "1ef91e83-3678-48f2-b3b3-3fa3c49ea641",
       "from": "primitive:herd_chicken",
       "to": "catalog:animal_husbandry",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "93ec8c3f-24c5-4b14-8278-267271048790",
       "from": "primitive:herd_pig",
       "to": "catalog:animal_husbandry",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "331066ce-0b05-4d4d-8f0a-24c5a1eb2283",
       "from": "primitive:herd_sheep",
       "to": "catalog:animal_husbandry",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "2573e256-e06c-42bd-96ca-33dcc4b2d24b",
       "from": "catalog:seed_selection",
       "to": "primitive:granary",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "dd6c9b1b-e6f4-4f9c-85ea-778b6432d2a5",
       "from": "primitive:gardening",
       "to": "catalog:seed_selection",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "fe7a529f-becb-4530-aeb3-b3b187294c1e",
       "from": "catalog:herbal_medicine",
       "to": "primitive:gardening",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "88dd9fa4-15cd-435e-8f44-3fd20edda204",
       "from": "catalog:masonry",
       "to": "draft:6da3821d-b04a-49fd-bc28-344009a55e7e",
       "type": "required",
-      "status": "manual"
+      "status": "adapted"
     },
     {
       "id": "423335fa-5254-4b6d-acf8-7b01cb99eb66",
@@ -742,6 +852,160 @@
       "id": "6cdbad4f-b72c-4c87-9afa-ae439f797e8e",
       "from": "primitive:building",
       "to": "draft:3bd41871-c167-4927-af8f-9cfe5d6eabd2",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "17ee8d6c-56b0-470e-95b4-3d986404ff68",
+      "from": "catalog:oral_accounting",
+      "to": "draft:0f477dcc-f79b-4a2a-ab5c-86ee24f648b3",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "f94d6f0d-e862-465e-8bfa-4e1b3527cff3",
+      "from": "primitive:carpentry",
+      "to": "draft:0f477dcc-f79b-4a2a-ab5c-86ee24f648b3",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "3fc795ff-6155-4bee-98bc-9cb51597a603",
+      "from": "primitive:hand_tools",
+      "to": "draft:0f477dcc-f79b-4a2a-ab5c-86ee24f648b3",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "3e671384-cbbc-44ca-bd79-c937a1b92a57",
+      "from": "draft:0f477dcc-f79b-4a2a-ab5c-86ee24f648b3",
+      "to": "catalog:water_mill",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "db1517be-c792-4ff1-953b-73c3218be792",
+      "from": "primitive:rafts",
+      "to": "draft:d47560c0-0fec-4a22-b9f5-c26c6eb42242",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "e0d932a2-9c01-4f63-82fd-c10a655a5e91",
+      "from": "primitive:gardening",
+      "to": "draft:47d87345-0be5-4b10-a5e9-68c00b6936bf",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "4629a62f-d8c3-4fbb-a958-e5b33ec816fe",
+      "from": "draft:47d87345-0be5-4b10-a5e9-68c00b6936bf",
+      "to": "draft:0d6ae09e-57c1-4ddd-aecd-fad5d3f70b34",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "10be177f-bd02-44a8-b1eb-17861df4518a",
+      "from": "primitive:gathering",
+      "to": "draft:0d6ae09e-57c1-4ddd-aecd-fad5d3f70b34",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "9cfce2dc-f96b-43a9-a87e-0d0dceadd069",
+      "from": "primitive:herd_sheep",
+      "to": "draft:0d6ae09e-57c1-4ddd-aecd-fad5d3f70b34",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "9479c506-5c20-4c6c-b46f-9e2433fda0b5",
+      "from": "draft:0d6ae09e-57c1-4ddd-aecd-fad5d3f70b34",
+      "to": "draft:d47560c0-0fec-4a22-b9f5-c26c6eb42242",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "6f916e81-56b1-4bda-9861-b51f31f8bfb5",
+      "from": "draft:0d6ae09e-57c1-4ddd-aecd-fad5d3f70b34",
+      "to": "draft:027ca62c-1fd1-4b83-8709-bc02e4a1a265",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "24394333-b691-400b-928d-bf147fa1bcd2",
+      "from": "draft:0f477dcc-f79b-4a2a-ab5c-86ee24f648b3",
+      "to": "draft:84f6c5eb-fa84-4199-9aa7-e182205a3d16",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "f0daa241-3173-402b-b30d-07219523211d",
+      "from": "draft:84f6c5eb-fa84-4199-9aa7-e182205a3d16",
+      "to": "catalog:water_mill",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "48a085f9-836c-40fc-aa0e-5357519e6f00",
+      "from": "primitive:stone_axes",
+      "to": "draft:689c4a32-b45a-489c-8373-28df8e57c0f5",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "1ce92e6b-ba11-4145-bc92-8ce0b9629b03",
+      "from": "draft:689c4a32-b45a-489c-8373-28df8e57c0f5",
+      "to": "catalog:water_mill",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "d154aafe-0347-4280-9adf-d9c6b2caa49e",
+      "from": "draft:84f6c5eb-fa84-4199-9aa7-e182205a3d16",
+      "to": "draft:5260d774-901d-4779-9dfb-0975f950e671",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "6f3cde16-55bb-4b6f-91ea-7485c5a5aea9",
+      "from": "draft:5e85f42b-e09b-46f0-bd25-1c8aadad778f",
+      "to": "draft:5260d774-901d-4779-9dfb-0975f950e671",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "5f0f9aeb-70d8-48eb-9301-1c3e5b1307b1",
+      "from": "draft:d47560c0-0fec-4a22-b9f5-c26c6eb42242",
+      "to": "draft:5e85f42b-e09b-46f0-bd25-1c8aadad778f",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "b1becbac-a106-46ff-8952-4e6bb5ae9a4c",
+      "from": "primitive:draught_animals",
+      "to": "draft:2d8e76ac-c8c5-4b00-a6d4-702e5386c64e",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "df1b1b2a-f8eb-4ef6-b1d5-2b889e6d9929",
+      "from": "draft:689c4a32-b45a-489c-8373-28df8e57c0f5",
+      "to": "draft:5260d774-901d-4779-9dfb-0975f950e671",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "8cafc642-98e3-477a-b9d6-f71f3546a80b",
+      "from": "draft:689c4a32-b45a-489c-8373-28df8e57c0f5",
+      "to": "draft:2d8e76ac-c8c5-4b00-a6d4-702e5386c64e",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "e6b8a0db-60a7-4453-af72-4fa20d6bd827",
+      "from": "draft:0f477dcc-f79b-4a2a-ab5c-86ee24f648b3",
+      "to": "draft:5e85f42b-e09b-46f0-bd25-1c8aadad778f",
       "type": "required",
       "status": "adapted"
     }
@@ -817,7 +1081,7 @@
       "text": "Остаток после интеграции знания: В дерево внесено знание. Выбор конкретного животного, упряжь, усталость, корм и экономия труда пока не подключены.",
       "createdAt": "2026-08-29T08:19:34.2276645+00:00",
       "status": "manual",
-      "remainingText": null
+      "remainingText": "Разведка уже проверяет наличие пригодного стада и получает множитель грузоподъёмности. Осталось выделить конкретное животное и упряжь, считать корм, усталость, потери и экономию труда вне экспедиций."
     },
     {
       "id": "implementation-primitive-riding-20260829",
@@ -825,7 +1089,7 @@
       "text": "Остаток после интеграции знания: В дерево внесено знание. Скорость, груз, усталость и пригодность конкретного вида пока не влияют на экспедиции.",
       "createdAt": "2026-08-29T08:19:34.2526751+00:00",
       "status": "manual",
-      "remainingText": null
+      "remainingText": "Разведка уже проверяет наличие пригодного стада и получает множитель скорости. Осталось считать конкретный вид и особь, корм, усталость, отдых, смену животных и влияние на прочие поездки."
     },
     {
       "id": "implementation-primitive-granary-20260829",
@@ -865,7 +1129,7 @@
       "text": "Остаток после интеграции знания: В дерево внесено знание. Корпус плота, грузоподъёмность, износ, причал и водные маршруты ещё не реализованы.",
       "createdAt": "2026-08-29T08:19:34.3563514+00:00",
       "status": "manual",
-      "remainingText": null
+      "remainingText": "Разведка уже резервирует древесину, собирает плот при выходе на воду и проходит прибрежные водные клетки. Осталось сделать плот долговечным объектом с отдельной вместимостью, износом, ремонтом, причалом и повторным использованием."
     },
     {
       "id": "implementation-primitive-fishing_nets-20260829",
@@ -962,6 +1226,86 @@
       "createdAt": "2026-08-29T11:07:01.4408659+00:00",
       "status": "manual",
       "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-mechanics-20260829",
+      "nodeId": "primitive:mechanics",
+      "text": "Остаток: выделить качество и износ механических деталей, запасные части, ремонт компонентов и общий предел мощности/очередь установок за пределами мельниц.",
+      "createdAt": "2026-08-29T14:15:21.6557708+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-sail-20260829",
+      "nodeId": "primitive:primitive_sail",
+      "text": "Остаток: связать физический парус с корпусом плота, направлением ветра, скоростью и грузоподъёмностью водного маршрута; учитывать повреждение оснастки.",
+      "createdAt": "2026-08-29T14:15:21.6684406+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-grow-cotton-20260829",
+      "nodeId": "primitive:grow_cotton",
+      "text": "Остаток: качество волокна, сорта, вредители, полив и селекция пока не моделируются; климат и урожайность остаются игровыми коэффициентами.",
+      "createdAt": "2026-08-29T14:15:21.6843764+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-textile-weaving-20260829",
+      "nodeId": "primitive:textile_weaving",
+      "text": "Остаток: выделить пряжу, станок или рабочее место, качество полотна, красители, ширину ткани и износ инструмента.",
+      "createdAt": "2026-08-29T14:15:21.6992029+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-woven-clothing-20260829",
+      "nodeId": "primitive:woven_clothing",
+      "text": "Остаток: различать материалы, размерные ряды, качество, ремонт и индивидуальный износ одежды; сейчас выход сворачивается в общий запас garments.",
+      "createdAt": "2026-08-29T14:15:21.7115444+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-water-power-20260829",
+      "nodeId": "primitive:water_power",
+      "text": "Остаток: суточный расход воды, сезонность стока, ледостав, паводки, напор и паспортная мощность установки пока свёрнуты в пригодность места и множитель труда.",
+      "createdAt": "2026-08-29T14:15:21.7246257+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-millstone-20260829",
+      "nodeId": "primitive:millstone",
+      "text": "Остаток: геометрия, балансировка, материал камня, износ и качество помола жерновов пока не выделены из общего физического компонента.",
+      "createdAt": "2026-08-29T14:15:21.7371955+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-windmill-20260829",
+      "nodeId": "primitive:windmill",
+      "text": "Остаток: суточный ветер ещё не ограничивает партии; нужны штиль, перегрузка, штормовые поломки, ориентация и очередь процессов по мощности.",
+      "createdAt": "2026-08-29T14:15:21.7535505+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-wind-power-20260829",
+      "nodeId": "primitive:wind_power",
+      "text": "Остаток: численное освоение ветра в других установках и связь компетенции с наблюдаемой розой ветров пока не реализованы.",
+      "createdAt": "2026-08-29T14:15:21.7667519+00:00",
+      "status": "manual",
+      "remainingText": null
+    },
+    {
+      "id": "remaining-primitive-animal-mill-20260829",
+      "nodeId": "primitive:animal_mill",
+      "text": "Остаток: конкретные рабочие животные, смены, корм, вода, усталость, здоровье и доступность упряжи пока не списываются на каждую партию.",
+      "createdAt": "2026-08-29T14:15:21.7792602+00:00",
+      "status": "manual",
+      "remainingText": null
     }
   ],
   "journal": [
@@ -989,7 +1333,8 @@
         "TECHNOLOGY_FIRST_PASS.md"
       ],
       "createdAt": "2026-08-29T07:46:08.3133404+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "first-pass-composite-stone-tools-20260829",
@@ -1007,7 +1352,8 @@
         "TECHNOLOGY_FIRST_PASS.md"
       ],
       "createdAt": "2026-08-29T07:46:08.3252864+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "first-pass-hunting-products-audit-20260829",
@@ -1029,7 +1375,8 @@
           "implemented": "Мясо уже поступает в физический запас food и учитывается как категория рациона hunt; шкуры производятся отдельным ресурсом hides при охоте и забое.",
           "remaining": "Добавить видоспецифичные яйца как портящийся продукт и перья как материальный ресурс; связать выход с видами, полом, сезоном и способом добычи, не дублируя массу мяса в food."
         }
-      ]
+      ],
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-pottery-20260829",
@@ -1046,7 +1393,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.1277499+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-fletched_arrows-20260829",
@@ -1063,7 +1411,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.1574744+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-wool_clothing-20260829",
@@ -1080,7 +1429,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.1778244+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-dairy-20260829",
@@ -1097,7 +1447,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.1982533+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-cheesemaking-20260829",
@@ -1114,7 +1465,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.217072+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-draught_animals-20260829",
@@ -1131,7 +1483,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.2365634+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-riding-20260829",
@@ -1148,7 +1501,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.2620989+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-granary-20260829",
@@ -1165,7 +1519,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.2821071+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-log_construction-20260829",
@@ -1182,7 +1537,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.3020114+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-pottery_kiln-20260829",
@@ -1199,7 +1555,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.3215102+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-charcoal_burning-20260829",
@@ -1216,7 +1573,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.3452011+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-rafts-20260829",
@@ -1233,7 +1591,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.3663506+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-fishing_nets-20260829",
@@ -1250,7 +1609,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.3860164+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-mortar-20260829",
@@ -1267,7 +1627,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.4065411+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-composite_construction-20260829",
@@ -1284,7 +1645,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.4279335+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-grow_grape-20260829",
@@ -1301,7 +1663,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.4507137+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-winemaking-20260829",
@@ -1318,7 +1681,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.4712465+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-nonferrous_metallurgy-20260829",
@@ -1335,7 +1699,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.4924838+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-alloying-20260829",
@@ -1352,7 +1717,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.5126563+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-copper_tools-20260829",
@@ -1369,7 +1735,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.5332078+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-carpentry-20260829",
@@ -1386,7 +1753,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.5533456+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-bloomery_smelting-20260829",
@@ -1403,7 +1771,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.5742+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "knowledge-layer-primitive-hand_tools-20260829",
@@ -1420,7 +1789,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.5955999+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-alloying-20260829",
@@ -1437,7 +1807,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.6523608+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-bloomery_smelting-20260829",
@@ -1454,7 +1825,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.6624433+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-carpentry-20260829",
@@ -1471,7 +1843,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.6776835+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-charcoal_burning-20260829",
@@ -1488,7 +1861,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.688252+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-cheesemaking-20260829",
@@ -1505,7 +1879,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.6987394+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-composite_construction-20260829",
@@ -1524,7 +1899,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.7095561+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-copper_tools-20260829",
@@ -1541,7 +1917,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.7202711+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-fishing_nets-20260829",
@@ -1559,7 +1936,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.7328768+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-fletched_arrows-20260829",
@@ -1577,7 +1955,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.7434201+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-granary-20260829",
@@ -1594,7 +1973,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.7544115+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-grow_grape-20260829",
@@ -1611,7 +1991,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.7647056+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-hand_tools-20260829",
@@ -1628,7 +2009,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.7746406+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-log_construction-20260829",
@@ -1645,7 +2027,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.8183698+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-mortar-20260829",
@@ -1662,7 +2045,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.8296155+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-nonferrous_metallurgy-20260829",
@@ -1679,7 +2063,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.8451957+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-pottery-20260829",
@@ -1698,7 +2083,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.8595628+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-pottery_kiln-20260829",
@@ -1715,7 +2101,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.8713458+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-rafts-20260829",
@@ -1733,7 +2120,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.8835261+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-winemaking-20260829",
@@ -1750,7 +2138,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.9009634+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "source-links-primitive-wool_clothing-20260829",
@@ -1768,7 +2157,8 @@
         "TECHNOLOGY_UNIFIED_TREE.md"
       ],
       "createdAt": "2026-08-29T08:19:34.9135863+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "review-storage-buildings-20260829",
@@ -1790,7 +2180,8 @@
         "STORAGE_SYSTEM.md"
       ],
       "createdAt": "2026-08-29T09:31:48.4238835+00:00",
-      "commentProgress": []
+      "commentProgress": [],
+      "edgeAdaptations": null
     },
     {
       "id": "review-granary-storage-stage-20260829",
@@ -1813,7 +2204,8 @@
           "implemented": "Амбар получил физическую вместимость 10 условных м³ и специализацию по пище, урожаю и семенам: профильный запас портится с коэффициентом 0,18, прочий — 0,7. Потребность в амбаре возникает от еды вне специализированного хранения; совет выбирает место, строит и сохраняет реально используемое здание.",
           "remaining": "Смоделировать влажность, вредителей и заражение партий; выделить защищённый семенной фонд и целевой двухлетний резерв; добавить труд обслуживания, тару и влияние доступности амбара."
         }
-      ]
+      ],
+      "edgeAdaptations": null
     },
     {
       "id": "integrate-stone-road-20260829",
@@ -1833,7 +2225,8 @@
         "SETTLEMENT_PROCESSES.md"
       ],
       "createdAt": "2026-08-29T11:06:53.296815+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "implement-dairy-products-20260829",
@@ -1852,7 +2245,8 @@
         "SETTLEMENT_PROCESSES.md"
       ],
       "createdAt": "2026-08-29T11:07:32.0858395+00:00",
-      "commentProgress": null
+      "commentProgress": null,
+      "edgeAdaptations": null
     },
     {
       "id": "implement-pottery-process-stage1-20260829",
@@ -1875,7 +2269,8 @@
           "implemented": "Реализованы физические входы глины и топлива, нерасходуемый каменный комплект, оплаченный труд, отдельный запас посуды, целевой объём и наблюдаемое состояние процесса. В новом мире все шесть поселений произвели посуду.",
           "remaining": "Добавить место открытого обжига, температурный режим, разброс качества, брак, назначение и жизненный цикл отдельных ёмкостей."
         }
-      ]
+      ],
+      "edgeAdaptations": null
     },
     {
       "id": "implement-wool-clothing-stage1-20260829",
@@ -1899,7 +2294,8 @@
           "implemented": "Шерсть стала отдельным ресурсом, который дают овцы при знании технологии и оплаченном уходе; настраиваемый процесс расходует шерсть и труд и создаёт реальный запас одежды.",
           "remaining": "Разделить стрижку, очистку, прядение, ткачество и шитьё; добавить оснащение стадий, качество и отдельное влияние шерстяной одежды на теплозащиту."
         }
-      ]
+      ],
+      "edgeAdaptations": null
     },
     {
       "id": "implement-cheesemaking-stage1-20260829",
@@ -1923,7 +2319,8 @@
           "implemented": "Процесс списывает реальное молоко, требует наличия посуды, оплачивает человеко-часы и создаёт сыр с собственной скоростью порчи и пищевой ценностью.",
           "remaining": "Добавить время и место созревания, занятость ёмкостей, качество партии и риск заражения или порчи при изготовлении."
         }
-      ]
+      ],
+      "edgeAdaptations": null
     },
     {
       "id": "implement-charcoal-stage1-20260829",
@@ -1945,7 +2342,8 @@
           "implemented": "Одна партия расходует древесину и общий труд, требует каменного оснащения и даёт 45% массы отдельного запаса древесного угля; состояние и причина остановки сохраняются.",
           "remaining": "Добавить пространственное место кучи или печи, дым, пожарный риск, длительность партии, объём при перевозке и обслуживание оборудования."
         }
-      ]
+      ],
+      "edgeAdaptations": null
     },
     {
       "id": "implement-species-eggs-stage1-20260829",
@@ -1968,233 +2366,1006 @@
           "implemented": "Яйца домашних кур стали отдельным видоспецифичным портящимся ресурсом; их получение требует самок и труда, а употребление учитывается в рационе без второй массы в food. Шкуры уже остаются отдельным ресурсом.",
           "remaining": "Добавить сбор яиц диких птиц, перья как материальный ресурс и сезонность выходов; разделить происхождение мяса внутри food без дублирования массы."
         }
+      ],
+      "edgeAdaptations": null
+    },
+    {
+      "id": "connections-20260829-animal-husbandry",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "catalog:animal_husbandry",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.3451024+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": [
+        {
+          "edgeId": "f7c70a47-3d22-4e60-9a07-c3556f99b10b",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "6c86df18-67e7-4c4b-bbd0-b81b28fa1522",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "18ddfa73-f5cb-4c84-bdee-d4993680b998",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "f3d73ed6-67cb-4b40-ae43-8746a780451b",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "06c788dd-f0fc-4e92-b72a-be3dcf683350",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "1ef91e83-3678-48f2-b3b3-3fa3c49ea641",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "93ec8c3f-24c5-4b14-8278-267271048790",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "331066ce-0b05-4d4d-8f0a-24c5a1eb2283",
+          "implementedType": "alternative"
+        }
       ]
+    },
+    {
+      "id": "connections-20260829-seed-selection",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "dd6c9b1b-e6f4-4f9c-85ea-778b6432d2a5"
+      ],
+      "targetId": "catalog:seed_selection",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.3621021+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": []
+    },
+    {
+      "id": "connections-20260829-carpentry",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:carpentry",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.3744608+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": [
+        {
+          "edgeId": "8150449d-baf3-427f-b323-29037c4fcb49",
+          "implementedType": "helps"
+        },
+        {
+          "edgeId": "ebe77432-f8b5-46dd-9b2b-dc9aae5ede76",
+          "implementedType": "helps"
+        }
+      ]
+    },
+    {
+      "id": "connections-20260829-dairy",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:dairy",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.3872536+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": [
+        {
+          "edgeId": "bfaba159-b5d2-40fb-aca3-ed71d06dab31",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "e18fd609-ba80-4ab7-ad03-448f461c5abc",
+          "implementedType": "alternative"
+        }
+      ]
+    },
+    {
+      "id": "connections-20260829-draught-animals",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:draught_animals",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.3993246+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": [
+        {
+          "edgeId": "e938f5f5-0c79-4b1b-952f-9c4cb8075a1c",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "01b13a7a-51bc-490b-b361-83a7fbe0be1e",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "36727a7a-f939-4e44-af07-c007a8e09244",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "b15d1f36-5779-496d-912a-46a5a7b9c055",
+          "implementedType": "helps"
+        },
+        {
+          "edgeId": "bdd6b710-daef-4d64-a7dd-6f7f9d4bf6bb",
+          "implementedType": "supports"
+        },
+        {
+          "edgeId": "8c5cfef1-2dd6-4e4b-a3f8-75602ba6da7a",
+          "implementedType": "supports"
+        }
+      ]
+    },
+    {
+      "id": "connections-20260829-gardening",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:gardening",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.4127828+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": [
+        {
+          "edgeId": "7a26b0fa-d85d-4ecd-a034-b71c13174a80",
+          "implementedType": "helps"
+        },
+        {
+          "edgeId": "fe7a529f-becb-4530-aeb3-b3b187294c1e",
+          "implementedType": "supports"
+        }
+      ]
+    },
+    {
+      "id": "connections-20260829-granary",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:granary",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.4251027+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": [
+        {
+          "edgeId": "2573e256-e06c-42bd-96ca-33dcc4b2d24b",
+          "implementedType": "supports"
+        }
+      ]
+    },
+    {
+      "id": "connections-20260829-riding",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:riding",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.4440883+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": [
+        {
+          "edgeId": "aad53cc1-a6dd-43a3-87e8-19c6cc7e204d",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "af7601b0-018f-4b7d-8871-35b7cb45556f",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "bb8c54ac-43cb-40ea-84b0-7ae23bd5c60f",
+          "implementedType": "alternative"
+        }
+      ]
+    },
+    {
+      "id": "connections-20260829-storage-buildings",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:storage_buildings",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.4585511+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": [
+        {
+          "edgeId": "88dd9fa4-15cd-435e-8f44-3fd20edda204",
+          "implementedType": "supports"
+        }
+      ]
+    },
+    {
+      "id": "connections-20260829-wool-clothing",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:wool_clothing",
+      "summary": "Ручные связи разобраны как смысловые предложения. Обязательные условия сохранены только там, где они исполняются как AND; альтернативные входы сведены через явную плашку ИЛИ, остальные связи стали поддерживающими или облегчающими.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "src/WorldGen.Content/TechnologyEditorCatalog.cs",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T12:01:36.477493+00:00",
+      "commentProgress": [],
+      "edgeAdaptations": [
+        {
+          "edgeId": "f03f6a73-a081-461b-ae39-b35f906fb7ba",
+          "implementedType": "helps"
+        },
+        {
+          "edgeId": "bfa71cb3-48fd-4cfd-bb4e-82c6543bcb0e",
+          "implementedType": "helps"
+        }
+      ]
+    },
+    {
+      "id": "integrate-mechanics-20260829",
+      "nodeIds": [
+        "draft:0f477dcc-f79b-4a2a-ab5c-86ee24f648b3"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:mechanics",
+      "summary": "Внедрена механика рычагов, осей и передач: знание возникает после счёта, плотничества и инструментов; физический процесс создаёт комплект механизмов, который расходуется при строительстве силовых установок.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.4790301+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-primitive-sail-20260829",
+      "nodeIds": [
+        "draft:d47560c0-0fec-4a22-b9f5-c26c6eb42242"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:primitive_sail",
+      "summary": "Внедрён примитивный парус как отдельное знание и физический ресурс: он требует плотов и ткачества тканей, производится из полотна и древесины и входит обязательным компонентом ветровой мельницы.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.5043157+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-grow-cotton-20260829",
+      "nodeIds": [
+        "draft:47d87345-0be5-4b10-a5e9-68c00b6936bf"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:grow_cotton",
+      "summary": "Хлопок внедрён как техническая культура биосферы: дикий ареал, поиск и размножение семян, опытный участок, климатический цикл, физический урожай без пищевой ценности.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.5180777+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-textile-weaving-20260829",
+      "nodeIds": [
+        "draft:0d6ae09e-57c1-4ddd-aecd-fad5d3f70b34"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:textile_weaving",
+      "summary": "Ткачество тканей внедрено как единое знание с альтернативным сырьём: хлопок, шерсть или дикое волокно превращаются конфигурируемыми физическими процессами в тканое полотно.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.531224+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-woven-clothing-20260829",
+      "nodeIds": [
+        "draft:027ca62c-1fd1-4b83-8709-bc02e4a1a265"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:woven_clothing",
+      "summary": "Тканая одежда внедрена как отдельное знание и процесс раскроя: тканое полотно и оснащение превращаются в реальный запас одежды, участвующий в обеспеченности жителей.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.5438698+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-water-power-20260829",
+      "nodeIds": [
+        "draft:84f6c5eb-fa84-4199-9aa7-e182205a3d16"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:water_power",
+      "summary": "Энергия воды внедрена как знание после механики и как условие физической водяной установки: место выбирается только у реального русла, а помол получает отдельный множитель труда.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.5579675+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-millstone-20260829",
+      "nodeIds": [
+        "draft:689c4a32-b45a-489c-8373-28df8e57c0f5"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:millstone",
+      "summary": "Жернов внедрён как отдельное знание, производственный процесс и физическая пара каменных компонентов; жернова обязательны в смете всех трёх типов мельниц и не стираются заменой материала корпуса.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.5729775+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-windmill-20260829",
+      "nodeIds": [
+        "draft:5260d774-901d-4779-9dfb-0975f950e671"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:windmill",
+      "summary": "Ветряная мельница внедрена как физическая постройка на открытом возвышенном участке: требует механизм, жернова и парус, строится решением совета, стареет и обслуживает процессы помола.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.5942075+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-wind-power-20260829",
+      "nodeIds": [
+        "draft:5e85f42b-e09b-46f0-bd25-1c8aadad778f"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:wind_power",
+      "summary": "Энергия ветра внедрена как знание на пересечении механики и опыта паруса; она открывает ветровую установку и участвует в причинной сети без требования водного привода.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.6262344+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-animal-mill-20260829",
+      "nodeIds": [
+        "draft:2d8e76ac-c8c5-4b00-a6d4-702e5386c64e"
+      ],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:animal_mill",
+      "summary": "Мельница с животным приводом внедрена как физическая постройка после жерновов, механики и тягловых животных; она даёт самостоятельный, менее эффективный, но не зависящий от воды и ветра путь помола.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/worlds/biosphere.json",
+        "content/worlds/settlement-rules.json",
+        "tests/WorldGen.Tests/SettlementPowerTests.cs",
+        "TestResults/power-textile-10y-final-report.json"
+      ],
+      "createdAt": "2026-08-29T14:15:21.6398775+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-edges-mechanics-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "17ee8d6c-56b0-470e-95b4-3d986404ff68",
+        "f94d6f0d-e862-465e-8bfa-4e1b3527cff3",
+        "3fc795ff-6155-4bee-98bc-9cb51597a603"
+      ],
+      "targetId": "primitive:mechanics",
+      "summary": "Устный счёт, плотничество и инструменты сохранены как совместные обязательные предпосылки механики.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.7788169+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "integrate-edges-water-mill-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "3e671384-cbbc-44ca-bd79-c937a1b92a57",
+        "f0daa241-3173-402b-b30d-07219523211d",
+        "1ce92e6b-ba11-4145-bc92-8ce0b9629b03"
+      ],
+      "targetId": "catalog:water_mill",
+      "summary": "Для водяной мельницы сохранены обязательные механика, водный привод и жернова; плотничество уже присутствует в исходном каталоге.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.8031145+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "integrate-edges-primitive-sail-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "db1517be-c792-4ff1-953b-73c3218be792",
+        "9479c506-5c20-4c6c-b46f-9e2433fda0b5"
+      ],
+      "targetId": "primitive:primitive_sail",
+      "summary": "Плот/корпус и тканое полотно сохранены как совместные условия возникновения примитивного паруса.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.8158417+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "integrate-edges-grow-cotton-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "e0d932a2-9c01-4f63-82fd-c10a655a5e91"
+      ],
+      "targetId": "primitive:grow_cotton",
+      "summary": "Общее земледелие сохранено обязательной основой видового знания выращивания хлопка.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.82856+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "integrate-edges-textile-weaving-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:textile_weaving",
+      "summary": "Хлопок, дикое волокно и шерсть нормализованы из приблизительных required-стрелок в три альтернативных сырьевых входа через OR.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.8421766+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": [
+        {
+          "edgeId": "4629a62f-d8c3-4fbb-a958-e5b33ec816fe",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "10be177f-bd02-44a8-b1eb-17861df4518a",
+          "implementedType": "alternative"
+        },
+        {
+          "edgeId": "9cfce2dc-f96b-43a9-a87e-0d0dceadd069",
+          "implementedType": "alternative"
+        }
+      ]
+    },
+    {
+      "id": "integrate-edges-woven-clothing-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "6f916e81-56b1-4bda-9861-b51f31f8bfb5"
+      ],
+      "targetId": "primitive:woven_clothing",
+      "summary": "Ткачество тканей сохранено обязательной предпосылкой отдельного знания тканой одежды.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.8559909+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "integrate-edges-water-power-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "24394333-b691-400b-928d-bf147fa1bcd2"
+      ],
+      "targetId": "primitive:water_power",
+      "summary": "Механика сохранена обязательной предпосылкой освоения водного привода.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.879553+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "integrate-edges-millstone-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "48a085f9-836c-40fc-aa0e-5357519e6f00"
+      ],
+      "targetId": "primitive:millstone",
+      "summary": "Каменные инструменты сохранены обязательной ранней предпосылкой жерновов; кладка добавлена как второе исполняемое условие.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.8926979+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "integrate-edges-windmill-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "6f3cde16-55bb-4b6f-91ea-7485c5a5aea9",
+        "df1b1b2a-f8eb-4ef6-b1d5-2b889e6d9929"
+      ],
+      "targetId": "primitive:windmill",
+      "summary": "Ветровой привод и жернова сохранены обязательными; водный привод нормализован в поддерживающую связь как переносимый опыт силовых установок, а не запрет на независимую ветровую ветку.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.9073635+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": [
+        {
+          "edgeId": "d154aafe-0347-4280-9adf-d9c6b2caa49e",
+          "implementedType": "supports"
+        }
+      ]
+    },
+    {
+      "id": "integrate-edges-wind-power-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "5f0f9aeb-70d8-48eb-9301-1c3e5b1307b1",
+        "e6b8a0db-60a7-4453-af72-4fa20d6bd827"
+      ],
+      "targetId": "primitive:wind_power",
+      "summary": "Практика паруса и общая механика сохранены совместными предпосылками освоения ветрового привода.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.9205799+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "integrate-edges-animal-mill-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [
+        "b1becbac-a106-46ff-8952-4e6bb5ae9a4c",
+        "8cafc642-98e3-477a-b9d6-f71f3546a80b"
+      ],
+      "targetId": "primitive:animal_mill",
+      "summary": "Тягловые животные и жернова сохранены обязательными условиями животной мельницы; общая механика добавлена исполняемым третьим условием.",
+      "references": [
+        "content/worlds/primordial-rules.json",
+        "content/editor/technology-annotations.json",
+        "POWER_SYSTEM.md",
+        "tests/WorldGen.Tests/TechnologyEditorTests.cs"
+      ],
+      "createdAt": "2026-08-29T14:16:00.9337821+00:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "scouting-effects-taming-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:taming",
+      "summary": "Живой отлов стал исполняемой частью разведки: базовый шанс зависит от вида, приручение увеличивает его в десять раз, пойманное животное уменьшает дикую группу, занимает поклажу и пополняет стадо только после возвращения.",
+      "references": ["EXPLORATION.md", "src/WorldGen.Core/Simulation/SettlementExploration.cs", "content/editor/technology-annotations.json"],
+      "createdAt": "2026-08-29T18:00:00+03:00",
+      "commentProgress": null,
+      "edgeAdaptations": []
+    },
+    {
+      "id": "scouting-effects-draught-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:draught_animals",
+      "summary": "Добавлен первый физический эффект тягловых животных: знание вместе с фактическим пригодным стадом увеличивает конечную вместимость разведывательной поклажи в 2,5 раза.",
+      "references": ["EXPLORATION.md", "src/WorldGen.Core/Simulation/SettlementExploration.cs", "content/editor/technology-annotations.json"],
+      "createdAt": "2026-08-29T18:00:01+03:00",
+      "commentProgress": [{
+        "commentId": "implementation-primitive-draught_animals-20260829",
+        "implemented": "Разведка проверяет наличие пригодного стада и получает множитель грузоподъёмности.",
+        "remaining": "Выделить конкретное животное и упряжь; считать корм, усталость, потери и хозяйственную экономию труда."
+      }],
+      "edgeAdaptations": []
+    },
+    {
+      "id": "scouting-effects-riding-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:riding",
+      "summary": "Добавлен первый физический эффект верховой езды: знание вместе с фактическим пригодным стадом увеличивает скорость разведывательной группы в 1,65 раза.",
+      "references": ["EXPLORATION.md", "src/WorldGen.Core/Simulation/SettlementExploration.cs", "content/editor/technology-annotations.json"],
+      "createdAt": "2026-08-29T18:00:02+03:00",
+      "commentProgress": [{
+        "commentId": "implementation-primitive-riding-20260829",
+        "implemented": "Разведка проверяет наличие пригодного стада и получает множитель скорости.",
+        "remaining": "Добавить различия видов и особей, корм, усталость, отдых и смену животных."
+      }],
+      "edgeAdaptations": []
+    },
+    {
+      "id": "scouting-effects-rafts-20260829",
+      "nodeIds": [],
+      "commentIds": [],
+      "edgeIds": [],
+      "targetId": "primitive:rafts",
+      "summary": "Добавлен первый пространственный эффект плотов: разведка резервирует древесину, собирает плот при первом выходе на воду и проходит прибрежные водные клетки с отдельным множителем скорости.",
+      "references": ["EXPLORATION.md", "src/WorldGen.Core/Simulation/SettlementExploration.cs", "content/editor/technology-annotations.json"],
+      "createdAt": "2026-08-29T18:00:03+03:00",
+      "commentProgress": [{
+        "commentId": "implementation-primitive-rafts-20260829",
+        "implemented": "Разведка резервирует древесину, собирает плот при выходе на воду и проходит прибрежные водные клетки.",
+        "remaining": "Сделать плот долговечным объектом: корпус, отдельная вместимость, износ, ремонт, причал и повторное использование."
+      }],
+      "edgeAdaptations": []
     }
   ],
   "positions": {
     "primitive:grow_raspberry": {
-      "x": 1484.3963846754864,
-      "y": 2852.4725346780247
+      "x": 1512,
+      "y": 2400
     },
     "primitive:stone_axes": {
-      "x": -14.5352194782006,
-      "y": 1427.5931640461176
+      "x": -24,
+      "y": 1320
     },
     "primitive:spears": {
-      "x": 346.57794921383527,
-      "y": 1176.6939400415074
+      "x": 0,
+      "y": -48
     },
     "primitive:fire": {
-      "x": 45.952454800015566,
-      "y": 3838.246536846009
+      "x": -24,
+      "y": 1608
     },
     "primitive:stone_vessels": {
-      "x": -14.943529529030643,
-      "y": 1604.4035358418469
+      "x": -24,
+      "y": 1392
     },
     "primitive:gathering": {
-      "x": -18.45073159400199,
-      "y": 1989.931698535154
+      "x": -24,
+      "y": 1536
     },
     "primitive:hunting": {
-      "x": 691.8173639386337,
-      "y": 1111.4801896714957
+      "x": 384,
+      "y": 96
     },
     "primitive:building": {
-      "x": -14.943529529030643,
-      "y": 1514.277658941772
+      "x": -24,
+      "y": 1248
     },
     "primitive:hide_clothing": {
-      "x": 1057.7963311365622,
-      "y": 1110.3593742255612
+      "x": 768,
+      "y": 168
     },
     "primitive:calendar": {
-      "x": -20.295804753402187,
-      "y": 1900.8187241605324
+      "x": -24,
+      "y": 1464
     },
     "primitive:fishing": {
-      "x": 34.623959082914915,
-      "y": 4137.285902528148
+      "x": -24,
+      "y": 1680
     },
     "primitive:gardening": {
-      "x": 350.47882944959684,
-      "y": 2088.819501430189
+      "x": 744,
+      "y": 1536
     },
     "primitive:archery": {
-      "x": 690.264837842295,
-      "y": 1201.0062839103389
+      "x": 768,
+      "y": -48
     },
     "primitive:taming": {
-      "x": 1058.0460240578423,
-      "y": 1034.22220132229
+      "x": 768,
+      "y": 96
     },
     "primitive:chieftains": {
-      "x": 350.41715294794693,
-      "y": 311.0384461603197
+      "x": 384,
+      "y": -336
     },
     "primitive:woodworking": {
-      "x": 350.69089271326504,
-      "y": 1257.6132150048236
+      "x": 384,
+      "y": 24
     },
     "primitive:weaving": {
-      "x": 348.63375629019663,
-      "y": 1992.1295494288026
+      "x": 384,
+      "y": 168
     },
     "primitive:well": {
-      "x": 352.43990602289495,
-      "y": 1605.581674015954
+      "x": 384,
+      "y": 576
     },
     "primitive:grow_wheat": {
-      "x": 680.7337581685845,
-      "y": 2824.81050858476
+      "x": 1128,
+      "y": 2328
     },
     "primitive:grow_barley": {
-      "x": 680.7456176056872,
-      "y": 2971.1477696149313
+      "x": 1128,
+      "y": 2472
     },
     "primitive:grow_buckwheat": {
-      "x": 688.0421467833922,
-      "y": 2307.4809669411525
+      "x": 1128,
+      "y": 1752
     },
     "primitive:grow_rice": {
-      "x": 682.100621983559,
-      "y": 2681.1241423566325
+      "x": 1128,
+      "y": 2184
     },
     "primitive:grow_cabbage": {
-      "x": 689.8872199427923,
-      "y": 2234.42418827772
+      "x": 1128,
+      "y": 1824
     },
     "primitive:grow_carrot": {
-      "x": 679.7624565620087,
-      "y": 3042.6011208133746
+      "x": 1128,
+      "y": 2544
     },
     "primitive:grow_turnip": {
-      "x": 682.100621983559,
-      "y": 2752.283893563209
+      "x": 1128,
+      "y": 2256
     },
     "primitive:grow_beet": {
-      "x": 684.4674857985335,
-      "y": 2604.5975273350814
+      "x": 1128,
+      "y": 2112
     },
     "primitive:grow_peas": {
-      "x": 684.3520004645918,
-      "y": 2454.340671980592
+      "x": 1128,
+      "y": 1968
     },
     "primitive:grow_beans": {
-      "x": 677.3909131293514,
-      "y": 3193.152810468292
+      "x": 1128,
+      "y": 2688
     },
     "primitive:grow_cucumber": {
-      "x": 676.7505846000502,
-      "y": 3117.9106091868084
+      "x": 1128,
+      "y": 2616
     },
     "primitive:grow_pumpkin": {
-      "x": 687.61966284919,
-      "y": 2378.658134318153
+      "x": 1128,
+      "y": 1896
     },
     "primitive:grow_onion": {
-      "x": 676.44590272514,
-      "y": 3267.3108314904166
+      "x": 1128,
+      "y": 2760
     },
     "primitive:grow_garlic": {
-      "x": 684.3013782591797,
-      "y": 2529.8488745731647
+      "x": 1128,
+      "y": 2040
     },
     "primitive:grow_pepper": {
-      "x": 680.7337581685845,
-      "y": 2898.703987421285
+      "x": 1128,
+      "y": 2400
     },
     "primitive:grow_apple": {
-      "x": 1487.2990797216435,
-      "y": 2303.2204088466383
+      "x": 1512,
+      "y": 1824
     },
     "primitive:grow_pear": {
-      "x": 1487.6435856746707,
-      "y": 2371.6233842381007
+      "x": 1512,
+      "y": 1896
     },
     "primitive:grow_plum": {
-      "x": 1488.3095092565006,
-      "y": 2441.8739742516623
+      "x": 1512,
+      "y": 1968
     },
     "primitive:grow_cherry": {
-      "x": 1486.7768380975094,
-      "y": 2232.743772052832
+      "x": 1512,
+      "y": 1752
     },
     "primitive:grow_hazel": {
-      "x": 1487.9980561586583,
-      "y": 2508.6311597134895
+      "x": 1512,
+      "y": 2040
     },
     "primitive:grow_walnut": {
-      "x": 1484.0551415974269,
-      "y": 2786.011456263957
+      "x": 1512,
+      "y": 2328
     },
     "primitive:grow_currant": {
-      "x": 1486.6886361928923,
-      "y": 2719.6765475823404
+      "x": 1512,
+      "y": 2256
     },
     "primitive:grow_blueberry": {
-      "x": 1486.9095679874936,
-      "y": 2648.8889653006563
+      "x": 1512,
+      "y": 2184
     },
     "primitive:herd_chicken": {
-      "x": 1433.474515077545,
-      "y": 854.4742091645443
+      "x": 1152,
+      "y": 456
     },
     "primitive:herd_pig": {
-      "x": 1433.392350085211,
-      "y": 924.1954739839118
+      "x": 1152,
+      "y": 528
     },
     "primitive:herd_cow": {
-      "x": 1438.3826059919074,
-      "y": 548.9130877204391
+      "x": 1152,
+      "y": 240
     },
     "primitive:herd_deer": {
-      "x": 1434.6676063884552,
-      "y": 367.63352225960284
+      "x": 1152,
+      "y": 96
     },
     "primitive:herd_horse": {
-      "x": 1435.717668589911,
-      "y": 434.70613621667417
+      "x": 1152,
+      "y": 168
     },
     "primitive:herd_rabbit": {
-      "x": 1431.5375328325072,
-      "y": 784.3319746319099
+      "x": 1152,
+      "y": 384
     },
     "primitive:herd_goat": {
-      "x": 1439.2276791513075,
-      "y": 618.6254976435563
+      "x": 1152,
+      "y": 312
     },
     "primitive:herd_sheep": {
-      "x": 1431.5369475535733,
-      "y": 1033.0875371819393
+      "x": 1152,
+      "y": 600
     },
     "primitive:crop_rotation": {
-      "x": 1149.1097104882604,
-      "y": 2039.925961363988
+      "x": 1512,
+      "y": 1536
     },
     "catalog:oral_accounting": {
-      "x": -12.231321816127496,
-      "y": 1352.4337484928376
+      "x": -24,
+      "y": 1752
     },
     "catalog:seed_selection": {
-      "x": 690.1986338876966,
-      "y": 2037.379209362161
+      "x": 1128,
+      "y": 1608
     },
     "catalog:crop_rotation": {
       "x": 380,
       "y": 1400
     },
     "catalog:animal_husbandry": {
-      "x": 2114.3209507572706,
-      "y": 369.976805166061
+      "x": 1920,
+      "y": 240
     },
     "catalog:pottery": {
       "x": 0,
       "y": 1848
     },
     "catalog:masonry": {
-      "x": -15.188964289853994,
-      "y": 1739.0377928579708
+      "x": 384,
+      "y": 432
     },
     "catalog:woodworking": {
       "x": 0,
@@ -2209,28 +3380,28 @@
       "y": 1736
     },
     "catalog:iron_forging": {
-      "x": 1760.394035042482,
-      "y": 3561.8094947299414
+      "x": 1944,
+      "y": 3144
     },
     "catalog:hand_tools": {
       "x": 380,
       "y": 1512
     },
     "catalog:water_mill": {
-      "x": 2510.498082935023,
-      "y": 2117.278355621423
+      "x": 3456,
+      "y": 864
     },
     "catalog:food_preservation": {
-      "x": 723.5656437411302,
-      "y": 3480.7483504976008
+      "x": 744,
+      "y": 1464
     },
     "catalog:river_navigation": {
-      "x": 350.5882352941184,
-      "y": 1338.5882352941153
+      "x": 360,
+      "y": 1752
     },
     "catalog:herbal_medicine": {
-      "x": 47.59208810820918,
-      "y": 3484.789605085906
+      "x": 360,
+      "y": 1536
     },
     "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121": {
       "x": 1146.5854385391267,
@@ -2329,116 +3500,216 @@
       "y": 3636.8036961496664
     },
     "primitive:horticulture": {
-      "x": 1146.5854385391267,
-      "y": 2113.9206914774963
+      "x": 1128,
+      "y": 1536
     },
     "primitive:pottery": {
-      "x": 382.1710710083771,
-      "y": 3838.3105579512267
+      "x": 384,
+      "y": 648
     },
     "primitive:fletched_arrows": {
-      "x": 1057.5912225757897,
-      "y": 1201.5980296929565
+      "x": 1152,
+      "y": -48
     },
     "primitive:wool_clothing": {
-      "x": 2135.7663811447023,
-      "y": 1119.831071345788
+      "x": 2304,
+      "y": 600
     },
     "primitive:dairy": {
-      "x": 1781.828360127054,
-      "y": 549.4466157470929
+      "x": 1920,
+      "y": 168
     },
     "primitive:cheesemaking": {
-      "x": 2113.8104325041536,
-      "y": 548.736342792611
+      "x": 2304,
+      "y": 168
     },
     "primitive:draught_animals": {
-      "x": 2506.822579861766,
-      "y": 2041.2616072348906
+      "x": 2688,
+      "y": 792
     },
     "primitive:riding": {
-      "x": 1781.6376326004658,
-      "y": 436.39702199511896
+      "x": 1920,
+      "y": 96
     },
     "primitive:granary": {
-      "x": 1151.2580935359451,
-      "y": 1968.297571759585
+      "x": 1896,
+      "y": 1536
     },
     "primitive:log_construction": {
-      "x": 687.0604414559278,
-      "y": 1288.6092942335708
+      "x": 768,
+      "y": 360
     },
     "primitive:pottery_kiln": {
-      "x": 718.3939163412667,
-      "y": 3838.1796186628644
+      "x": 768,
+      "y": 504
     },
     "primitive:charcoal_burning": {
-      "x": 1052.4990195300156,
-      "y": 3836.8318653048245
+      "x": 1152,
+      "y": 864
     },
     "primitive:rafts": {
-      "x": 687.1533590538829,
-      "y": 1382.7703847254686
+      "x": 744,
+      "y": 3648
     },
     "primitive:fishing_nets": {
-      "x": 718.7755992319769,
-      "y": 4137.572147683691
+      "x": 744,
+      "y": 1752
     },
     "primitive:mortar": {
-      "x": 351.81768173158946,
-      "y": 1416.549070826977
+      "x": 384,
+      "y": 360
     },
     "primitive:composite_construction": {
-      "x": 1054.2000517668334,
-      "y": 1292.8091401421218
+      "x": 1152,
+      "y": 792
     },
     "primitive:grow_grape": {
-      "x": 1487.0055631577652,
-      "y": 2579.6817906369856
+      "x": 1512,
+      "y": 2112
     },
     "primitive:winemaking": {
-      "x": 1901.8045403756578,
-      "y": 2577.2358695205085
+      "x": 1896,
+      "y": 2112
     },
     "primitive:nonferrous_metallurgy": {
-      "x": 1411.1599239724212,
-      "y": 3837.422139117809
+      "x": 1536,
+      "y": 3216
     },
     "primitive:alloying": {
-      "x": 2099.9482224928424,
-      "y": 3837.0864270130915
+      "x": 1944,
+      "y": 3360
     },
     "primitive:copper_tools": {
-      "x": 1756.4323002529347,
-      "y": 3731.685911725374
+      "x": 1944,
+      "y": 3288
     },
     "primitive:carpentry": {
-      "x": 2137.122489599082,
-      "y": 1200.706143415472
+      "x": 2304,
+      "y": 792
     },
     "primitive:bloomery_smelting": {
-      "x": 1420.1868328507742,
-      "y": 3637.791098530343
+      "x": 1536,
+      "y": 3144
     },
     "primitive:hand_tools": {
-      "x": 2101.4574258014736,
-      "y": 3634.778500911019
+      "x": 1944,
+      "y": 3216
     },
     "draft:6da3821d-b04a-49fd-bc28-344009a55e7e": {
       "x": 349.79363757527034,
       "y": 1738.7286140826134
     },
     "primitive:storage_buildings": {
-      "x": 349.79363757527034,
-      "y": 1738.7286140826134
+      "x": 768,
+      "y": 432
     },
     "draft:3bd41871-c167-4927-af8f-9cfe5d6eabd2": {
       "x": 350.96011151310216,
       "y": 1515.8167591502388
     },
     "primitive:stone_road": {
-      "x": 350.96011151310216,
-      "y": 1515.8167591502388
+      "x": 384,
+      "y": 504
+    },
+    "logic:any:animal_husbandry": {
+      "x": 1632,
+      "y": 240
+    },
+    "logic:any:dairy": {
+      "x": 1632,
+      "y": 168
+    },
+    "logic:any:draught_animals": {
+      "x": 1632,
+      "y": 312
+    },
+    "logic:any:riding": {
+      "x": 1632,
+      "y": 96
+    },
+    "draft:0f477dcc-f79b-4a2a-ab5c-86ee24f648b3": {
+      "x": 2688,
+      "y": 864
+    },
+    "draft:d47560c0-0fec-4a22-b9f5-c26c6eb42242": {
+      "x": 2712,
+      "y": 2832
+    },
+    "draft:47d87345-0be5-4b10-a5e9-68c00b6936bf": {
+      "x": 1128,
+      "y": 2832
+    },
+    "draft:0d6ae09e-57c1-4ddd-aecd-fad5d3f70b34": {
+      "x": 2328,
+      "y": 2832
+    },
+    "draft:027ca62c-1fd1-4b83-8709-bc02e4a1a265": {
+      "x": 2712,
+      "y": 2760
+    },
+    "draft:84f6c5eb-fa84-4199-9aa7-e182205a3d16": {
+      "x": 3072,
+      "y": 864
+    },
+    "draft:689c4a32-b45a-489c-8373-28df8e57c0f5": {
+      "x": 360,
+      "y": 1320
+    },
+    "draft:5260d774-901d-4779-9dfb-0975f950e671": {
+      "x": 3456,
+      "y": 936
+    },
+    "draft:5e85f42b-e09b-46f0-bd25-1c8aadad778f": {
+      "x": 3072,
+      "y": 936
+    },
+    "draft:2d8e76ac-c8c5-4b00-a6d4-702e5386c64e": {
+      "x": 3456,
+      "y": 1008
+    },
+    "primitive:mechanics": {
+      "x": 2688,
+      "y": 864
+    },
+    "primitive:primitive_sail": {
+      "x": 2712,
+      "y": 2832
+    },
+    "primitive:grow_cotton": {
+      "x": 1128,
+      "y": 2832
+    },
+    "primitive:textile_weaving": {
+      "x": 2328,
+      "y": 2832
+    },
+    "primitive:woven_clothing": {
+      "x": 2712,
+      "y": 2760
+    },
+    "primitive:water_power": {
+      "x": 3072,
+      "y": 864
+    },
+    "primitive:millstone": {
+      "x": 360,
+      "y": 1320
+    },
+    "primitive:windmill": {
+      "x": 3456,
+      "y": 936
+    },
+    "primitive:wind_power": {
+      "x": 3072,
+      "y": 936
+    },
+    "primitive:animal_mill": {
+      "x": 3456,
+      "y": 1008
+    },
+    "logic:any:textile_weaving": {
+      "x": 1992,
+      "y": 2256
     }
   }
 }

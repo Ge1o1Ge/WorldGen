@@ -1,4 +1,4 @@
-import { SphereCamera, MIN_SPHERE_ZOOM, MAX_SPHERE_ZOOM } from "/sphere-camera.js";
+import { dampZoom, SphereCamera, MIN_SPHERE_ZOOM, MAX_SPHERE_ZOOM } from "/sphere-camera.js";
 import { SphereChunkCache } from "/sphere-chunks.js";
 import { facePoint as surfacePoint, locateFace, createSurfaceSampler, contourInterval } from "/sphere-cartography.js";
 import { createSymbolRenderer, symbolSvg } from "/map-symbols.js";
@@ -6,22 +6,32 @@ import { drawCartographicLayer } from "/sphere-map-layer.js";
 import { buildingNames,buildingStates } from "/settlement-symbols.js";
 import {buildingConditionText,buildingHoverText} from "/sphere-lifecycle-panel.js";
 import { roundSpherePath } from "/sphere-world-geometry.js";
-import { connectSphereSimulation } from "/sphere-simulation-panel.js";
+import { connectSphereSimulation } from "/sphere-simulation-panel.js?v=batched-playback1";
 import { SphereMapData,structureTiles } from "/sphere-map-data.js";
 import {createLakeSurfaceSampler} from "/sphere-water.js";
 import {paintWaterRaster} from "/sphere-water-raster.js";
-import {createWeatherSampler,WeatherTint,WeatherEffects,weatherEffectSites,weatherText} from '/sphere-weather.js';
+import {createWeatherSampler,createClimateSampler,climateSeries,WeatherTint,WeatherEffects,weatherEffectSites,weatherText} from '/sphere-weather.js?v=climate-history1';
 import {wildPlants} from '/sphere-biology.js';
+import {WebGlobeRenderer} from '/sphere-webgl.js';
+import {MobileUnitLayer} from '/sphere-mobile-units.js';
 
 const canvas = document.getElementById("sphere-map");
-const context = canvas.getContext("2d", { alpha: false });
+const context = canvas.getContext("2d", { alpha: true });
+const globeRenderer=new WebGlobeRenderer(document.getElementById("sphere-globe"));
+const mobileUnits=new MobileUnitLayer(document.getElementById("sphere-mobile-units"),{
+  pointForCell:cell=>facePoint(cell.face,cell.x,cell.y),
+  project:point=>{const view=rotateWorldToView(point),geometry=globeGeometry();return{x:(geometry.centerX+view.x*geometry.radius)/pixelRatio,y:(geometry.centerY-view.y*geometry.radius)/pixelRatio,z:view.z};}
+});
 const weatherTint=new WeatherTint(()=>document.createElement('canvas'));
 let weatherInView=true;
 const weatherEffects=new WeatherEffects(document.getElementById('sphere-weather-effects'),{hidden:()=>document.hidden||!weatherInView});
 const weatherLayer=document.getElementById('sphere-weather-layer');
 const weatherMotion=document.getElementById('sphere-weather-motion');
 let sampleWeather=null;
-const landInk=document.createElement("canvas"),mapInk=document.createElement("canvas"),waterMask=document.createElement("canvas");
+let sampleClimate=null;
+let currentClimateSeries=[];
+let climateField="temperature";
+const landInk=document.createElement("canvas"),mapInk=document.createElement("canvas"),waterMask=document.createElement("canvas"),interactiveInk=document.createElement("canvas");
 const layerSelect = document.getElementById("sphere-layer");
 const tooltip = document.getElementById("sphere-tooltip");
 const selection = document.getElementById("sphere-selection");
@@ -46,6 +56,10 @@ const camera = new SphereCamera();
 let pixelRatio = 1;
 let drag = null;
 let frame = null;
+let cameraInteraction = false;
+let cameraSettleTimer = null;
+let chunkRenderTimer = null;
+let zoomMotion = null;
 let tooltipTimer = null;
 let lastHover = null;
 let neededChunks = new Set();
@@ -54,11 +68,18 @@ let chunkAxis;
 let faceIds;
 let refreshPromise = null;
 let simulationView=null;
+let simulationExactPending=false;
+let simulationController=null;
+let interfaceWorkTimer=null;
+let interfaceIdle=0;
+const interfaceWork=new Map();
 let mapData;
 let chunkRequests=0;
 let rasterSnapshot=null;
 let rasterBuilds=0;
+let simulationReconcileTimer=null;
 let parcels=[];
+let lastInteractiveStatusAt=0;
 
 function refreshParcelOptions(){
   const select=document.getElementById("sphere-parcel");if(!metadata||!select)return;
@@ -84,10 +105,50 @@ const chunkCache = new SphereChunkCache({
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const chunk = await response.json();
     if (chunk.worldId !== metadata.worldId) throw new Error("Мир на сервере заменён. Обновите страницу.");
+    globeRenderer.updateChunk(chunk);
     return chunk;
   },
-  onChange: () => { updateViewStatus(); refreshSelection(); scheduleRender(); }
+  onChange: () => {
+    // Chunk arrival must not inject expensive map frames into an active drag.
+    // The current GPU snapshot is complete enough for motion; one batched sharp
+    // frame reconciles the cache after the camera settles.
+    if(cameraInteraction||drag)return;
+    clearTimeout(chunkRenderTimer);chunkRenderTimer=setTimeout(()=>{
+      updateViewStatus();refreshSelection();scheduleRender();
+    },120);
+  }
 });
+
+function chunkTile(key){
+  const perFace=chunkAxis*chunkAxis,faceIndex=Math.floor(key/perFace),local=key%perFace;
+  return {face:metadata.faces[faceIndex],tx:local%chunkAxis,ty:Math.floor(local/chunkAxis)};
+}
+
+function chunkPrefetchBelt(required){
+  // A breadth-first halo is spatially stable across cube seams because
+  // dependenciesFor projects every neighbour through the sphere topology.
+  const seen=new Set(required),prefetch=[],room=Math.max(0,chunkCache.capacity-seen.size);
+  if(!room)return prefetch;
+  let frontier=[...required];
+  const rings=required.size<=36?3:required.size<=96?2:1;
+  for(let ring=0;ring<rings&&frontier.length&&prefetch.length<room;ring++){
+    const next=[];
+    for(const key of frontier){
+      for(const neighbour of mapData.dependenciesFor(chunkTile(key))){
+        if(seen.has(neighbour))continue;
+        seen.add(neighbour);prefetch.push(neighbour);next.push(neighbour);
+        if(prefetch.length>=room)break;
+      }
+      if(prefetch.length>=room)break;
+    }
+    frontier=next;
+  }
+  return prefetch;
+}
+
+function setChunkWorkingSet(required){
+  chunkCache.setDesired(required,chunkPrefetchBelt(required));
+}
 
 function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value));
@@ -206,18 +267,175 @@ function globeGeometry() {
   return camera.geometry(canvas.width, canvas.height);
 }
 
-function renderSphere() {
+function renderInteractiveFrame({started,sampleSurface,centerX,centerY,radius,width,height}){
+  // The exact cartographic frame is intentionally not mutated. A bounded
+  // low-resolution surface keeps camera input responsive, then release builds
+  // one sharp frame with rivers, contours and symbols.
+  const targetSamples=18_000,scale=Math.max(4,Math.ceil(Math.sqrt(width*height/targetSamples)));
+  const iw=Math.ceil(width/scale),ih=Math.ceil(height/scale);
+  if(interactiveInk.width!==iw||interactiveInk.height!==ih){interactiveInk.width=iw;interactiveInk.height=ih;}
+  const ctx=interactiveInk.getContext("2d"),image=ctx.createImageData(iw,ih),pixels=image.data;
+  const packed=((255<<24)|(background[2]<<16)|(background[1]<<8)|background[0])>>>0;
+  new Uint32Array(pixels.buffer).fill(packed);
+  const cx=centerX/scale,cy=centerY/scale,r=radius/scale;
+  for(let py=Math.max(0,Math.floor(cy-r));py<=Math.min(ih-1,Math.ceil(cy+r));py++)for(let px=Math.max(0,Math.floor(cx-r));px<=Math.min(iw-1,Math.ceil(cx+r));px++){
+    const sx=(px+.5-cx)/r,sy=-(py+.5-cy)/r,q=sx*sx+sy*sy;if(q>1)continue;
+    const point=rotateViewToWorld(sx,sy,Math.sqrt(1-q)),location=locateFace(point);
+    const tx=clamp(Math.floor((location.u+1)*metadata.faceSize/2/metadata.chunkSize),0,chunkAxis-1),ty=clamp(Math.floor((location.v+1)*metadata.faceSize/2/metadata.chunkSize),0,chunkAxis-1);
+    const key=faceIds.get(location.face)*chunkAxis*chunkAxis+ty*chunkAxis+tx;
+    const tile={face:location.face,tx,ty};
+    const sample=sampleSurface(location);let color=terrainColor(sample,point);
+    if(mapOptions.water&&(sample.elevation<=metadata.seaLevelMeters||sample.lakeDepth>1)){
+      const depth=Math.max(metadata.seaLevelMeters-sample.elevation,sample.lakeDepth-1),amount=clamp(depth/240,0,1);color=[195-42*amount,220-26*amount,226-17*amount];
+    }
+    const offset=(py*iw+px)*4;pixels[offset]=color[0];pixels[offset+1]=color[1];pixels[offset+2]=color[2];pixels[offset+3]=255;
+    for(const dependency of mapData.dependenciesFor(tile))neededChunks.add(dependency);
+    neededChunks.add(key);
+  }
+  ctx.putImageData(image,0,0);
+  context.imageSmoothingEnabled=true;context.drawImage(interactiveInk,0,0,iw,ih,0,0,width/pixelRatio,height/pixelRatio);
+  context.beginPath();context.arc(centerX/pixelRatio,centerY/pixelRatio,radius/pixelRatio,0,Math.PI*2);context.strokeStyle=dark?"#d8c9ad":"#5d5145";context.lineWidth=1.2;context.stroke();
+  if(!globeRenderer.snapshotReady)drawSettlementMarkers(centerX/pixelRatio,centerY/pixelRatio,radius/pixelRatio);
+  weatherEffects.update({key:"interactive",width:width/pixelRatio,height:height/pixelRatio,pixelRatio,sites:()=>[],enabled:false,arrows:false,geometry:{centerX:centerX/pixelRatio,centerY:centerY/pixelRatio,radius:radius/pixelRatio}});
+  setChunkWorkingSet(neededChunks);updateViewStatus();
+  const elapsed=performance.now()-started;document.getElementById("sphere-render-time").textContent=`${Math.round(elapsed)} мс`;canvas.dataset.interactiveMs=elapsed.toFixed(1);
+}
+
+function renderWebGlInteraction({started,centerX,centerY,radius,width,height}){
+  context.clearRect(0,0,width/pixelRatio,height/pixelRatio);
+  // The snapshot already contains settlements and cartographic signs. Drawing
+  // them again both doubled the work and made two projections visibly diverge.
+  if(!globeRenderer.snapshotReady)drawSettlementMarkers(centerX/pixelRatio,centerY/pixelRatio,radius/pixelRatio);
+  weatherEffects.update({key:"gpu-interactive",width:width/pixelRatio,height:height/pixelRatio,pixelRatio,sites:()=>[],enabled:false,arrows:false,
+    geometry:{centerX:centerX/pixelRatio,centerY:centerY/pixelRatio,radius:radius/pixelRatio}});
+  if(performance.now()-lastInteractiveStatusAt>140){lastInteractiveStatusAt=performance.now();updateViewStatus();}
+  const elapsed=performance.now()-started;document.getElementById("sphere-render-time").textContent=`GPU ${elapsed.toFixed(1)} мс`;canvas.dataset.interactiveMs=elapsed.toFixed(1);
+}
+
+function currentViewScope() {
+  if(!metadata)return {key:"loading",level:"world",cityIds:null,label:"Весь мир",context:"Загрузка пространственных данных"};
+  const level=camera.zoom<2.4?"world":camera.zoom<12?"region":"local";
+  let visible=metadata.settlements.map(settlement=>{
+    const anchor=settlement.buildings[0];if(!anchor)return null;
+    const view=rotateWorldToView(facePoint(anchor.face,anchor.x,anchor.y));
+    const geometry=globeGeometry(),x=geometry.centerX+view.x*geometry.radius,y=geometry.centerY-view.y*geometry.radius;
+    return {settlement,view,x,y,distance:view.x*view.x+view.y*view.y};
+  }).filter(item=>item&&item.view.z>.01&&item.x>=-40&&item.x<=canvas.width+40&&item.y>=-40&&item.y<=canvas.height+40);
+  if(level==="world")visible=metadata.settlements.map(settlement=>({settlement}));
+  if(level==="local"&&visible.length>1)visible=[visible.sort((a,b)=>a.distance-b.distance)[0]];
+  const ids=level==="world"?null:visible.map(item=>item.settlement.id).sort();
+  const label=level==="world"?"Весь мир":level==="region"
+    ? (visible.length?`Регион · ${visible.length} пос.`:"Ненаселённый регион")
+    : (visible[0]?.settlement.name??"Окрестности без поселений");
+  const context=level==="world"?"Глобальная сводка — локальные события скрыты":level==="region"
+    ? "Сводка по поселениям, попавшим в экран":"Местные запасы, решения и события";
+  return {key:`${level}:${ids?.join(",")??"all"}`,level,cityIds:ids,label,context};
+}
+
+function updateWeatherSummary(){
+  const values=[],locations=[];
+  if(sampleWeather)for(let y=0;y<4;y++)for(let x=0;x<6;x++){
+    const point=camera.worldAt((x+.5)*canvas.width/6,(y+.5)*canvas.height/4,canvas.width,canvas.height);
+    if(point){const location=locateFace(point);locations.push(location);values.push(sampleWeather(location));}
+  }
+  const average=key=>values.length?values.reduce((sum,item)=>sum+item[key],0)/values.length:NaN;
+  const set=(id,value,digits=1)=>document.getElementById(id).textContent=Number.isFinite(value)?value.toFixed(digits):"—";
+  set("sphere-weather-temperature",average("temperature"));set("sphere-weather-rain",average("rain"));
+  const wind=values.length?values.reduce((sum,item)=>sum+Math.hypot(item.windX,item.windY,item.windZ),0)/values.length:NaN;
+  set("sphere-weather-wind",wind,2);
+  set("sphere-weather-snow",average("snow"),0);
+  document.getElementById("sphere-weather-scope").textContent=`Погода · ${currentViewScope().label.toLowerCase()}`;
+  currentClimateSeries=climateSeries(sampleClimate,locations);renderClimateHistory();
+}
+
+const climateMonths=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+function renderClimateHistory(){
+  const chart=document.getElementById("sphere-climate-chart");if(!chart)return;chart.replaceChildren();chart.dataset.field=climateField;
+  const present=currentClimateSeries.filter(item=>item[climateField]!==null),values=present.map(item=>item[climateField]);
+  const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1,range=Math.max(.001,max-min);
+  const digits=climateField==="wind"?2:1,unit=climateField==="temperature"?"°":climateField==="rain"?" мм":"";
+  for(let month=0;month<12;month++){
+    const item=currentClimateSeries[month],value=item?.[climateField];
+    const column=document.createElement("div");column.className="sphere-climate-month"+(value===null||value===undefined?" is-missing":"");
+    const label=document.createElement("strong"),track=document.createElement("div"),bar=document.createElement("i"),name=document.createElement("small");
+    track.className="sphere-climate-track";bar.className="sphere-climate-bar";name.textContent=climateMonths[month];
+    if(value===null||value===undefined)label.textContent="—";
+    else{label.textContent=`${value.toFixed(digits)}${unit}`;bar.style.height=`${Math.round(5+27*(value-min)/range)}px`;track.append(bar);}
+    column.append(label,track,name);chart.append(column);
+  }
+  const observed=currentClimateSeries.filter(item=>item.sampleDays>0).length;
+  const maxDays=Math.max(0,...currentClimateSeries.map(item=>item.sampleDays));
+  document.getElementById("sphere-climate-note").textContent=observed?`История области · ${observed}/12 мес. · до ${maxDays} дн.`:"История появится по мере симуляции";
+}
+
+for(const button of document.querySelectorAll("[data-climate-field]"))button.addEventListener("click",()=>{
+  climateField=button.dataset.climateField;
+  for(const peer of document.querySelectorAll("[data-climate-field]"))peer.setAttribute("aria-selected",String(peer===button));
+  renderClimateHistory();
+});
+const climateHistory=document.getElementById("sphere-climate-history"),climateToggle=document.getElementById("sphere-climate-toggle");
+function setClimateCollapsed(collapsed){
+  climateHistory.classList.toggle("is-collapsed",collapsed);climateToggle.setAttribute("aria-expanded",String(!collapsed));
+  climateToggle.querySelector("span").textContent=collapsed?"Показать климатограмму":"Климатограмма";
+  try{localStorage.setItem("worldgen.climateCollapsed",String(collapsed));}catch{}
+}
+try{setClimateCollapsed(localStorage.getItem("worldgen.climateCollapsed")==="true");}catch{setClimateCollapsed(false);}
+climateToggle.addEventListener("click",()=>setClimateCollapsed(!climateHistory.classList.contains("is-collapsed")));
+
+function scheduleInterfaceWork(key,work,delay=120){
+  interfaceWork.set(key,work);clearTimeout(interfaceWorkTimer);
+  if(interfaceIdle&&window.cancelIdleCallback){cancelIdleCallback(interfaceIdle);interfaceIdle=0;}
+  interfaceWorkTimer=setTimeout(flushInterfaceWork,delay);
+}
+
+function flushInterfaceWork(){
+  interfaceWorkTimer=null;
+  if(drag||cameraInteraction||zoomMotion||frame!==null||simulationExactPending){interfaceWorkTimer=setTimeout(flushInterfaceWork,120);return;}
+  const run=()=>{
+    interfaceIdle=0;
+    if(drag||cameraInteraction||zoomMotion||frame!==null||simulationExactPending){interfaceWorkTimer=setTimeout(flushInterfaceWork,120);return;}
+    const started=performance.now(),tasks=[...interfaceWork.values()];interfaceWork.clear();
+    for(const task of tasks)task();canvas.dataset.interfaceMs=(performance.now()-started).toFixed(1);
+  };
+  if(window.requestIdleCallback)interfaceIdle=requestIdleCallback(run,{timeout:700});else setTimeout(run,0);
+}
+
+function scheduleScopeRefresh(delay=180){
+  scheduleInterfaceWork("scope",()=>{updateWeatherSummary();simulationController?.refreshScope();},delay);
+}
+
+function advanceZoomMotion(timestamp){
+  if(!zoomMotion)return false;
+  const elapsed=clamp(timestamp-zoomMotion.lastTime,1,48);zoomMotion.lastTime=timestamp;
+  const next=dampZoom(camera.zoom,zoomMotion.targetZoom,elapsed);
+  camera.zoomAt(next,zoomMotion.x,zoomMotion.y,zoomMotion.width,zoomMotion.height);
+  const finished=Math.abs(Math.log(camera.zoom/zoomMotion.targetZoom))<.00045;
+  if(finished){
+    camera.zoomAt(zoomMotion.targetZoom,zoomMotion.x,zoomMotion.y,zoomMotion.width,zoomMotion.height);
+    zoomMotion=null;canvas.dataset.zoomAnimating="false";scheduleScopeRefresh();return false;
+  }
+  canvas.dataset.zoomAnimating="true";return true;
+}
+
+function renderSphere(timestamp=performance.now()) {
   const started=performance.now();
   frame = null;
+  if(advanceZoomMotion(timestamp))scheduleRender();
   if (!preview) return;
   neededChunks = new Set();
   const cartographic = ["topographic","elevation","political"].includes(layerSelect.value);
+  const interacting=!!drag||cameraInteraction;
+  const preciseCartography=cartographic&&!interacting;
   const sampleSurface = smoothSampler();
   let visibleTiles=new Map();
-  const step = drag ? 2 : 1;
   const { centerX, centerY, radius } = globeGeometry();
+  mobileUnits.render();
   const width = canvas.width;
   const height = canvas.height;
+  const gpuFrame=globeRenderer.draw({width,height,centerX,centerY,radius,matrix:camera.matrix,useSnapshot:interacting});
+  if(interacting&&gpuFrame){renderWebGlInteraction({started,centerX,centerY,radius,width,height});return;}
+  if(interacting){renderInteractiveFrame({started,sampleSurface,centerX,centerY,radius,width,height});return;}
+  const step = 1;
   const rasterKey=JSON.stringify([width,height,camera.zoom,camera.orientation,layerSelect.value,step,mapOptions.water,hydrologyVersion(),metadata.worldId]);
   const reuseRaster=rasterSnapshot?.key===rasterKey&&[...rasterSnapshot.visibleTiles].every(([key,tile])=>rasterSnapshot.versions.get(key)===tileVersion(tile,true));
   let image,mask;
@@ -226,16 +444,11 @@ function renderSphere() {
   }else{
   image = context.createImageData(width, height);
   const pixels = image.data;
-  mask=cartographic?context.createImageData(width,height):null;
-  const ocean=cartographic?new Float32Array(width*height).fill(NaN):null;
-  const lakes=cartographic?new Float32Array(width*height).fill(NaN):null;
-  const waterColors=cartographic?new Uint8ClampedArray(width*height*3):null;
-  for (let index = 0; index < width * height; index++) {
-    pixels[index * 4] = background[0];
-    pixels[index * 4 + 1] = background[1];
-    pixels[index * 4 + 2] = background[2];
-    pixels[index * 4 + 3] = 255;
-  }
+  mask=preciseCartography?context.createImageData(width,height):null;
+  const ocean=preciseCartography?new Float32Array(width*height).fill(NaN):null;
+  const lakes=preciseCartography?new Float32Array(width*height).fill(NaN):null;
+  const waterColors=preciseCartography?new Uint8ClampedArray(width*height*3):null;
+  if(!gpuFrame){const packed=((255<<24)|(background[2]<<16)|(background[1]<<8)|background[0])>>>0;new Uint32Array(pixels.buffer).fill(packed);}
   const x0 = Math.max(0, Math.floor(centerX - radius));
   const x1 = Math.min(width - 1, Math.ceil(centerX + radius));
   const y0 = Math.max(0, Math.floor(centerY - radius));
@@ -255,8 +468,12 @@ function renderSphere() {
         if(!visibleTiles.has(key))visibleTiles.set(key,{face:location.face,tx,ty});
       }
       const sample = cartographic ? sampleSurface(location) : sampleAt(location);
-      const color = terrainColor(sample, point);
-      if(cartographic){
+      let color = terrainColor(sample, point);
+      if(cartographic&&drag&&mapOptions.water&&(sample.elevation<=metadata.seaLevelMeters||sample.lakeDepth>1)){
+        const depth=Math.max(metadata.seaLevelMeters-sample.elevation,sample.lakeDepth-1),amount=clamp(depth/240,0,1);
+        color=[195-42*amount,220-26*amount,226-17*amount];
+      }
+      if(preciseCartography){
         const index=py*width+px;
         ocean[index]=metadata.seaLevelMeters-sample.elevation;
         lakes[index]=sample.lakeShore;
@@ -273,11 +490,12 @@ function renderSphere() {
           pixels[offset] = color[0];
           pixels[offset + 1] = color[1];
           pixels[offset + 2] = color[2];
+          pixels[offset + 3] = 255;
         }
       }
     }
   }
-  if(cartographic)paintWaterRaster({pixels,mask:mask.data,ocean,lakes,waterColors,width,height,step,x0,y0,x1,y1,pixelRatio,
+  if(preciseCartography)paintWaterRaster({pixels,mask:mask.data,ocean,lakes,waterColors,width,height,step,x0,y0,x1,y1,pixelRatio,
     fill:layerSelect.value==="topographic",stroke:layerSelect.value!=="political",
     shoreColor:atlas?atlas.palette.water.match(/[0-9a-f]{2}/gi).map(value=>parseInt(value,16)):undefined});
   rasterSnapshot={key:rasterKey,image,mask,visibleTiles,neededChunks:new Set(neededChunks),
@@ -303,7 +521,7 @@ function renderSphere() {
     geometry:{centerX:cssX,centerY:cssY,radius:cssRadius}});
   canvas.dataset.weatherBuilds=String(weatherTint.builds);
   canvas.dataset.weatherMs=weatherTint.milliseconds.toFixed(1);
-  if(cartographic && atlas) {
+  if(preciseCartography && atlas) {
     for(const surface of [landInk,mapInk,waterMask]){surface.width=width;surface.height=height;}
     const ink=landInk.getContext("2d"),overlay=mapInk.getContext("2d"),maskContext=waterMask.getContext("2d");
     ink.setTransform(pixelRatio,0,0,pixelRatio,0,0);overlay.setTransform(pixelRatio,0,0,pixelRatio,0,0);
@@ -340,10 +558,18 @@ function renderSphere() {
   if(camera.zoom>=3.5)for(const tile of visibleTiles.values())
     for(const key of mapData.dependenciesFor(tile))neededChunks.add(key);
   rasterSnapshot.neededChunks=new Set(neededChunks);
-  chunkCache.setDesired(neededChunks);
+  setChunkWorkingSet(neededChunks);
+  const snapshotStatus=chunkCache.status;
+  if(snapshotStatus.loaded===snapshotStatus.total&&snapshotStatus.pending===0)
+    globeRenderer.captureSnapshot(canvas,{width,height,centerX,centerY,radius,matrix:camera.matrix});
   updateViewStatus();
-  document.getElementById("sphere-render-time").textContent=`${Math.round(performance.now()-started)} мс`;
+  const elapsed=performance.now()-started;
+  document.getElementById("sphere-render-time").textContent=`${Math.round(elapsed)} мс`;
+  canvas.dataset[interacting?"interactiveMs":"finalMs"]=elapsed.toFixed(1);
   document.getElementById("sphere-raster-builds").textContent=String(rasterBuilds);
+  if(!interacting&&simulationExactPending){
+    simulationExactPending=false;clearTimeout(simulationReconcileTimer);simulationReconcileTimer=null;
+  }
 }
 
 function facePoint(face, x, y) {
@@ -428,7 +654,7 @@ function updateViewStatus() {
 
 function hideTooltip() { clearTimeout(tooltipTimer); tooltip.hidden = true; }
 
-function applyMapUpdate(update) {
+function applyMapUpdate(update,{refresh=true}={}) {
   const result=mapData.apply(update);
   if(!result.accepted)return false;
   if(result.structures){
@@ -437,21 +663,35 @@ function applyMapUpdate(update) {
   }
   metadata.revision=update.revision;
   document.getElementById("sphere-map-updates").textContent=String(mapData.updates);
-  refreshSelection();
-  return true;
+  if(refresh)refreshSelection();
+  return result;
 }
 
-function applySimulationView(state){
-  if(simulationView&&state.revision<simulationView.revision)return false;
-  if(!applyMapUpdate(state.map))return false;
+function applySimulationView(state,{live=false}={}){
+  if(simulationView&&state.revision<simulationView.revision){canvas.dataset.rejectedSimulationRevision=String(state.revision);return false;}
+  canvas.dataset.simulationRevision=String(state.revision);
+  // Most live frames contain only simulation data. A rare structural frame
+  // carries buildings/fields/claims and earns one exact cartographic redraw.
+  if(!live&&!applyMapUpdate(state.map,{refresh:true}))return false;
+  if(live&&state._liveMapChanged){
+    const mapResult=applyMapUpdate(state.map,{refresh:false});if(!mapResult)return false;
+    simulationExactPending=mapResult.changedTiles.size>0||!!mapResult.structures;
+    if(simulationExactPending)scheduleSimulationReconcile();
+  }
   simulationView=state;
+  mobileUnits.update(state.scouts??[],state.day,{animate:live});
   sampleWeather=createWeatherSampler(state.weatherMap,metadata.faceSize);
-  updateWeatherLegend();
+  sampleClimate=createClimateSampler(state.weatherMap);
   const homes=new Map(state.cities.flatMap(city=>city.homes??[]).map(home=>[home.id,home]));
   for(const city of metadata.settlements)for(const building of city.buildings){
     const home=homes.get(building.id);if(home){building.status=home.status;building.residents=home.residents;}
   }
-  refreshSelection();scheduleRender();
+  if(live)scheduleInterfaceWork("weather",()=>{updateWeatherLegend();updateWeatherSummary();},90);
+  else{
+    updateWeatherLegend();
+    simulationExactPending=false;clearTimeout(simulationReconcileTimer);simulationReconcileTimer=null;
+    refreshSelection();scheduleRender();scheduleScopeRefresh(0);
+  }
 }
 
 function updateWeatherLegend(){
@@ -518,16 +758,52 @@ function refreshSelection() {
   document.getElementById("sphere-land-toggle").textContent = land?.usage > 0 ? "Прекратить использование угодья" : "Возобновить использование угодья";
 }
 
-function zoomAt(value, x, y) {
-  const rect = canvas.getBoundingClientRect();
-  camera.zoomAt(value, x ?? rect.width * 0.5, y ?? rect.height * 0.49, rect.width, rect.height);
-  hideTooltip();
-  scheduleRender();
+function beginCameraInteraction(settleDelay=150) {
+  cameraInteraction=true;
+  clearTimeout(chunkRenderTimer);
+  clearTimeout(cameraSettleTimer);
+  const settle=()=>{
+    if(zoomMotion){cameraSettleTimer=setTimeout(settle,45);return;}
+    cameraInteraction=false;scheduleRender();
+  };
+  cameraSettleTimer=setTimeout(settle,settleDelay);
 }
+
+function zoomAt(value, x, y, interactive=false) {
+  const rect = canvas.getBoundingClientRect();
+  const pointX=x??rect.width*.5,pointY=y??rect.height*.49;
+  if(interactive){
+    beginCameraInteraction();
+    zoomMotion??={targetZoom:camera.zoom,lastTime:performance.now(),x:pointX,y:pointY,width:rect.width,height:rect.height};
+    Object.assign(zoomMotion,{targetZoom:clamp(value,MIN_SPHERE_ZOOM,MAX_SPHERE_ZOOM),x:pointX,y:pointY,width:rect.width,height:rect.height});
+    hideTooltip();scheduleRender();return;
+  }
+  camera.zoomAt(value,pointX,pointY,rect.width,rect.height);
+  hideTooltip();
+  scheduleRender();scheduleScopeRefresh();
+}
+
+function cancelZoomMotion(){
+  zoomMotion=null;cameraInteraction=false;clearTimeout(cameraSettleTimer);canvas.dataset.zoomAnimating="false";
+}
+
+function requestedZoom(){return zoomMotion?.targetZoom??camera.zoom;}
 
 function scheduleRender() {
   if (frame !== null) return;
   frame = requestAnimationFrame(renderSphere);
+}
+
+function scheduleSimulationReconcile(delay=650){
+  clearTimeout(simulationReconcileTimer);
+  simulationReconcileTimer=setTimeout(()=>{
+    simulationReconcileTimer=null;
+    if(!simulationExactPending)return;
+    // Camera input and exact chunk arrival have priority over background world
+    // reconciliation. Keep the accepted data dirty and try again when quiet.
+    if(drag||cameraInteraction||zoomMotion||chunkCache.pending.size){scheduleSimulationReconcile(180);return;}
+    scheduleRender();
+  },delay);
 }
 
 function screenLocation(clientX, clientY) {
@@ -544,7 +820,7 @@ function screenLocation(clientX, clientY) {
 }
 
 function showTooltip(location, event) {
-  if (!preview || drag) return;
+  if (!preview || drag || cameraInteraction) return;
   const sample = sampleAt(location);
   const cellX = clamp(Math.floor((location.u + 1) * 0.5 * metadata.faceSize), 0, metadata.faceSize - 1);
   const cellY = clamp(Math.floor((location.v + 1) * 0.5 * metadata.faceSize), 0, metadata.faceSize - 1);
@@ -570,19 +846,23 @@ function showTooltip(location, event) {
 }
 
 function resize() {
+  cancelZoomMotion();
   const rect = canvas.getBoundingClientRect();
-  pixelRatio = Math.min(1.5, window.devicePixelRatio || 1);
+  const cssPixels=Math.max(1,rect.width*rect.height);
+  pixelRatio = Math.min(1.25, window.devicePixelRatio || 1, Math.sqrt(2_100_000/cssPixels));
   canvas.width = Math.max(1, Math.round(rect.width * pixelRatio));
   canvas.height = Math.max(1, Math.round(rect.height * pixelRatio));
+  mobileUnits.resize(rect.width,rect.height,pixelRatio);
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   drag = null;
   canvas.classList.remove("is-dragging");
   hideTooltip();
-  scheduleRender();
+  scheduleRender();scheduleScopeRefresh();
 }
 
 canvas.addEventListener("pointerdown", event => {
   if (event.button !== 0 || !preview) return;
+  cancelZoomMotion();
   const rect = canvas.getBoundingClientRect();
   drag = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false,
     start: camera.beginDrag(event.clientX - rect.left, event.clientY - rect.top, rect.width, rect.height) };
@@ -610,11 +890,13 @@ canvas.addEventListener("pointermove", event => {
 function finishDrag(event) {
   if (drag?.id !== event.pointerId) return;
   const click = !drag.moved && event.type === "pointerup";
+  const moved=drag.moved;
   drag = null;
   canvas.classList.remove("is-dragging");
   if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
   if (click) selectCell(event);
-  scheduleRender();
+  if(moved)beginCameraInteraction(110);
+  scheduleRender();scheduleScopeRefresh();
 }
 canvas.addEventListener("pointerup", finishDrag);
 canvas.addEventListener("pointercancel", finishDrag);
@@ -628,18 +910,26 @@ canvas.addEventListener("wheel", event => {
   if (drag) return;
   const rect = canvas.getBoundingClientRect();
   const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1);
-  zoomAt(camera.zoom * Math.exp(-clamp(delta, -600, 600) * 0.002), event.clientX - rect.left, event.clientY - rect.top);
+  zoomAt(requestedZoom() * Math.exp(-clamp(delta, -600, 600) * 0.002), event.clientX - rect.left, event.clientY - rect.top, true);
 }, { passive: false });
 
-document.getElementById("sphere-zoom-in").addEventListener("click", () => zoomAt(camera.zoom * 1.5));
-document.getElementById("sphere-zoom-out").addEventListener("click", () => zoomAt(camera.zoom / 1.5));
-document.getElementById("sphere-reset").addEventListener("click", () => { camera.reset(); hideTooltip(); scheduleRender(); });
+document.getElementById("sphere-zoom-in").addEventListener("click", () => zoomAt(requestedZoom() * 1.5,undefined,undefined,true));
+document.getElementById("sphere-zoom-out").addEventListener("click", () => zoomAt(requestedZoom() / 1.5,undefined,undefined,true));
+document.getElementById("sphere-reset").addEventListener("click", () => { cancelZoomMotion();camera.reset();hideTooltip();scheduleRender();scheduleScopeRefresh(); });
 document.getElementById("sphere-retry").addEventListener("click", () => chunkCache.retry());
 canvas.addEventListener("dblclick", event => {
   const location = screenLocation(event.clientX, event.clientY);
-  if (location) { camera.focus(location.point, Math.max(8, camera.zoom * 2)); hideTooltip(); scheduleRender(); }
+  if (location) { cancelZoomMotion();camera.focus(location.point, Math.max(8, camera.zoom * 2));hideTooltip();scheduleRender(); }
 });
 layerSelect.addEventListener("change", scheduleRender);
+const journal=document.getElementById("sphere-journal"),journalToggle=document.getElementById("sphere-journal-toggle");
+function setJournalCollapsed(collapsed){
+  journal.classList.toggle("is-collapsed",collapsed);journalToggle.setAttribute("aria-expanded",String(!collapsed));
+  journalToggle.setAttribute("aria-label",collapsed?"Развернуть журнал":"Свернуть журнал");
+  try{localStorage.setItem("worldgen.journalCollapsed",collapsed?"1":"0");}catch{}
+}
+try{setJournalCollapsed(localStorage.getItem("worldgen.journalCollapsed")==="1");}catch{setJournalCollapsed(false);}
+journalToggle.addEventListener("click",()=>setJournalCollapsed(!journal.classList.contains("is-collapsed")));
 document.getElementById("sphere-land-toggle").addEventListener("click", async event => {
   const land = selectedLand();
   if (!land) return;
@@ -671,6 +961,16 @@ metadata = await metadataResponse.json();
 preview = await previewResponse.json();
 if(!metadata.worldId||metadata.worldId!==preview.worldId)throw new Error("Сервер обновлён во время загрузки. Обновите страницу.");
 mapData=new SphereMapData({worldId:metadata.worldId,faceSize:metadata.faceSize,chunkSize:metadata.chunkSize,faces:metadata.faces});
+try{
+  globeRenderer.initialize({preview,seaLevel:metadata.seaLevelMeters,seed:metadata.seed,faceSize:metadata.faceSize});
+  void globeRenderer.loadStarTexture('/assets/2k_stars_milky_way.jpg').then(()=>scheduleRender());
+  void globeRenderer.loadExactSurface(`/api/sphere/gpu-surface?worldId=${encodeURIComponent(metadata.worldId)}`).then(loaded=>{
+    if(loaded)document.getElementById("sphere-gpu-status").textContent=`WebGL2 · точная поверхность ${metadata.faceSize}² × 6`;
+    scheduleRender();
+  }).catch(error=>console.warn("Exact GPU surface unavailable",error));
+}
+catch(error){globeRenderer.available=false;globeRenderer.error=error;console.warn("WebGL2 globe disabled",error);}
+document.getElementById("sphere-gpu-status").textContent=globeRenderer.available?`WebGL2 · ${metadata.faceSize}² × 6`:"Canvas fallback";
 atlas = await atlasResponse.json();
 drawSymbol = createSymbolRenderer(atlas);
 const legend=document.getElementById("sphere-map-legend");
@@ -700,8 +1000,8 @@ for (const settlement of metadata.settlements) {
 settlementSelect.addEventListener("change", () => {
   const anchor = metadata.settlements.find(item => item.id === settlementSelect.value)?.buildings[0];
   if (!anchor) return;
-  camera.focus(facePoint(anchor.face, anchor.x, anchor.y), 24);
-  hideTooltip(); scheduleRender();
+  cancelZoomMotion();camera.focus(facePoint(anchor.face, anchor.x, anchor.y), 24);
+  hideTooltip(); scheduleRender();scheduleScopeRefresh();
 });
 const parcelSelect = document.getElementById("sphere-parcel");
 refreshParcelOptions();
@@ -709,13 +1009,15 @@ parcelSelect.addEventListener("change", () => {
   if (parcelSelect.value === "") return;
   const parcel = parcels[Number(parcelSelect.value)];
   selectedCell = { face: parcel.face, x: parcel.x, y: parcel.y };
-  camera.focus(facePoint(parcel.face, parcel.x, parcel.y), 48);
-  hideTooltip(); refreshSelection(); scheduleRender();
+  cancelZoomMotion();camera.focus(facePoint(parcel.face, parcel.x, parcel.y), 48);
+  hideTooltip(); refreshSelection(); scheduleRender();scheduleScopeRefresh();
 });
 resize();
 void loadHydrology();
-void connectSphereSimulation({onState:applySimulationView,biosphere:metadata.biosphere,processes:metadata.processes??[],mapQuery:()=>mapData.query(),
-  onFocus:site=>{selectedCell={face:site.face,x:site.x,y:site.y};camera.focus(facePoint(site.face,site.x,site.y),48);hideTooltip();refreshSelection();scheduleRender();}});
+simulationController=await connectSphereSimulation({onState:applySimulationView,biosphere:metadata.biosphere,processes:metadata.processes??[],activities:metadata.activities??[],mapQuery:()=>mapData.query(),getScope:currentViewScope,
+  scheduleUi:work=>scheduleInterfaceWork("simulation",work,90),
+  onFocus:site=>{selectedCell={face:site.face,x:site.x,y:site.y};cancelZoomMotion();camera.focus(facePoint(site.face,site.x,site.y),48);hideTooltip();refreshSelection();scheduleRender();scheduleScopeRefresh();}});
+scheduleScopeRefresh(0);
 }
 initialize().catch(error => {
   document.getElementById("sphere-view-error").textContent = `${error.message}. Перезагрузите страницу после восстановления сервера.`;
@@ -758,7 +1060,7 @@ document.getElementById("sphere-nature").addEventListener("change",event=>{
   const reach=hydrology.reaches.find(item=>item.id===Number(event.target.value));
   if(!reach) return;
   const point=reach.points[Math.floor(reach.points.length*.55)];
-  camera.focus({x:point[0],y:point[1],z:point[2]},8);
+  cancelZoomMotion();camera.focus({x:point[0],y:point[1],z:point[2]},8);
   hideTooltip();scheduleRender();
 });
 

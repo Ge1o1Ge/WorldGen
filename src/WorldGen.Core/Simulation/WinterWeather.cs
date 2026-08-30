@@ -24,6 +24,14 @@ public sealed class WeatherSurfaceGrid
     public double[] Snow { get; set; } = [];
     public double[] Ice { get; set; } = [];
     public bool[] LeafOff { get; set; } = [];
+    // A deliberately coarse, persistent climatology. It stores one spatial
+    // average per simulated day, grouped into twelve calendar months. Keeping
+    // it in the world state makes the graph observed history, not a forecast.
+    public int ClimateResolution { get; set; }
+    public int[] ClimateSampleDays { get; set; } = [];
+    public double[] ClimateTemperatureSum { get; set; } = [];
+    public double[] ClimateRainSum { get; set; } = [];
+    public double[] ClimateWindSum { get; set; } = [];
 }
 
 public static class WinterWeather

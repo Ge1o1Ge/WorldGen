@@ -8,14 +8,22 @@ export class SphereChunkCache {
     this.chunks = new Map();
     this.pending = new Map();
     this.failed = new Set();
+    this.required = new Set();
     this.desired = new Set();
     this.generation = 0;
   }
 
   get(key) { return this.chunks.get(key); }
 
-  setDesired(keys) {
-    this.desired = new Set(keys);
+  setDesired(keys, prefetchKeys = []) {
+    // Required chunks always lead the queue. The speculative belt may occupy
+    // only the otherwise free cache slots and therefore never delays the view.
+    this.required = new Set([...keys].slice(0, this.capacity));
+    this.desired = new Set(this.required);
+    for (const key of prefetchKeys) {
+      if (this.desired.size >= this.capacity) break;
+      this.desired.add(key);
+    }
     for (const key of this.failed) if (!this.desired.has(key)) this.failed.delete(key);
     for (const key of this.desired) {
       const chunk = this.chunks.get(key);
@@ -45,11 +53,14 @@ export class SphereChunkCache {
   get status() {
     let loaded = 0;
     let failed = 0;
-    for (const key of this.desired) {
+    let pending = 0;
+    for (const key of this.required) {
       if (this.chunks.has(key)) loaded++;
       if (this.failed.has(key)) failed++;
+      if (this.pending.has(key)) pending++;
     }
-    return { loaded, total: this.desired.size, failed, resident: this.chunks.size };
+    return { loaded, total: this.required.size, failed, pending, resident: this.chunks.size,
+      prefetched: [...this.desired].filter(key => !this.required.has(key) && this.chunks.has(key)).length };
   }
 
   pump() {

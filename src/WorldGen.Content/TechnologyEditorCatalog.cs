@@ -10,7 +10,7 @@ namespace WorldGen.Content;
 public sealed record TechnologyEditorNode(string Id, string TechnologyId, string Title, string Domain,
     string Layer, string Source, string Description, string[] Conditions, string[] Effects, string? Symbol, string Kind = "technology");
 public sealed record TechnologyEditorEdge(string Id, string From, string To, string Type);
-public sealed record TechnologyAnnotation(string Description, string[] Effects, string? Symbol);
+public sealed record TechnologyAnnotation(string Description, string[] Effects, string? Symbol, string? EditorId = null);
 public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, TechnologyEditorEdge[] Edges)
 {
     public string Version => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, HashOptions))));
@@ -24,7 +24,8 @@ public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, Techn
         var primitiveIds = (primitive?.Technologies ?? []).Select(t => t.Id).ToHashSet(StringComparer.Ordinal);
         var resourceNames = content.Resources.Resources.Concat(primitive?.Resources ?? [])
             .GroupBy(resource => resource.Id, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First().Name, StringComparer.Ordinal);
-        string NodeId(string technologyId) => primitiveIds.Contains(technologyId) ? "primitive:" + technologyId : "catalog:" + technologyId;
+        string NodeId(string technologyId) => annotations?.GetValueOrDefault(technologyId)?.EditorId
+            ?? (primitiveIds.Contains(technologyId) ? "primitive:" + technologyId : "catalog:" + technologyId);
         static string N(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
         foreach (var tech in primitive?.Technologies ?? [])
         {
@@ -68,7 +69,11 @@ public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, Techn
                 string Amounts(IEnumerable<KeyValuePair<string, double>> amounts) => string.Join(", ", amounts.OrderBy(pair => pair.Key, StringComparer.Ordinal)
                     .Select(pair => $"{resourceNames.GetValueOrDefault(pair.Key, pair.Key)} {N(pair.Value)}"));
                 conditions.Add($"Процесс «{process.Name}»: входы {Amounts(process.Inputs)}; оснащение {Amounts(process.RequiredStocks)}; труд {N(process.LaborHoursPerBatch)} ч на партию.");
+                if (process.BuildingRequirements.Length > 0)
+                    conditions.Add("Для процесса нужна хотя бы одна действующая установка: " + string.Join(" или ", process.BuildingRequirements) + ".");
                 effects.Add($"Выход процесса: {Amounts(process.Outputs)}. Целевой запас {N(process.TargetOutputPerPerson)} {resourceNames.GetValueOrDefault(process.TargetResource, process.TargetResource)} на жителя; фактические партии ограничены трудом, входами и оснащением.");
+                if (process.LaborMultipliers.Count > 0)
+                    effects.Add("Труд на той же партии зависит от установки: " + string.Join(", ", process.LaborMultipliers.OrderBy(pair => pair.Key, StringComparer.Ordinal).Select(pair => $"{pair.Key} ×{N(pair.Value)}")) + ".");
             }
             if (tech.Id == "crop_rotation")
             {
@@ -76,12 +81,13 @@ public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, Techn
                 effects.Add("При выборе посева предпочтительна смена семейства. Посадка бобовых после другого семейства восстанавливает качество почвы на 0,025 × долю засеянной площади.");
             }
             if (effects.Count == 0) effects.Add("Отдельный эффект в описании пока не размечен. Это не означает автоматического бонуса к производству.");
-            nodes.Add(new("primitive:" + tech.Id, tech.Id, tech.Name, tech.Domain, "primitive",
+            nodes.Add(new(NodeId(tech.Id), tech.Id, tech.Name, tech.Domain, "primitive",
                 crop is not null || animal is not null || tech.Id == "crop_rotation" ? "content/worlds/biosphere.json" : "content/worlds/primordial-rules.json",
                 annotation?.Description ?? (crop is not null ? "Видовое знание выращивания, отделённое от семян и фактических посадок."
                     : animal is not null ? "Видовое знание содержания животных, отделённое от живого поголовья." : "Технология начальной эпохи."),
                 conditions.ToArray(), effects.ToArray(), crop?.Symbol ?? animal?.Symbol ?? annotation?.Symbol));
-            edges.AddRange(tech.Prerequisites.Select(p => new TechnologyEditorEdge($"primitive:{p}>{tech.Id}:required", "primitive:" + p, "primitive:" + tech.Id, "required")));
+            edges.AddRange(tech.Prerequisites.Select(p => new TechnologyEditorEdge(
+                $"{NodeId(p)}>{NodeId(tech.Id)}:required", NodeId(p), NodeId(tech.Id), "required")));
             if (tech.AlternativePrerequisites.Length > 0)
             {
                 var logicId = "logic:any:" + tech.Id;
@@ -90,12 +96,12 @@ public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, Techn
                     tech.AlternativePrerequisites.Select(id => primitive.Technologies.First(t => t.Id == id).Name).ToArray(),
                     [$"Разрешает обязательное условие для «{tech.Name}» при наличии любого одного входа."], null, "logic"));
                 edges.AddRange(tech.AlternativePrerequisites.Select(p => new TechnologyEditorEdge(
-                    $"primitive:{p}>{logicId}:alternative", "primitive:" + p, logicId, "alternative")));
-                edges.Add(new($"{logicId}>primitive:{tech.Id}:required", logicId, "primitive:" + tech.Id, "required"));
+                    $"{NodeId(p)}>{logicId}:alternative", NodeId(p), logicId, "alternative")));
+                edges.Add(new($"{logicId}>{NodeId(tech.Id)}:required", logicId, NodeId(tech.Id), "required"));
             }
         }
         edges.AddRange((primitive?.Relations ?? []).Select(relation => new TechnologyEditorEdge(
-            $"primitive:{relation.From}>{relation.To}:{relation.Type}", "primitive:" + relation.From, "primitive:" + relation.To, relation.Type)));
+            $"{NodeId(relation.From)}>{NodeId(relation.To)}:{relation.Type}", NodeId(relation.From), NodeId(relation.To), relation.Type)));
         // There is one organic knowledge graph. Primitive definitions are the
         // authoritative version of overlapping IDs; the remaining catalogue
         // definitions stay connected in the same layer instead of forming an era.
@@ -110,6 +116,8 @@ public sealed record TechnologyEditorCatalog(TechnologyEditorNode[] Nodes, Techn
         }
         edges.AddRange(content.Technologies.Relations.Select(e => new TechnologyEditorEdge($"catalog:{e.From}>{e.To}:{e.Type}", NodeId(e.From), NodeId(e.To), e.Type)));
         var uniqueEdges = edges.GroupBy(e => (e.From, e.To, e.Type)).Select(group => group.First()).ToArray();
+        if (nodes.Select(node => node.Id).Distinct(StringComparer.Ordinal).Count() != nodes.Count)
+            throw new InvalidDataException("Редакторские ID технологий должны быть уникальными");
         return new(nodes.ToArray(), uniqueEdges);
     }
 }

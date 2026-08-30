@@ -183,11 +183,27 @@ public sealed class TechnologyEditorTests : IDisposable
         Assert.Equal("{ broken", await File.ReadAllTextAsync(FilePath));
     }
     [Fact]
+    public async Task CheckedInWorkspaceMatchesTheCurrentJournalSchema()
+    {
+        var path = Path.Combine(ContentLoader.FindContentDirectory(), "editor/technology-workspace.json");
+        var state = await new TechnologyEditorStore(path, catalog).ReadAsync();
+        Assert.NotEmpty(state.Journal);
+        Assert.All(state.Journal.SelectMany(entry => entry.CommentProgress ?? []), progress =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(progress.CommentId));
+            Assert.False(string.IsNullOrWhiteSpace(progress.Implemented));
+            Assert.NotNull(progress.Remaining);
+        });
+    }
+    [Fact]
     public async Task CatalogContainsActualSpeciesRequirementsInOneDeduplicatedTree()
     {
         var content = await ContentLoader.LoadAsync(); var rules = await SettlementRulesLoader.LoadAsync(scenario: "primordial");
-        var graph = TechnologyEditorCatalog.Build(content, rules.Primitive);
-        Assert.Equal(89, graph.Nodes.Length); Assert.Equal(89, graph.Nodes.Select(n => n.Id).Distinct().Count());
+        var annotations = JsonSerializer.Deserialize<Dictionary<string, TechnologyAnnotation>>(
+            await File.ReadAllTextAsync(Path.Combine(ContentLoader.FindContentDirectory(), "editor/technology-annotations.json")),
+            TechnologyEditorStore.JsonOptions);
+        var graph = TechnologyEditorCatalog.Build(content, rules.Primitive, annotations);
+        Assert.Equal(100, graph.Nodes.Length); Assert.Equal(100, graph.Nodes.Select(n => n.Id).Distinct().Count());
         Assert.Equal(graph.Nodes.Length, graph.Nodes.Select(n => n.TechnologyId).Distinct().Count());
         Assert.Contains(graph.Nodes, n => n.Id == "primitive:woodworking"); Assert.DoesNotContain(graph.Nodes, n => n.Id == "catalog:woodworking");
         Assert.All(graph.Nodes, n => Assert.Equal("primitive", n.Layer));
@@ -202,13 +218,18 @@ public sealed class TechnologyEditorTests : IDisposable
         Assert.Contains(graph.Edges, e => e.From == "primitive:charcoal_burning" && e.To == "primitive:bloomery_smelting" && e.Type == "required");
         Assert.Contains(graph.Edges, e => e.From == "primitive:woodworking" && e.To == "primitive:hand_tools" && e.Type == "required");
         Assert.Contains(graph.Nodes, n => n.Id == "primitive:storage_buildings" && n.Title == "Складские помещения");
+        Assert.Contains(graph.Nodes, n => n.Id == "catalog:seed_selection" && n.TechnologyId == "seed_selection");
+        Assert.DoesNotContain(graph.Nodes, n => n.Id == "primitive:seed_selection");
+        Assert.Contains(graph.Nodes, n => n.Id == "catalog:water_mill" && n.TechnologyId == "water_mill");
+        var textileOr = graph.Nodes.Single(n => n.Id == "logic:any:textile_weaving");
+        Assert.Contains(graph.Edges, edge => edge.From == "primitive:grow_cotton" && edge.To == textileOr.Id && edge.Type == "alternative");
         Assert.Contains(graph.Edges, e => e.From == "primitive:building" && e.To == "primitive:stone_road" && e.Type == "required");
         var dairyOr = graph.Nodes.Single(n => n.Id == "logic:any:dairy");
         Assert.Equal("logic", dairyOr.Kind); Assert.Equal("ИЛИ", dairyOr.Title);
         Assert.Contains(graph.Edges, e => e.From == "primitive:herd_cow" && e.To == dairyOr.Id && e.Type == "alternative");
         Assert.Contains(graph.Edges, e => e.From == dairyOr.Id && e.To == "primitive:dairy" && e.Type == "required");
         Assert.DoesNotContain(graph.Edges, e => e.From == "primitive:herd_cow" && e.To == "primitive:dairy");
-        Assert.Equal(64, graph.Version.Length); Assert.Equal(graph.Version, TechnologyEditorCatalog.Build(content, rules.Primitive).Version);
+        Assert.Equal(64, graph.Version.Length); Assert.Equal(graph.Version, TechnologyEditorCatalog.Build(content, rules.Primitive, annotations).Version);
         Assert.All(graph.Edges, e => { Assert.Contains(graph.Nodes, n => n.Id == e.From); Assert.Contains(graph.Nodes, n => n.Id == e.To); });
     }
     public void Dispose() { if (Directory.Exists(directory)) Directory.Delete(directory, true); }

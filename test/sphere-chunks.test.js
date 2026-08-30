@@ -34,3 +34,18 @@ test("чанки: устаревшая версия не попадает в к�
   requests[2].resolve({old:false}); await settle();
   assert.equal(cache.get(1).old, false);
 });
+test("чанки: видимая область загружается раньше упреждающего пояса", async () => {
+  const requests=[];
+  const cache=new SphereChunkCache({concurrency:1,capacity:3,fetchChunk:key=>new Promise(resolve=>requests.push({key,resolve}))});
+  cache.setDesired([10],[20,21,22]);await settle();
+  assert.deepEqual(requests.map(item=>item.key),[10]);
+  assert.deepEqual(cache.status,{loaded:0,total:1,failed:0,pending:1,resident:0,prefetched:0});
+  requests[0].resolve({key:10});await settle();
+  assert.deepEqual(requests.map(item=>item.key),[10,20]);
+  assert.equal(cache.status.loaded,1);
+  requests[1].resolve({key:20});await settle();
+  assert.deepEqual(requests.map(item=>item.key),[10,20,21]);
+  requests[2].resolve({key:21});await settle();
+  assert.equal(cache.status.resident,3);
+  assert.equal(cache.status.prefetched,2);
+});

@@ -61,7 +61,8 @@ public sealed record SettlementRules
             NaturalPools.Any(x => !Positive(x.Capacity) || !double.IsFinite(x.RecoveryPerDay) || x.RecoveryPerDay < 0 || x.RecoveryPerDay > 1 || !x.Renewable && x.RecoveryPerDay != 0) ||
             Activities.Any(x => !Positive(x.OutputPerHour) || !Positive(x.MaximumLaborShare) || x.MaximumLaborShare > 1 || x.Inputs.Values.Any(n => !Positive(n))) ||
             Buildings.Any(x => !Positive(x.LaborHours) || x.Materials.Values.Any(n => !Positive(n)) ||
-                !double.IsFinite(x.StorageCapacity) || x.StorageCapacity < 0 || x.Storage is { } storage && !storage.Valid()) ||
+                !double.IsFinite(x.StorageCapacity) || x.StorageCapacity < 0 || x.Storage is { } storage && !storage.Valid() ||
+                x.Technology is { Length: 0 } || x.Site is not (null or "ordinary" or "river" or "wind")) ||
             Discoveries.Any(x => !Positive(x.PracticeHours)))
             throw new InvalidOperationException("Некорректный каталог деятельности или ресурсов поселения");
         foreach (var id in new[] { "house", "well" }) if (!Buildings.Any(x => x.Id == id)) throw new InvalidOperationException($"Нет нормы {id}");
@@ -79,6 +80,8 @@ public sealed record SettlementRules
         {
             var technologyIds = primitive.Technologies.Select(t => t.Id).ToHashSet(StringComparer.Ordinal);
             if (primitive.Processes.Any(p => !technologyIds.Contains(p.Technology)) ||
+                primitive.Processes.Any(p => p.BuildingRequirements.Any(id => !Buildings.Any(b => b.Id == id))) ||
+                Buildings.Any(b => b.Technology is { } technology && !technologyIds.Contains(technology)) ||
                 primitive.Biosphere?.Animals.SelectMany(a => a.ProductRules).Any(p =>
                     p.Technology is { } technology && !technologyIds.Contains(technology)) == true)
                 throw new InvalidOperationException("Неизвестная технология или ресурс поселкового процесса");
@@ -91,7 +94,9 @@ public sealed record HouseholdActivityRule(string Id, string Name, string Output
     double MaximumLaborShare, string? Pool, string? Discovery, IReadOnlyDictionary<string, double> Inputs);
 public sealed record SettlementBuildingRule(string Id, double LaborHours, IReadOnlyDictionary<string, double> Materials,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] double StorageCapacity = 0,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BuildingStorageProfile? Storage = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BuildingStorageProfile? Storage = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Technology = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Site = null);
 public sealed record SettlementDiscoveryRule(string Id, string Name, string Practice, double PracticeHours);
 
 public sealed record BuildingStorageProfile(double DecayMultiplier, double FallbackDecayMultiplier, string[] Preferred)
@@ -146,12 +151,23 @@ public sealed record SettlementExplorationRules
     public double SupplyRadiusCost { get; init; } = 12;
     public double LaborPressureShare { get; init; } = .65;
     public double MinimumRenewalCoverage { get; init; } = 1.15;
-    public int CooldownDays { get; init; } = 90;
+    public int CooldownDays { get; init; } = 60;
     public int PartySize { get; init; } = 2;
     public double MaximumLaborShare { get; init; } = .1;
     public double HomeReserveDays { get; init; } = 2;
-    public int OutboundDays { get; init; } = 2;
-    public int ProvisionDays { get; init; } = 6;
+    public int MinimumProvisionDays { get; init; } = 4;
+    public int MaximumProvisionDays { get; init; } = 14;
+    public double BaseCarryTonnesPerPerson { get; init; } = .04;
+    public double PackAnimalCapacityMultiplier { get; init; } = 2.5;
+    public double RidingSpeedMultiplier { get; init; } = 1.65;
+    public double RaftSpeedMultiplier { get; init; } = 1.35;
+    public double RaftTimberTonnes { get; init; } = .025;
+    public int MaximumExtensionDays { get; init; } = 14;
+    public double ResupplyShare { get; init; } = .35;
+    public double BaseLiveCaptureChance { get; init; } = .05;
+    public double TamingCaptureMultiplier { get; init; } = 10;
+    public double BaseFatalityChancePerDay { get; init; } = .0005;
+    public double DecisionComplexity { get; init; } = 1.4;
     public int StepsPerDay { get; init; } = 24;
     public double SurveyHoursPerCell { get; init; } = .15;
     public int MaximumReports { get; init; } = 6;
@@ -160,9 +176,14 @@ public sealed record SettlementExplorationRules
         static bool Positive(double n) => double.IsFinite(n) && n > 0;
         if (WindowDays is < 1 or > 90 || PressureDays < 1 || PressureDays > WindowDays || !Positive(SupplyRadiusCost) ||
             !Positive(LaborPressureShare) || LaborPressureShare > 1 || !Positive(MinimumRenewalCoverage) ||
-            CooldownDays < 1 || PartySize < 1 || !Positive(MaximumLaborShare) || MaximumLaborShare > .25 ||
-            !Positive(HomeReserveDays) || OutboundDays is < 1 or > 14 || ProvisionDays < OutboundDays * 2 + 1 ||
-            ProvisionDays > 30 || StepsPerDay is < 1 or > 64 || !Positive(SurveyHoursPerCell) || MaximumReports is < 1 or > 20)
+            CooldownDays < 60 || PartySize < 1 || !Positive(MaximumLaborShare) || MaximumLaborShare > .25 ||
+            !Positive(HomeReserveDays) || MinimumProvisionDays is < 4 or > 14 || MaximumProvisionDays < MinimumProvisionDays || MaximumProvisionDays > 14 ||
+            !Positive(BaseCarryTonnesPerPerson) || !Positive(PackAnimalCapacityMultiplier) || PackAnimalCapacityMultiplier < 1 ||
+            !Positive(RidingSpeedMultiplier) || RidingSpeedMultiplier < 1 || !Positive(RaftSpeedMultiplier) || RaftSpeedMultiplier < 1 ||
+            !Positive(RaftTimberTonnes) || MaximumExtensionDays is < 0 or > 30 || !Positive(ResupplyShare) || ResupplyShare > 1 ||
+            !Positive(BaseLiveCaptureChance) || BaseLiveCaptureChance > .25 || !Positive(TamingCaptureMultiplier) ||
+            !Positive(BaseFatalityChancePerDay) || BaseFatalityChancePerDay > .05 || !Positive(DecisionComplexity) ||
+            StepsPerDay is < 1 or > 64 || !Positive(SurveyHoursPerCell) || MaximumReports is < 1 or > 20)
             throw new InvalidOperationException("Некорректные нормы снабжения или разведки");
     }
 }
