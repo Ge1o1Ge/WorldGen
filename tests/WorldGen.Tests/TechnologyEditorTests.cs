@@ -203,7 +203,7 @@ public sealed class TechnologyEditorTests : IDisposable
             await File.ReadAllTextAsync(Path.Combine(ContentLoader.FindContentDirectory(), "editor/technology-annotations.json")),
             TechnologyEditorStore.JsonOptions);
         var graph = TechnologyEditorCatalog.Build(content, rules.Primitive, annotations);
-        Assert.Equal(100, graph.Nodes.Length); Assert.Equal(100, graph.Nodes.Select(n => n.Id).Distinct().Count());
+        Assert.Equal(102, graph.Nodes.Length); Assert.Equal(102, graph.Nodes.Select(n => n.Id).Distinct().Count());
         Assert.Equal(graph.Nodes.Length, graph.Nodes.Select(n => n.TechnologyId).Distinct().Count());
         Assert.Contains(graph.Nodes, n => n.Id == "primitive:woodworking"); Assert.DoesNotContain(graph.Nodes, n => n.Id == "catalog:woodworking");
         Assert.All(graph.Nodes, n => Assert.Equal("primitive", n.Layer));
@@ -223,7 +223,10 @@ public sealed class TechnologyEditorTests : IDisposable
         Assert.Contains(graph.Nodes, n => n.Id == "catalog:water_mill" && n.TechnologyId == "water_mill");
         var textileOr = graph.Nodes.Single(n => n.Id == "logic:any:textile_weaving");
         Assert.Contains(graph.Edges, edge => edge.From == "primitive:grow_cotton" && edge.To == textileOr.Id && edge.Type == "alternative");
-        Assert.Contains(graph.Edges, e => e.From == "primitive:building" && e.To == "primitive:stone_road" && e.Type == "required");
+        Assert.Contains(graph.Edges, e => e.From == "primitive:woodworking" && e.To == "primitive:forestry" && e.Type == "required");
+        Assert.Contains(graph.Edges, e => e.From == "primitive:horticulture" && e.To == "primitive:forestry" && e.Type == "required");
+        Assert.Contains(graph.Edges, e => e.From == "primitive:hand_tools" && e.To == "primitive:quarrying" && e.Type == "required");
+        Assert.Contains(graph.Edges, e => e.From == "primitive:quarrying" && e.To == "primitive:stone_road" && e.Type == "required");
         var dairyOr = graph.Nodes.Single(n => n.Id == "logic:any:dairy");
         Assert.Equal("logic", dairyOr.Kind); Assert.Equal("ИЛИ", dairyOr.Title);
         Assert.Contains(graph.Edges, e => e.From == "primitive:herd_cow" && e.To == dairyOr.Id && e.Type == "alternative");

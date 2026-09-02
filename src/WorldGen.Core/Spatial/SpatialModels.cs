@@ -42,7 +42,7 @@ public sealed class Territory
     public required string Terrain { get; init; }
     public required WaterState Water { get; init; }
     public required IReadOnlyDictionary<string, double> ResourcePotential { get; init; }
-    public required string AssignedCityId { get; init; }
+    public required string AssignedCityId { get; set; }
     public required string ParentNodeId { get; init; }
     public required IReadOnlyList<string> TriangleIds { get; init; }
     public required string Diagonal { get; init; }
@@ -60,6 +60,21 @@ public sealed record NaturalState
     public required double FishStock { get; set; }
     public required Dictionary<string, double> Deposits { get; init; }
     public required Dictionary<string, double> ExtractedBatches { get; init; }
+    public SoilProfileState Soil { get; init; } = new();
+    public double ManagedForestCare { get; set; }
+}
+
+public sealed class SoilProfileState
+{
+    public double Nutrients { get; set; } = 1;
+    public double OrganicMatter { get; set; } = .5;
+    public double Rockiness { get; set; }
+    public double MoistureRetention { get; set; } = .5;
+    public double Pests { get; set; }
+    public double Compaction { get; set; }
+    public double GrazingBiomass { get; set; } = 1;
+    public int LastGrazedDay { get; set; } = -10000;
+    public Dictionary<string, double> Pathogens { get; init; } = new(StringComparer.Ordinal);
 }
 
 public sealed record SpatialNode

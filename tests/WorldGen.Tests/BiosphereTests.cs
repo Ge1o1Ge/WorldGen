@@ -90,6 +90,66 @@ public sealed class BiosphereTests
         life.Biology.HarvestedCrops.UnionWith(["wheat", "barley", "peas"]); Invoke(d, "DiscoverPrimitive", city); Assert.Contains("crop_rotation", life.Discoveries);
     }
     [Fact]
+    public async Task SoilPackageCanReduceYieldEvenWithRotationKnowledge()
+    {
+        var sim = await PrimitiveWorldTests.Create(); var d = sim.Development!; var city = sim.World.Cities["river_hearth"];
+        var cell = (CellAddress)Invoke(d, "Anchor", city)!; var territory = sim.World.Spatial.Territories[SphericalSimulation.ZoneId(cell)];
+        var crop = d.Rules.Primitive!.Biosphere!.Crops.Single(c => c.Id == "wheat");
+        var weather = Weather(d)[cell] with { TemperatureC = 18, SoilWater = .55, Snow = 0 };
+        var healthy = new CropPlotState();
+        territory.NaturalState.Soil.Nutrients = 1; territory.NaturalState.Soil.OrganicMatter = .8;
+        territory.NaturalState.Soil.Rockiness = .05; territory.NaturalState.Soil.Compaction = 0;
+        territory.NaturalState.Soil.Pests = 0; territory.NaturalState.Soil.Pathogens[crop.Family] = 0;
+        var baseline = (double)Invoke(d, "SoilYieldFactor", crop, cell, healthy, weather)!;
+
+        var depleted = new CropPlotState();
+        territory.NaturalState.Soil.Nutrients = .16; territory.NaturalState.Soil.OrganicMatter = .12;
+        territory.NaturalState.Soil.Rockiness = .6; territory.NaturalState.Soil.Compaction = .55;
+        territory.NaturalState.Soil.Pests = .5; territory.NaturalState.Soil.Pathogens[crop.Family] = .65;
+        var damaged = (double)Invoke(d, "SoilYieldFactor", crop, cell, depleted, weather)!;
+        Assert.True(damaged < baseline * .4, $"baseline={baseline}, damaged={damaged}");
+        Assert.Equal(.5, depleted.PestPressure, 8); Assert.Equal(.65, depleted.DiseasePressure, 8);
+    }
+    [Fact]
+    public async Task ExhaustedPastureMovesAndMineralExtractionGetsRapidlyHarder()
+    {
+        var sim = await PrimitiveWorldTests.Create(); var d = sim.Development!; var city = sim.World.Cities["grass_camp"]; var life = d.State.Cities[city.Id];
+        var origin = (CellAddress)Invoke(d, "Anchor", city)!; var cow = d.Rules.Primitive!.Biosphere!.Animals.Single(a => a.Id == "cow");
+        d.State.Wildlife!.Clear(); life.Biology!.Herds.Clear(); life.Discoveries.Add("taming"); life.Discoveries.Add(cow.Technology);
+        life.Biology.Herds[cow.Id] = new HerdState { Females = 2, Males = 1, Pasture = origin, PastureWork = 24, PastureStartedDay = 0, LastDay = -1 };
+        sim.World.Spatial.Territories[SphericalSimulation.ZoneId(origin)].NaturalState.Soil.GrazingBiomass = .01;
+        city.Stocks["food"] = city.Stocks["water"] = 100; life.LaborAvailableHours = 1000; sim.World.Day = 400;
+        Invoke(d, "TendSpeciesHerds", city, 100d, new DailyTelemetry { Day = sim.World.Day });
+        var herd = life.Biology.Herds[cow.Id]; Assert.Contains(origin, herd.PreviousPastures); Assert.NotEqual(origin, herd.Pasture);
+
+        var stone = sim.World.Spatial.Territories.Values.Where(t => t.ResourcePotential.GetValueOrDefault("stone") > .05)
+            .OrderByDescending(t => t.ResourcePotential["stone"]).First();
+        var before = d.ExtractionDifficulty(stone, "stone"); var capacity = d.Capacity(stone, "stone");
+        d.Extract(stone, "stone", capacity * .35); var after = d.ExtractionDifficulty(stone, "stone");
+        Assert.True(after > before * 2, $"before={before}, after={after}");
+        Assert.True(d.ExtractionDifficulty(stone, "iron_ore") >= 1);
+    }
+    [Fact]
+    public async Task ForesterAndQuarrySpendRealLaborOnTheirLocalNaturalSites()
+    {
+        var sim = await PrimitiveWorldTests.Create(); var d = sim.Development!; var city = sim.World.Cities["grass_camp"]; var life = d.State.Cities[city.Id];
+        var origin = (CellAddress)Invoke(d, "Anchor", city)!;
+        foreach (var territory in sim.World.Spatial.Territories.Values.Where(t => t.AssignedCityId == city.Id))
+            d.Extract(territory, "timber", d.Stock(territory, "timber") * .7);
+        d.State.Buildings.Add(new DwellingState { Id = "test-forester", CityId = city.Id, Kind = "forester_lodge", Cell = origin, Status = "active", ReadyDay = 0 });
+        life.Discoveries.Add("forestry"); life.LaborAvailableHours = 1000;
+        var forestrySpent = (double)Invoke(d, "RunManagedLandSites", city, 100d, new DailyTelemetry { Day = sim.World.Day })!;
+        Assert.True(forestrySpent > 0); Assert.Contains(sim.World.Spatial.Territories.Values, t => t.NaturalState.ManagedForestCare > 0);
+
+        var stone = sim.World.Spatial.Territories.Values.Where(t => t.ResourcePotential.GetValueOrDefault("stone") > .05)
+            .OrderByDescending(t => t.ResourcePotential["stone"]).First();
+        var quarryCell = sim.Addresses[stone.Id];
+        d.State.Buildings.Add(new DwellingState { Id = "test-quarry", CityId = city.Id, Kind = "quarry", Cell = quarryCell, Status = "active", ReadyDay = 0 });
+        life.Discoveries.Add("quarrying"); city.Stocks["stone"] = 0; var before = d.Stock(stone, "stone");
+        var quarrySpent = (double)Invoke(d, "RunManagedLandSites", city, 100d, new DailyTelemetry { Day = sim.World.Day })!;
+        Assert.True(quarrySpent > 0); Assert.True(city.Stocks["stone"] > 0); Assert.True(d.Stock(stone, "stone") < before);
+    }
+    [Fact]
     public async Task AlternativeAnimalPrerequisiteNeedsOnlyOneSuitableSpeciesAndResetsPracticeWhileBlocked()
     {
         var sim = await PrimitiveWorldTests.Create(); var d = sim.Development!; var city = sim.World.Cities["grass_camp"];
@@ -121,6 +181,21 @@ public sealed class BiosphereTests
         Assert.True(city.Stocks["eggs"] > 0); Assert.True(herd.ProductsToday.GetValueOrDefault("eggs") > 0);
         herd.Males = 1; var soil = sim.World.Spatial.Territories[SphericalSimulation.ZoneId(origin)].NaturalState; var before = soil.SoilQuality;
         sim.World.Day++; Invoke(d, "TendSpeciesHerds", city, 100d, new DailyTelemetry { Day = sim.World.Day }); Assert.True(herd.Births > 0); Assert.True(soil.SoilQuality > before);
+    }
+
+    [Fact]
+    public async Task DifferentSpeciesDoNotPrepareTheSamePastureCell()
+    {
+        var sim = await PrimitiveWorldTests.Create(); var d = sim.Development!; var city = sim.World.Cities["grass_camp"];
+        var life = d.State.Cities[city.Id]; var origin = (CellAddress)Invoke(d, "Anchor", city)!;
+        life.Biology!.Herds.Clear(); life.Biology.Herds["chicken"] = new() { Females = 1, Pasture = origin, PastureWork = 24 };
+        life.Biology.Herds["rabbit"] = new() { Females = 1, Pasture = origin, PastureWork = 24 };
+        life.LaborAvailableHours = 1000; city.Stocks["food"] = city.Stocks["water"] = 100;
+
+        Invoke(d, "TendSpeciesHerds", city, 100d, new DailyTelemetry { Day = sim.World.Day });
+
+        var occupied = life.Biology.Herds.Values.Where(herd => herd.Count > 0 && herd.Pasture is not null).Select(herd => herd.Pasture!.Value).ToArray();
+        Assert.Equal(occupied.Length, occupied.Distinct().Count());
     }
     [Fact]
     public async Task MilkNeedsKnowledgeRecentBirthAndPaidLaborThenCanBeEatenAsItsOwnStock()

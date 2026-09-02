@@ -7,6 +7,7 @@ public sealed class BiologyState
     public HashSet<string> KnownAnimals { get; set; } = new(StringComparer.Ordinal);
     public HashSet<string> HarvestedCrops { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, CropPlotState> Plots { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, CropProductionHistory> CropHistory { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, HerdState> Herds { get; set; } = new(StringComparer.Ordinal);
     public List<ResourceCampState> Camps { get; set; } = [];
     public string? LastCampScout { get; set; }
@@ -14,6 +15,15 @@ public sealed class BiologyState
     public double SeedCollected { get; set; }
     public double CampTimberDelivered { get; set; }
     public string Status { get; set; } = "Знакомство с местными видами";
+}
+public sealed class CropProductionHistory
+{
+    public int Seasons { get; set; }
+    public int FailedSeasons { get; set; }
+    public double ExpectedTonnes { get; set; }
+    public double HarvestedTonnes { get; set; }
+    public int LastExpectedDay { get; set; } = -1;
+    public int LastHarvestDay { get; set; } = -1;
 }
 public sealed class CropPlotState
 {
@@ -28,7 +38,12 @@ public sealed class CropPlotState
     public int LastHarvestDay { get; set; } = -1;
     public int FailedSeasons { get; set; }
     public bool SeedSaved { get; set; }
+    public bool IsOrchard { get; set; }
     public string? LastFamily { get; set; }
+    public double WeatherStress { get; set; }
+    public double PestPressure { get; set; }
+    public double DiseasePressure { get; set; }
+    public string? LastProblem { get; set; }
     public string Phase { get; set; } = "ожидание семян";
 }
 public sealed class HerdState
@@ -47,6 +62,9 @@ public sealed class HerdState
     public int LastBirthDay { get; set; } = -10000;
     public CellAddress? Pasture { get; set; }
     public double PastureWork { get; set; }
+    public int PastureStartedDay { get; set; } = -1;
+    public double PastureForageConsumed { get; set; }
+    public List<CellAddress> PreviousPastures { get; set; } = [];
     public Dictionary<string, double> ProductsToday { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, double> TotalProducts { get; set; } = new(StringComparer.Ordinal);
     public int LastDay { get; set; } = -1;

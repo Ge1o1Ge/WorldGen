@@ -14,6 +14,7 @@ public sealed class SettlementDevelopmentState
     public List<DwellingState> Buildings { get; set; } = [];
     public Dictionary<string, Dictionary<string, double>> WildStocks { get; set; } = new(StringComparer.Ordinal);
     public List<LocalTrailState> Trails { get; set; } = [];
+    public Dictionary<string, int> FloodedLandDays { get; set; } = new(StringComparer.Ordinal);
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public ScoutingState? Scouting { get; set; }
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
@@ -50,6 +51,7 @@ public sealed class SettlementLifeState
     public int HousingCapacity { get; set; }
     public int Unhoused { get; set; }
     public int LastRelocationDay { get; set; } = -1000;
+    public int CenterFloodedDays { get; set; }
     public double LaborAvailableHours { get; set; }
     public double LaborUsedHours { get; set; }
     public double WaterTravelHours { get; set; }
@@ -193,11 +195,14 @@ public sealed class ScoutExpedition
 }
 public sealed record ScoutTerrain(bool Water, bool FreshWater, double Elevation, double Temperature, double Moisture, double Forest, double FoodRenewalPerDay);
 public sealed record ScoutObservation(CellAddress Cell, int ObservedDay, bool FreshWater, double FoodRenewalPerDay,
-    IReadOnlyList<string>? Plants = null, IReadOnlyList<string>? Animals = null, string? ObservedClaim = null);
+    IReadOnlyList<string>? Plants = null, IReadOnlyList<string>? Animals = null, string? ObservedClaim = null,
+    IReadOnlyList<string>? CapturableAnimals = null);
 public sealed record ScoutReport(string ExpeditionId, int DepartureDay, int ReceivedDay, int SurveyedCells,
     IReadOnlyList<ScoutObservation> Candidates, string Outcome, IReadOnlyList<string>? Plants = null,
     IReadOnlyList<string>? Animals = null, IReadOnlyDictionary<string, int>? CapturedAnimals = null, int Casualties = 0,
-    IReadOnlyDictionary<string, int>? ForeignClaims = null);
+    IReadOnlyDictionary<string, int>? ForeignClaims = null, IReadOnlyList<ScoutObservation>? AnimalSites = null,
+    IReadOnlyDictionary<string, double>? SeedSamples = null, double ForagedFood = 0, double RefilledWater = 0,
+    int DurationDays = 0, int RouteCells = 0);
 
 public sealed class DwellingState
 {
@@ -216,6 +221,7 @@ public sealed class DwellingState
     public int Residents { get; set; }
     public double LaborDone { get; set; }
     public int UnusedDays { get; set; }
+    public int FloodedDays { get; set; }
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public int? ReadyDay { get; set; }
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]

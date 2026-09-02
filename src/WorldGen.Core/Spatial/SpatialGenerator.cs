@@ -58,7 +58,15 @@ public static class SpatialGenerator
                             ["stone"] = geography.ResourcePotential["stone"] > 0 ? 1 : 0,
                             ["iron_ore"] = geography.ResourcePotential["iron_ore"] > 0 ? 1 : 0
                         },
-                        ExtractedBatches = new Dictionary<string, double>(StringComparer.Ordinal)
+                        ExtractedBatches = new Dictionary<string, double>(StringComparer.Ordinal),
+                        Soil = new SoilProfileState
+                        {
+                            Nutrients = geography.Fertility,
+                            OrganicMatter = Math.Clamp(.2 + geography.ForestCover * .65, .1, 1),
+                            Rockiness = Math.Clamp(geography.ResourcePotential["stone"] * .65, 0, .9),
+                            MoistureRetention = Math.Clamp(.2 + geography.Moisture * .65, .1, 1),
+                            GrazingBiomass = Math.Clamp(.25 + geography.Fertility * .75, .1, 1)
+                        }
                     }
                 });
             }

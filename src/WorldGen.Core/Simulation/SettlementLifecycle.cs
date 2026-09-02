@@ -60,14 +60,14 @@ public sealed partial class SettlementSimulation
         var life = State.Cities[city.Id]; var route = Routes(home.Cell);
         var wells = State.Buildings.Where(b => b.CityId == city.Id && b.Kind == "well" && b.Status == "active" && b.Well is not null)
             .GroupBy(b => b.Cell).ToDictionary(g => g.Key, g => g.OrderBy(b => b.Id, StringComparer.Ordinal).ToArray());
-        var sources = route.Cost.Keys.Where(c => terrain[c].Terrain != "water" && (terrain[c].Water.DistanceToRiver == 0 || wells.ContainsKey(c)))
+        var sources = route.Cost.Keys.Where(c => !OpenWater(c) && (River(c) || wells.ContainsKey(c)))
             .OrderBy(c => route.Cost[c]).ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal);
         var remaining = Math.Min(requested, Math.Max(0, Target(city, "water") - city.Stocks["water"]));
         var spent = 0d;
         foreach (var source in sources)
         {
             if (remaining <= 1e-9 || spent >= budget * .65) break;
-            var river = terrain[source].Water.DistanceToRiver == 0;
+            var river = River(source);
             var stock = river ? Math.Max(0, 2 - waterTaken.GetValueOrDefault(source)) : wells[source].Sum(b => b.Well!.Stock);
             var distance = route.Cost[source] * world.Spatial.Grid.ZoneSizeMeters;
             var tripHours = distance * 2 / Rules.WalkingMetersPerHour + .08;

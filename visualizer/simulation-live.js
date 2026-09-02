@@ -9,6 +9,8 @@ export function mergeLiveSimulationState(current, patch) {
       ...city,
       stocks: {...(previous.stocks ?? {}), ...(city.stocks ?? {})},
       technology: {...(previous.technology ?? {}), ...(city.technology ?? {})},
+      exploration: {...(previous.exploration ?? {}), ...(city.exploration ?? {})},
+      biology: {...(previous.biology ?? {}), ...(city.biology ?? {})},
       settlement: {...(previous.settlement ?? {}), ...(city.settlement ?? {})},
       homes: city.homes
         ? city.homes.map(home => ({...(previousHomes.get(home.id) ?? {}), ...home}))
@@ -23,17 +25,22 @@ export function mergeLiveSimulationState(current, patch) {
     ...current,
     ...patch,
     map: patch.map ? {...(current.map ?? {}), ...patch.map} : current.map,
-    weatherMap: patch.weatherMap ?? current.weatherMap,
+    weatherMap: patch.weatherMap ? {...(current.weatherMap??{}),...patch.weatherMap,
+      climate:patch.weatherMap.climate??current.weatherMap?.climate,
+      local:patch.weatherMap.local??current.weatherMap?.local} : current.weatherMap,
     atmosphere: patch.atmosphere ?? current.atmosphere,
+    rivers: patch.rivers ?? current.rivers,
+    riverRevision: patch.riverRevision ?? current.riverRevision,
     cities,
     events,
-    _liveMapChanged: Boolean(patch.map)
+    _liveMapChanged: Boolean(patch.map),
+    _riversChanged: Array.isArray(patch.rivers)
   };
 }
 
 export class SimulationLiveChannel {
-  constructor({url, socketFactory=value => new WebSocket(value), onMessage=()=>{}, onStatus=()=>{}, onError=()=>{}}) {
-    Object.assign(this, {url, socketFactory, onMessage, onStatus, onError});
+  constructor({url, socketFactory=value => new WebSocket(value), onMessage=()=>{}, onBinary=()=>{}, onStatus=()=>{}, onError=()=>{}}) {
+    Object.assign(this, {url, socketFactory, onMessage, onBinary, onStatus, onError});
     this.socket = null;
     this.ready = false;
     this.playing = false;
@@ -43,9 +50,11 @@ export class SimulationLiveChannel {
   connect() {
     if (this.socket || this.closed) return;
     const socket = this.socket = this.socketFactory(this.url);
+    try{socket.binaryType='arraybuffer';}catch{}
     socket.addEventListener("open", () => { this.ready = true; this.onStatus("ready"); });
     socket.addEventListener("message", event => {
       try {
+        if(event.data instanceof ArrayBuffer){this.onBinary(event.data,event.data.byteLength);return;}
         const message = JSON.parse(event.data);
         if (message.type === "busy") this.playing = false;
         if (message.type === "paused") this.playing = false;
@@ -69,7 +78,7 @@ export class SimulationLiveChannel {
   }
   start() { if (this.send({type: "run", speed: this.speed})) { this.playing = true; this.onStatus("playing"); } }
   pause() { if (this.send({type: "pause"})) { this.playing = false; this.onStatus("pausing"); } }
-  acknowledge() { return this.send({type: "ack"}); }
+  acknowledge(sequence=0) { return this.send({type: "ack",sequence}); }
   toggle() { if (this.playing) this.pause(); else this.start(); }
   close() {
     this.closed = true; this.playing = false;

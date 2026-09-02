@@ -33,6 +33,8 @@
     { "id": "rock", "label": "Скальный выход", "role": "ink", "path": "M-8 6L-5-4L0-8L6-3L9 5ZM-5-4L1 1L0-8M1 1L9 5M1 1L-8 6", "fill": false },
     { "id": "orchard", "label": "Сад", "role": "forest", "path": "M-8-6a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4-6a2 2 0 1 0 4 0a2 2 0 1 0-4 0M-8 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "fill": false },
     { "id": "field", "label": "Обрабатываемое поле", "role": "land", "path": "M-9-9H9V9H-9ZM-6 6L6-6M-6 0L0-6M0 6L6 0", "fill": false },
+    { "id": "forester_lodge", "label": "Дом лесничего", "role": "forest", "path": "M-9 8V-2L0-9L9-2V8ZM-3 8V2H3V8M-12-2L-8-9L-4-2M8-5L12-11L15-5", "fill": false },
+    { "id": "quarry", "label": "Каменоломня", "role": "ink", "path": "M-11-7H11L8-1H-8ZM-8-1H8L5 5H-5ZM-5 5H5L3 10H-3ZM-11-7L-7-10M11-7L7-10", "fill": false },
     { "id": "building", "label": "Здание", "role": "ink", "path": "M-7-5H7V5H-7Z", "fill": true },
     { "id": "mill", "label": "Водяная мельница", "role": "ink", "path": "M-10-5H1V6H-10ZM3 1a5 5 0 1 0 10 0a5 5 0 1 0-10 0M8-4V6M3 1H13", "fill": false },
     { "id": "fort", "label": "Укрепление", "role": "ink", "path": "M-8-8H8V8H-8ZM-11-11H-5V-5H-11ZM5-11H11V-5H5ZM-11 5H-5V11H-11ZM5 5H11V11H5Z", "fill": false },

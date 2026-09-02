@@ -41,13 +41,14 @@ export function createClimateSampler(data) {
   const climate=data?.climate;
   if(!climate?.resolution||climate.months!==12)return null;
   const n=climate.resolution,cellCount=6*n*n,faces=new Map(FACE_NAMES.map((face,index)=>[face,index]));
-  const scales={temperature:10,rain:10,wind:100};
+  const scales={temperature:10,rain:10,wind:100,windX:10000,windY:10000,windZ:10000,
+    latestTemperature:10,latestRain:10,latestWind:100,latestWindX:10000,latestWindY:10000,latestWindZ:10000};
   return location=>{
     const face=faces.get(location.face);if(face===undefined)return [];
     const x=clamp(Math.floor((location.u+1)*n/2),0,n-1),y=clamp(Math.floor((location.v+1)*n/2),0,n-1);
     const cell=(face*n+y)*n+x;
     return Array.from({length:12},(_,month)=>{
-      const index=month*cellCount+cell,result={month,sampleDays:climate.sampleDays[month]??0};
+      const index=month*cellCount+cell,result={month,sampleDays:climate.sampleDays[month]??0,latestSampleDays:climate.latestSampleDays?.[month]??0};
       for(const [field,scale] of Object.entries(scales)){
         const value=climate[field]?.[index];result[field]=value===undefined||value===CLIMATE_MISSING?null:value/scale;
       }
@@ -58,15 +59,16 @@ export function createClimateSampler(data) {
 
 export function climateSeries(sample,locations) {
   if(!sample||!locations.length)return [];
-  const series=Array.from({length:12},(_,month)=>({month,sampleDays:0,temperature:0,rain:0,wind:0,count:0}));
+  const fields=['temperature','rain','wind','windX','windY','windZ','latestTemperature','latestRain','latestWind','latestWindX','latestWindY','latestWindZ'];
+  const series=Array.from({length:12},(_,month)=>({month,sampleDays:0,latestSampleDays:0,count:0,fieldCounts:{},...Object.fromEntries(fields.map(field=>[field,0]))}));
   for(const location of locations)for(const item of sample(location)){
     if(item.temperature===null)continue;
-    const target=series[item.month];target.sampleDays=Math.max(target.sampleDays,item.sampleDays);target.count++;
-    for(const field of ['temperature','rain','wind'])target[field]+=item[field];
+    const target=series[item.month];target.sampleDays=Math.max(target.sampleDays,item.sampleDays);target.latestSampleDays=Math.max(target.latestSampleDays,item.latestSampleDays);target.count++;
+    for(const field of fields)if(item[field]!==null){target[field]+=item[field];target.fieldCounts[field]=(target.fieldCounts[field]??0)+1;}
   }
-  return series.map(item=>item.count?{month:item.month,sampleDays:item.sampleDays,
-    temperature:item.temperature/item.count,rain:item.rain/item.count,wind:item.wind/item.count}:
-    {month:item.month,sampleDays:0,temperature:null,rain:null,wind:null});
+  return series.map(item=>item.count?{month:item.month,sampleDays:item.sampleDays,latestSampleDays:item.latestSampleDays,
+    ...Object.fromEntries(fields.map(field=>[field,item.fieldCounts[field]?item[field]/item.fieldCounts[field]:null]))}:
+    {month:item.month,sampleDays:0,latestSampleDays:0,...Object.fromEntries(fields.map(field=>[field,null]))});
 }
 
 export function winterSymbol(kind, weather) {

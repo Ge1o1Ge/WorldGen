@@ -1,26 +1,40 @@
 import { dampZoom, SphereCamera, MIN_SPHERE_ZOOM, MAX_SPHERE_ZOOM } from "/sphere-camera.js";
 import { SphereChunkCache } from "/sphere-chunks.js";
-import { facePoint as surfacePoint, locateFace, createSurfaceSampler, contourInterval } from "/sphere-cartography.js";
+import { facePoint as surfacePoint, locateFace, createSurfaceSampler, contourInterval } from "/sphere-cartography.js?v=lod3";
 import { createSymbolRenderer, symbolSvg } from "/map-symbols.js";
-import { drawCartographicLayer } from "/sphere-map-layer.js";
+import { drawCartographicLayer,LOCAL_CARTOGRAPHY_ZOOM,OVERVIEW_SYMBOL_ZOOM } from "/sphere-map-layer.js?v=lod9";
 import { buildingNames,buildingStates } from "/settlement-symbols.js";
 import {buildingConditionText,buildingHoverText} from "/sphere-lifecycle-panel.js";
-import { roundSpherePath } from "/sphere-world-geometry.js";
-import { connectSphereSimulation } from "/sphere-simulation-panel.js?v=batched-playback1";
+import { connectSphereSimulation } from "/sphere-simulation-panel.js?v=world-ui2";
 import { SphereMapData,structureTiles } from "/sphere-map-data.js";
 import {createLakeSurfaceSampler} from "/sphere-water.js";
 import {paintWaterRaster} from "/sphere-water-raster.js";
-import {createWeatherSampler,createClimateSampler,climateSeries,WeatherTint,WeatherEffects,weatherEffectSites,weatherText} from '/sphere-weather.js?v=climate-history1';
+import {createWeatherSampler,createClimateSampler,climateSeries,WeatherTint,WeatherEffects,weatherEffectSites,weatherText} from '/sphere-weather.js?v=world-ui2';
 import {wildPlants} from '/sphere-biology.js';
 import {WebGlobeRenderer} from '/sphere-webgl.js';
-import {MobileUnitLayer} from '/sphere-mobile-units.js';
+import {parseRenderPacket} from '/sphere-render-packet.js';
+import {RetainedSphereLineLayer} from '/sphere-webgl-lines.js?v=line4';
+import {RetainedSphereSymbolLayer} from '/sphere-webgl-symbols.js';
+import {MobileUnitLayer} from '/sphere-mobile-units.js?v=world-ui2';
+import {interfaceWorkCanWait,interfaceWorkDelay,MAX_INTERFACE_LATENCY_MS} from '/interface-scheduler.js?v=world-ui1';
 
 const canvas = document.getElementById("sphere-map");
 const context = canvas.getContext("2d", { alpha: true });
 const globeRenderer=new WebGlobeRenderer(document.getElementById("sphere-globe"));
+const lineLayer=new RetainedSphereLineLayer(document.getElementById("sphere-lines"));
+const symbolLayer=new RetainedSphereSymbolLayer(document.getElementById("sphere-symbols"));
+const labelLayer=document.getElementById('sphere-labels');
+const mapLabelNodes=new Map();
+let cartographicLabels=[];
 const mobileUnits=new MobileUnitLayer(document.getElementById("sphere-mobile-units"),{
   pointForCell:cell=>facePoint(cell.face,cell.x,cell.y),
-  project:point=>{const view=rotateWorldToView(point),geometry=globeGeometry();return{x:(geometry.centerX+view.x*geometry.radius)/pixelRatio,y:(geometry.centerY-view.y*geometry.radius)/pixelRatio,z:view.z};}
+  project:point=>{const view=rotateWorldToView(point),geometry=globeGeometry();return{x:(geometry.centerX+view.x*geometry.radius)/pixelRatio,y:(geometry.centerY-view.y*geometry.radius)/pixelRatio,z:view.z};},
+  wildlifeVisible:()=>mapOptions.wildlife&&camera.zoom>=8,
+  drawWildlife:(ctx,x,y,group)=>{
+    const alert=group.alert>=.05,radius=Math.max(12,globeGeometry().radius*(group.radiusCells??1)*2/(metadata?.faceSize??100));
+    ctx.save();ctx.strokeStyle=alert?"#a25436":"rgba(71,100,84,.62)";ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.stroke();ctx.restore();
+    drawSymbol?.(ctx,metadata?.biosphere?.animals.find(animal=>animal.id===group.speciesId)?.symbol??"game",x,y,20,alert?1:.75);
+  }
 });
 const weatherTint=new WeatherTint(()=>document.createElement('canvas'));
 let weatherInView=true;
@@ -73,6 +87,8 @@ let simulationController=null;
 let interfaceWorkTimer=null;
 let interfaceIdle=0;
 const interfaceWork=new Map();
+let interfaceWorkQueuedAt=0;
+let interfaceWorkDueAt=0;
 let mapData;
 let chunkRequests=0;
 let rasterSnapshot=null;
@@ -80,6 +96,12 @@ let rasterBuilds=0;
 let simulationReconcileTimer=null;
 let parcels=[];
 let lastInteractiveStatusAt=0;
+let interactiveGeometryTimer=null;
+let interactiveGeometryDirty=false;
+let lastInteractiveGeometrySignature='';
+let incrementalCartography=false;
+let committedCartographyLod='';
+let committedGpuContours=null;
 
 function refreshParcelOptions(){
   const select=document.getElementById("sphere-parcel");if(!metadata||!select)return;
@@ -110,9 +132,9 @@ const chunkCache = new SphereChunkCache({
   },
   onChange: () => {
     // Chunk arrival must not inject expensive map frames into an active drag.
-    // The current GPU snapshot is complete enough for motion; one batched sharp
-    // frame reconciles the cache after the camera settles.
-    if(cameraInteraction||drag)return;
+    // The exact GPU surface stays resident during motion; one batched frame
+    // reconciles newly available retained geometry after the camera settles.
+    if(cameraInteraction||drag){scheduleInteractiveCartography(true);return;}
     clearTimeout(chunkRenderTimer);chunkRenderTimer=setTimeout(()=>{
       updateViewStatus();refreshSelection();scheduleRender();
     },120);
@@ -158,10 +180,10 @@ function rotateViewToWorld(x, y, z) {
   return camera.toWorld(x, y, z);
 }
 
-function sampleAt(location) {
+function sampleAt(location,exact=camera.zoom>=LOCAL_CARTOGRAPHY_ZOOM) {
   const cellX = clamp(Math.floor((location.u + 1) * 0.5 * metadata.faceSize), 0, metadata.faceSize - 1);
   const cellY = clamp(Math.floor((location.v + 1) * 0.5 * metadata.faceSize), 0, metadata.faceSize - 1);
-  if (camera.zoom >= 3.5) {
+  if (exact) {
     const chunkX = Math.floor(cellX / metadata.chunkSize);
     const chunkY = Math.floor(cellY / metadata.chunkSize);
     const key = faceIds.get(location.face) * chunkAxis * chunkAxis + chunkY * chunkAxis + chunkX;
@@ -193,9 +215,9 @@ function sampleAt(location) {
 }
 
 function tileVersion(tile,dynamic=false) {
-  const versions=[metadata.worldId,hydrologyVersion(),camera.zoom>=3.5];
+  const exact=camera.zoom>=LOCAL_CARTOGRAPHY_ZOOM,versions=[metadata.worldId,hydrologyVersion(),exact];
   for(const key of mapData.dependenciesFor(tile)){
-    if(camera.zoom>=3.5)versions.push(chunkCache.get(key)?1:0);
+    if(exact)versions.push(chunkCache.get(key)?1:0);
     if(dynamic)versions.push(mapData.version(key));
   }
   return versions.join(":");
@@ -209,6 +231,22 @@ function mix(left, right, amount) {
     left[1] + (right[1] - left[1]) * amount,
     left[2] + (right[2] - left[2]) * amount
   ];
+}
+
+// Visual survey of the same coherent spherical fields used by the simulation.
+// It intentionally shows geological potential, not an omniscient stock count:
+// later this layer can be masked by each culture's explored/known territory.
+function geologyPotential(resource, sample, point) {
+  if (sample.lakeDepth > 1) return 0;
+  const phase = (metadata.seed % 10007) * .0007;
+  const band = (a,b,c) => clamp(.5 +
+    Math.sin(point.x*a + point.y*b + phase) * .24 +
+    Math.cos(point.z*b - point.x*c - phase*.7) * .2 +
+    Math.sin((point.x + point.y - point.z)*c + phase*1.3) * .12, 0, 1);
+  const rock = clamp((sample.elevation - metadata.seaLevelMeters + 180) / 750, 0, 1);
+  return resource === "iron_ore"
+    ? clamp(band(8.3,4.7,10.1) * (.25 + rock*.75) - .48, 0, 1)
+    : clamp(rock*.65 + band(5.2,7.1,3.7)*.55 - .18, 0, 1);
 }
 
 function terrainColor(sample, point) {
@@ -232,6 +270,12 @@ function terrainColor(sample, point) {
     color = mix([164, 126, 77], [54, 127, 156], sample.moisture);
   } else if (layer === "forest") {
     color = sample.biome === 0 ? biomeColors[0] : mix([205, 190, 135], [35, 109, 55], sample.forest);
+  } else if (layer === "stone") {
+    const grade=geologyPotential("stone",sample,point);
+    color=grade<=.01?mix([226,220,197],[187,181,159],.18):mix([218,211,188],[76,80,79],Math.pow(grade,.72));
+  } else if (layer === "iron_ore") {
+    const grade=geologyPotential("iron_ore",sample,point);
+    color=grade<=.005?mix([226,220,197],[187,181,159],.12):mix([219,207,184],[124,52,32],Math.pow(grade,.62));
   } else if (layer === "political") {
     color = sample.owner >= 0
       ? mix(settlementColors[sample.owner % settlementColors.length], [235, 225, 199], 0.14)
@@ -250,9 +294,9 @@ function lakeDepthAt(location) {
 }
 
 function smoothSampler() {
-  const exact = camera.zoom >= 3.5;
+  const exact = camera.zoom >= LOCAL_CARTOGRAPHY_ZOOM;
   const sampler=createSurfaceSampler({size:metadata.faceSize,stride:exact?1:preview.stride,
-    origin:exact?0:Math.floor(preview.stride/2), read:(face,x,y)=>sampleAt(locateFace(facePoint(face,x,y)))});
+    origin:exact?0:Math.floor(preview.stride/2), read:(face,x,y)=>sampleAt(locateFace(facePoint(face,x,y)),exact)});
   return (location,claims=false)=>{
     const sample=sampler(location,claims);
     const lake=mapOptions.water?sampleLakeSurface?.surface(location):null;
@@ -285,8 +329,8 @@ function renderInteractiveFrame({started,sampleSurface,centerX,centerY,radius,wi
     const key=faceIds.get(location.face)*chunkAxis*chunkAxis+ty*chunkAxis+tx;
     const tile={face:location.face,tx,ty};
     const sample=sampleSurface(location);let color=terrainColor(sample,point);
-    if(mapOptions.water&&(sample.elevation<=metadata.seaLevelMeters||sample.lakeDepth>1)){
-      const depth=Math.max(metadata.seaLevelMeters-sample.elevation,sample.lakeDepth-1),amount=clamp(depth/240,0,1);color=[195-42*amount,220-26*amount,226-17*amount];
+    if(mapOptions.water&&sample.lakeDepth>1){
+      const depth=sample.lakeDepth-1,amount=clamp(depth/240,0,1);color=[195-42*amount,220-26*amount,226-17*amount];
     }
     const offset=(py*iw+px)*4;pixels[offset]=color[0];pixels[offset+1]=color[1];pixels[offset+2]=color[2];pixels[offset+3]=255;
     for(const dependency of mapData.dependenciesFor(tile))neededChunks.add(dependency);
@@ -295,7 +339,7 @@ function renderInteractiveFrame({started,sampleSurface,centerX,centerY,radius,wi
   ctx.putImageData(image,0,0);
   context.imageSmoothingEnabled=true;context.drawImage(interactiveInk,0,0,iw,ih,0,0,width/pixelRatio,height/pixelRatio);
   context.beginPath();context.arc(centerX/pixelRatio,centerY/pixelRatio,radius/pixelRatio,0,Math.PI*2);context.strokeStyle=dark?"#d8c9ad":"#5d5145";context.lineWidth=1.2;context.stroke();
-  if(!globeRenderer.snapshotReady)drawSettlementMarkers(centerX/pixelRatio,centerY/pixelRatio,radius/pixelRatio);
+  drawSettlementMarkers(centerX/pixelRatio,centerY/pixelRatio,radius/pixelRatio);
   weatherEffects.update({key:"interactive",width:width/pixelRatio,height:height/pixelRatio,pixelRatio,sites:()=>[],enabled:false,arrows:false,geometry:{centerX:centerX/pixelRatio,centerY:centerY/pixelRatio,radius:radius/pixelRatio}});
   setChunkWorkingSet(neededChunks);updateViewStatus();
   const elapsed=performance.now()-started;document.getElementById("sphere-render-time").textContent=`${Math.round(elapsed)} мс`;canvas.dataset.interactiveMs=elapsed.toFixed(1);
@@ -303,9 +347,8 @@ function renderInteractiveFrame({started,sampleSurface,centerX,centerY,radius,wi
 
 function renderWebGlInteraction({started,centerX,centerY,radius,width,height}){
   context.clearRect(0,0,width/pixelRatio,height/pixelRatio);
-  // The snapshot already contains settlements and cartographic signs. Drawing
-  // them again both doubled the work and made two projections visibly diverge.
-  if(!globeRenderer.snapshotReady)drawSettlementMarkers(centerX/pixelRatio,centerY/pixelRatio,radius/pixelRatio);
+  drawSettlementMarkers(centerX/pixelRatio,centerY/pixelRatio,radius/pixelRatio);
+  scheduleInteractiveCartography();
   weatherEffects.update({key:"gpu-interactive",width:width/pixelRatio,height:height/pixelRatio,pixelRatio,sites:()=>[],enabled:false,arrows:false,
     geometry:{centerX:centerX/pixelRatio,centerY:centerY/pixelRatio,radius:radius/pixelRatio}});
   if(performance.now()-lastInteractiveStatusAt>140){lastInteractiveStatusAt=performance.now();updateViewStatus();}
@@ -316,7 +359,7 @@ function currentViewScope() {
   if(!metadata)return {key:"loading",level:"world",cityIds:null,label:"Весь мир",context:"Загрузка пространственных данных"};
   const level=camera.zoom<2.4?"world":camera.zoom<12?"region":"local";
   let visible=metadata.settlements.map(settlement=>{
-    const anchor=settlement.buildings[0];if(!anchor)return null;
+    const anchor=settlement.anchor??settlement.buildings[0];if(!anchor)return null;
     const view=rotateWorldToView(facePoint(anchor.face,anchor.x,anchor.y));
     const geometry=globeGeometry(),x=geometry.centerX+view.x*geometry.radius,y=geometry.centerY-view.y*geometry.radius;
     return {settlement,view,x,y,distance:view.x*view.x+view.y*view.y};
@@ -351,21 +394,29 @@ function updateWeatherSummary(){
 const climateMonths=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
 function renderClimateHistory(){
   const chart=document.getElementById("sphere-climate-chart");if(!chart)return;chart.replaceChildren();chart.dataset.field=climateField;
-  const present=currentClimateSeries.filter(item=>item[climateField]!==null),values=present.map(item=>item[climateField]);
+  const latestField=`latest${climateField[0].toUpperCase()}${climateField.slice(1)}`;
+  const present=currentClimateSeries.filter(item=>item[climateField]!==null),values=present.flatMap(item=>[item[climateField],item[latestField]].filter(Number.isFinite));
   const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1,range=Math.max(.001,max-min);
   const digits=climateField==="wind"?2:1,unit=climateField==="temperature"?"°":climateField==="rain"?" мм":"";
   for(let month=0;month<12;month++){
-    const item=currentClimateSeries[month],value=item?.[climateField];
+    const item=currentClimateSeries[month],value=item?.[climateField],latest=item?.[latestField];
     const column=document.createElement("div");column.className="sphere-climate-month"+(value===null||value===undefined?" is-missing":"");
-    const label=document.createElement("strong"),track=document.createElement("div"),bar=document.createElement("i"),name=document.createElement("small");
-    track.className="sphere-climate-track";bar.className="sphere-climate-bar";name.textContent=climateMonths[month];
+    const label=document.createElement("strong"),track=document.createElement("div"),averageBar=document.createElement("i"),latestBar=document.createElement("i"),name=document.createElement("small");
+    track.className="sphere-climate-track";averageBar.className="sphere-climate-bar is-average";latestBar.className="sphere-climate-bar is-latest";name.textContent=climateMonths[month];
     if(value===null||value===undefined)label.textContent="—";
-    else{label.textContent=`${value.toFixed(digits)}${unit}`;bar.style.height=`${Math.round(5+27*(value-min)/range)}px`;track.append(bar);}
+    else{
+      label.textContent=`${value.toFixed(digits)}${unit}`;averageBar.style.height=`${Math.round(5+27*(value-min)/range)}px`;track.append(averageBar);
+      if(Number.isFinite(latest)){latestBar.style.height=`${Math.round(5+27*(latest-min)/range)}px`;track.append(latestBar);}
+      column.title=`${climateMonths[month]}: среднее ${value.toFixed(digits)}${unit}`+(Number.isFinite(latest)?`, последний ${latest.toFixed(digits)}${unit}`:"");
+      if(climateField==="wind"&&Number.isFinite(item.windX)&&Number.isFinite(item.windY)){
+        const arrow=document.createElement("em");arrow.className="sphere-climate-wind-arrow";arrow.textContent="➜";arrow.style.transform=`translateX(-50%) rotate(${Math.atan2(item.windY,item.windX)*180/Math.PI}deg)`;averageBar.append(arrow);
+      }
+    }
     column.append(label,track,name);chart.append(column);
   }
   const observed=currentClimateSeries.filter(item=>item.sampleDays>0).length;
   const maxDays=Math.max(0,...currentClimateSeries.map(item=>item.sampleDays));
-  document.getElementById("sphere-climate-note").textContent=observed?`История области · ${observed}/12 мес. · до ${maxDays} дн.`:"История появится по мере симуляции";
+  document.getElementById("sphere-climate-note").textContent=observed?`широкий — среднее · узкий — последний · ${observed}/12 мес. · до ${maxDays} дн.`:"История появится по мере симуляции";
 }
 
 for(const button of document.querySelectorAll("[data-climate-field]"))button.addEventListener("click",()=>{
@@ -383,22 +434,40 @@ try{setClimateCollapsed(localStorage.getItem("worldgen.climateCollapsed")==="tru
 climateToggle.addEventListener("click",()=>setClimateCollapsed(!climateHistory.classList.contains("is-collapsed")));
 
 function scheduleInterfaceWork(key,work,delay=120){
-  interfaceWork.set(key,work);clearTimeout(interfaceWorkTimer);
-  if(interfaceIdle&&window.cancelIdleCallback){cancelIdleCallback(interfaceIdle);interfaceIdle=0;}
-  interfaceWorkTimer=setTimeout(flushInterfaceWork,delay);
+  const now=performance.now();interfaceWork.set(key,work);
+  if(!interfaceWorkQueuedAt)interfaceWorkQueuedAt=now;
+  const due=now+Math.min(delay,Math.max(0,interfaceWorkQueuedAt+MAX_INTERFACE_LATENCY_MS-now));
+  // Live patches coalesce by key, but may not keep pushing the first queued
+  // journal update into the future. Only move an existing wake-up earlier.
+  if(interfaceWorkTimer&&interfaceWorkDueAt<=due)return;
+  clearTimeout(interfaceWorkTimer);interfaceWorkDueAt=due;
+  interfaceWorkTimer=setTimeout(flushInterfaceWork,Math.max(0,due-now));
 }
 
 function flushInterfaceWork(){
-  interfaceWorkTimer=null;
-  if(drag||cameraInteraction||zoomMotion||frame!==null||simulationExactPending){interfaceWorkTimer=setTimeout(flushInterfaceWork,120);return;}
+  interfaceWorkTimer=null;interfaceWorkDueAt=0;
+  if(!interfaceWork.size){interfaceWorkQueuedAt=0;return;}
+  const now=performance.now(),hardBlocked=!!(drag||cameraInteraction||zoomMotion),softBlocked=frame!==null||simulationExactPending;
+  if(interfaceWorkCanWait({queuedAt:interfaceWorkQueuedAt,now,hardBlocked,softBlocked})){
+    const delay=hardBlocked?120:interfaceWorkDelay({queuedAt:interfaceWorkQueuedAt,now,requested:60});
+    interfaceWorkDueAt=now+delay;interfaceWorkTimer=setTimeout(flushInterfaceWork,delay);return;
+  }
   const run=()=>{
     interfaceIdle=0;
-    if(drag||cameraInteraction||zoomMotion||frame!==null||simulationExactPending){interfaceWorkTimer=setTimeout(flushInterfaceWork,120);return;}
-    const started=performance.now(),tasks=[...interfaceWork.values()];interfaceWork.clear();
+    if(!interfaceWork.size){interfaceWorkQueuedAt=0;return;}
+    const check=performance.now(),hard=!!(drag||cameraInteraction||zoomMotion),soft=frame!==null||simulationExactPending;
+    if(interfaceWorkCanWait({queuedAt:interfaceWorkQueuedAt,now:check,hardBlocked:hard,softBlocked:soft})){
+      const delay=hard?120:interfaceWorkDelay({queuedAt:interfaceWorkQueuedAt,now:check,requested:60});
+      interfaceWorkDueAt=check+delay;interfaceWorkTimer=setTimeout(flushInterfaceWork,delay);return;
+    }
+    const started=performance.now(),tasks=[...interfaceWork.values()];interfaceWork.clear();interfaceWorkQueuedAt=0;
     for(const task of tasks)task();canvas.dataset.interfaceMs=(performance.now()-started).toFixed(1);
   };
-  if(window.requestIdleCallback)interfaceIdle=requestIdleCallback(run,{timeout:700});else setTimeout(run,0);
+  const overdue=performance.now()-interfaceWorkQueuedAt>=MAX_INTERFACE_LATENCY_MS;
+  if(window.requestIdleCallback&&!overdue)interfaceIdle=requestIdleCallback(run,{timeout:Math.max(1,MAX_INTERFACE_LATENCY_MS-(performance.now()-interfaceWorkQueuedAt))});else setTimeout(run,0);
 }
+
+function cartographyLod(zoom){return zoom<4?'world':zoom<8?'region':zoom<16?'settlement':'local';}
 
 function scheduleScopeRefresh(delay=180){
   scheduleInterfaceWork("scope",()=>{updateWeatherSummary();simulationController?.refreshScope();},delay);
@@ -417,6 +486,51 @@ function advanceZoomMotion(timestamp){
   canvas.dataset.zoomAnimating="true";return true;
 }
 
+function collectVisibleTiles(centerX,centerY,radius,width,height){
+  const result=new Map(),step=Math.max(8,Math.round(18*pixelRatio));
+  for(let py=Math.max(0,Math.floor(centerY-radius));py<=Math.min(height-1,Math.ceil(centerY+radius));py+=step)
+  for(let px=Math.max(0,Math.floor(centerX-radius));px<=Math.min(width-1,Math.ceil(centerX+radius));px+=step){
+    const sx=(px+.5-centerX)/radius,sy=-(py+.5-centerY)/radius,q=sx*sx+sy*sy;if(q>1)continue;
+    const location=locateFace(rotateViewToWorld(sx,sy,Math.sqrt(1-q)));
+    const tx=clamp(Math.floor((location.u+1)*metadata.faceSize/2/metadata.chunkSize),0,chunkAxis-1);
+    const ty=clamp(Math.floor((location.v+1)*metadata.faceSize/2/metadata.chunkSize),0,chunkAxis-1);
+    const key=faceIds.get(location.face)*chunkAxis*chunkAxis+ty*chunkAxis+tx;
+    result.set(key,{face:location.face,tx,ty});
+  }
+  for(const tile of [...result.values()])for(const key of mapData.dependenciesFor(tile))result.set(key,chunkTile(key));
+  return result;
+}
+
+function scheduleInteractiveCartography(dataChanged=false){
+  if(dataChanged)interactiveGeometryDirty=true;
+  // Zooming only changes projection uniforms. Building new world geometry in
+  // the middle of that motion used to inject 50-275 ms main-thread stalls.
+  // Keep the retained buffers until the camera has settled.
+  if(zoomMotion)return;
+  if(interactiveGeometryTimer||!metadata||!atlas||layerSelect.value!=="topographic"||camera.zoom<2.4||!lineLayer.available||!symbolLayer.ready)return;
+  interactiveGeometryTimer=setTimeout(()=>{
+    interactiveGeometryTimer=null;
+    if(!drag&&!cameraInteraction)return;
+    const {centerX,centerY,radius}=globeGeometry(),width=canvas.width,height=canvas.height;
+    const visible=collectVisibleTiles(centerX,centerY,radius,width,height);
+    const signature=[...visible.keys()].sort((a,b)=>a-b).join(',');
+    const rebuild=interactiveGeometryDirty||signature!==lastInteractiveGeometrySignature;
+    interactiveGeometryDirty=false;if(!rebuild)return;lastInteractiveGeometrySignature=signature;
+    const required=new Set(visible.keys());setChunkWorkingSet(required);
+    const sampleSurface=smoothSampler(),cssX=centerX/pixelRatio,cssY=centerY/pixelRatio,cssRadius=radius/pixelRatio;
+    const project=point=>{const view=rotateWorldToView(point);return view.z<=0?null:{x:cssX+view.x*cssRadius,y:cssY-view.y*cssRadius,z:view.z};};
+    const gpuContours=globeRenderer.elevationReady;
+    const stats=drawCartographicLayer({context,riverContext:context,width:width/pixelRatio,height:height/pixelRatio,zoom:camera.zoom,
+      metadata,atlas,hydrology,drawSymbol,options:mapOptions,layer:layerSelect.value,simulation:simulationView,
+      sampleWeather:point=>sampleWeather?.(locateFace(point)),tiles:[...visible.values()],dataVersion:tile=>tileVersion(tile,true),staticVersion:tile=>tileVersion(tile),
+      sampleWorld:(cell,claims=false)=>sampleSurface(locateFace(facePoint(cell.face,cell.x,cell.y)),claims),
+      projectCell:cell=>project(facePoint(cell.face,cell.x,cell.y)),projectVector:point=>project({x:point[0],y:point[1],z:point[2]}),
+      lineLayer,symbolLayer,selection:selectedCell,incremental:committedGpuContours===gpuContours,gpuContours});
+    cartographicLabels=stats.labels??cartographicLabels;canvas.dataset.progressiveTiles=String(visible.size);
+    canvas.dataset.progressiveBuilds=String((Number(canvas.dataset.progressiveBuilds)||0)+1);scheduleRender();
+  },140);
+}
+
 function renderSphere(timestamp=performance.now()) {
   const started=performance.now();
   frame = null;
@@ -432,16 +546,29 @@ function renderSphere(timestamp=performance.now()) {
   mobileUnits.render();
   const width = canvas.width;
   const height = canvas.height;
-  const gpuFrame=globeRenderer.draw({width,height,centerX,centerY,radius,matrix:camera.matrix,useSnapshot:interacting});
+  const gpuFrame=globeRenderer.draw({width,height,centerX,centerY,radius,matrix:camera.matrix,contours:mapOptions.contours&&layerSelect.value==="topographic",contourInterval:contourInterval(camera.zoom)});
+  if(globeRenderer.transitioning)scheduleRender();
+  const gpuTopographic=gpuFrame&&layerSelect.value==="topographic";
+  const lineEnabled=cartographic&&lineLayer.available;
+  if(interacting){
+    lineLayer.draw({width,height,centerX,centerY,radius,matrix:camera.matrix,enabled:lineEnabled});
+    symbolLayer.draw({width,height,centerX,centerY,radius,matrix:camera.matrix,enabled:cartographic&&mapOptions.symbols&&camera.zoom>=OVERVIEW_SYMBOL_ZOOM});
+  }
   if(interacting&&gpuFrame){renderWebGlInteraction({started,centerX,centerY,radius,width,height});return;}
   if(interacting){renderInteractiveFrame({started,sampleSurface,centerX,centerY,radius,width,height});return;}
   const step = 1;
   const rasterKey=JSON.stringify([width,height,camera.zoom,camera.orientation,layerSelect.value,step,mapOptions.water,hydrologyVersion(),metadata.worldId]);
+  if(gpuTopographic){
+    context.clearRect(0,0,width/pixelRatio,height/pixelRatio);
+    visibleTiles=collectVisibleTiles(centerX,centerY,radius,width,height);
+    if(camera.zoom>=LOCAL_CARTOGRAPHY_ZOOM)for(const key of visibleTiles.keys())neededChunks.add(key);
+    canvas.dataset.collectMs=(performance.now()-started).toFixed(1);
+  }
   const reuseRaster=rasterSnapshot?.key===rasterKey&&[...rasterSnapshot.visibleTiles].every(([key,tile])=>rasterSnapshot.versions.get(key)===tileVersion(tile,true));
   let image,mask;
-  if(reuseRaster){
+  if(!gpuTopographic&&reuseRaster){
     ({image,mask,visibleTiles}=rasterSnapshot);neededChunks=new Set(rasterSnapshot.neededChunks);
-  }else{
+  }else if(!gpuTopographic){
   image = context.createImageData(width, height);
   const pixels = image.data;
   mask=preciseCartography?context.createImageData(width,height):null;
@@ -469,15 +596,15 @@ function renderSphere(timestamp=performance.now()) {
       }
       const sample = cartographic ? sampleSurface(location) : sampleAt(location);
       let color = terrainColor(sample, point);
-      if(cartographic&&drag&&mapOptions.water&&(sample.elevation<=metadata.seaLevelMeters||sample.lakeDepth>1)){
-        const depth=Math.max(metadata.seaLevelMeters-sample.elevation,sample.lakeDepth-1),amount=clamp(depth/240,0,1);
+      if(cartographic&&drag&&mapOptions.water&&sample.lakeDepth>1){
+        const depth=sample.lakeDepth-1,amount=clamp(depth/240,0,1);
         color=[195-42*amount,220-26*amount,226-17*amount];
       }
       if(preciseCartography){
         const index=py*width+px;
-        ocean[index]=metadata.seaLevelMeters-sample.elevation;
+        ocean[index]=-1;
         lakes[index]=sample.lakeShore;
-        const depth=Math.max(ocean[index],sample.lakeDepth-1),amount=clamp(depth/240,0,1);
+        const depth=Math.max(0,sample.lakeDepth-1),amount=clamp(depth/240,0,1);
         const lighting=camera.zoom<2?.93+Math.max(0,point.z*.7+point.y*.3)*.07:1;
         waterColors[index*3]=(195-42*amount)*lighting;
         waterColors[index*3+1]=(220-26*amount)*lighting;
@@ -502,7 +629,7 @@ function renderSphere(timestamp=performance.now()) {
     versions:new Map([...visibleTiles].map(([key,tile])=>[key,tileVersion(tile,true)]))};
   rasterBuilds++;
   }
-  context.putImageData(image, 0, 0);
+  if(!gpuTopographic)context.putImageData(image, 0, 0);
   const cssX=centerX/pixelRatio,cssY=centerY/pixelRatio,cssRadius=radius/pixelRatio;
   const cssWidth=width/pixelRatio,cssHeight=height/pixelRatio;
   const rayAt=(x,y)=>{
@@ -510,11 +637,14 @@ function renderSphere(timestamp=performance.now()) {
     return q>1?null:rotateViewToWorld(sx,sy,Math.sqrt(1-q));
   };
   const weatherKey=JSON.stringify([rasterKey,rasterBuilds,simulationView?.weatherMap?.revision,weatherLayer.value,mapOptions.winter]);
-  context.save();context.beginPath();context.arc(cssX,cssY,cssRadius,0,Math.PI*2);context.clip();
-  weatherTint.draw(context,{key:weatherKey,width:cssWidth,height:cssHeight,rayAt,sample:sampleWeather,mode:weatherLayer.value,
-    winter:mapOptions.winter&&layerSelect.value==='topographic',
-    landAt:(x,y)=>mask?mask.data[(Math.min(height-1,Math.floor(y*pixelRatio))*width+Math.min(width-1,Math.floor(x*pixelRatio)))*4+3]/255:1});
-  context.restore();
+  if(!gpuTopographic){
+    context.save();context.beginPath();context.arc(cssX,cssY,cssRadius,0,Math.PI*2);context.clip();
+    weatherTint.draw(context,{key:weatherKey,width:cssWidth,height:cssHeight,rayAt,sample:sampleWeather,mode:weatherLayer.value,
+      winter:mapOptions.winter&&layerSelect.value==='topographic',landAt:(x,y)=>{
+        if(mask)return mask.data[(Math.min(height-1,Math.floor(y*pixelRatio))*width+Math.min(width-1,Math.floor(x*pixelRatio)))*4+3]/255;
+        const point=rayAt(x,y);if(!point)return 0;const sample=sampleSurface(locateFace(point));return sample.lakeDepth>1?0:1;
+      }});context.restore();
+  }
   weatherEffects.update({key:weatherKey,width:cssWidth,height:cssHeight,pixelRatio,
     sites:()=>weatherEffectSites({width:cssWidth,height:cssHeight,rayAt,sample:sampleWeather,toView:rotateWorldToView}),
     enabled:weatherMotion.checked&&!!sampleWeather,arrows:weatherLayer.value==='wind',
@@ -522,46 +652,61 @@ function renderSphere(timestamp=performance.now()) {
   canvas.dataset.weatherBuilds=String(weatherTint.builds);
   canvas.dataset.weatherMs=weatherTint.milliseconds.toFixed(1);
   if(preciseCartography && atlas) {
-    for(const surface of [landInk,mapInk,waterMask]){surface.width=width;surface.height=height;}
-    const ink=landInk.getContext("2d"),overlay=mapInk.getContext("2d"),maskContext=waterMask.getContext("2d");
-    ink.setTransform(pixelRatio,0,0,pixelRatio,0,0);overlay.setTransform(pixelRatio,0,0,pixelRatio,0,0);
-    maskContext.putImageData(mask,0,0);
-    context.save();
-    context.beginPath();context.arc(cssX,cssY,cssRadius,0,Math.PI*2);context.clip();
+    const gpuCartography=lineLayer.available&&symbolLayer.ready;
+    let ink=context,overlay=context;
+    if(!gpuCartography){
+      for(const surface of [landInk,mapInk,waterMask]){surface.width=width;surface.height=height;}
+      ink=landInk.getContext("2d");overlay=mapInk.getContext("2d");const maskContext=waterMask.getContext("2d");
+      ink.setTransform(pixelRatio,0,0,pixelRatio,0,0);overlay.setTransform(pixelRatio,0,0,pixelRatio,0,0);if(mask)maskContext.putImageData(mask,0,0);
+      context.save();context.beginPath();context.arc(cssX,cssY,cssRadius,0,Math.PI*2);context.clip();
+    }
     const project=point=>{
       const view=rotateWorldToView(point);
       return view.z<=0 ? null : {x:cssX+view.x*cssRadius,y:cssY-view.y*cssRadius,z:view.z};
     };
+    const geometryStarted=performance.now();
+    const nextCartographyLod=cartographyLod(camera.zoom);
+    const nextGpuContours=gpuTopographic&&globeRenderer.elevationReady;
+    // An incremental GL commit deliberately retains the previous base mesh.
+    // Never use it while switching from the legacy vector coast to the signed
+    // texture coast, otherwise both lake boundaries remain visible together.
+    const useIncremental=incrementalCartography&&camera.zoom<LOCAL_CARTOGRAPHY_ZOOM&&
+      committedCartographyLod===nextCartographyLod&&committedGpuContours===nextGpuContours;
     const geometryStats=drawCartographicLayer({context:overlay,riverContext:ink,width:width/pixelRatio,height:height/pixelRatio,zoom:camera.zoom,
       metadata,atlas,hydrology,drawSymbol,options:mapOptions,layer:layerSelect.value,simulation:simulationView,
       sampleWeather:point=>sampleWeather?.(locateFace(point)),
       tiles:[...visibleTiles.values()],dataVersion:tile=>tileVersion(tile,true),staticVersion:tile=>tileVersion(tile),
       sampleWorld:(cell,claims=false)=>sampleSurface(locateFace(facePoint(cell.face,cell.x,cell.y)),claims),
       projectCell:cell=>project(facePoint(cell.face,cell.x,cell.y)),
-      projectVector:point=>project({x:point[0],y:point[1],z:point[2]})
+      projectVector:point=>project({x:point[0],y:point[1],z:point[2]}),lineLayer,symbolLayer,selection:selectedCell,incremental:useIncremental,gpuContours:nextGpuContours
     });
-    ink.setTransform(1,0,0,1,0,0);ink.globalCompositeOperation="destination-in";ink.drawImage(waterMask,0,0);
-    context.drawImage(landInk,0,0,width/pixelRatio,height/pixelRatio);
-    context.drawImage(mapInk,0,0,width/pixelRatio,height/pixelRatio);
+    committedCartographyLod=nextCartographyLod;
+    committedGpuContours=nextGpuContours;
+    incrementalCartography=false;
+    canvas.dataset.geometryMs=(performance.now()-geometryStarted).toFixed(1);
+    cartographicLabels=geometryStats.labels??[];
+    if(!gpuCartography){
+      if(mask){ink.setTransform(1,0,0,1,0,0);ink.globalCompositeOperation="destination-in";ink.drawImage(waterMask,0,0);}
+      context.drawImage(landInk,0,0,width/pixelRatio,height/pixelRatio);context.drawImage(mapInk,0,0,width/pixelRatio,height/pixelRatio);context.restore();
+    }
     document.getElementById("sphere-geometry-builds").textContent=String(geometryStats.builds);
     document.getElementById("sphere-land-builds").textContent=String(geometryStats.landBuilds);
-    context.restore();
+    document.getElementById("sphere-line-status").textContent=lineLayer.available
+      ?`${geometryStats.lineTiles} чанков · ${geometryStats.lineBuilds} сборок`
+      :"Canvas fallback";
   }
-  context.beginPath();
-  context.arc(centerX / pixelRatio, centerY / pixelRatio, radius / pixelRatio, 0, Math.PI * 2);
-  context.strokeStyle = dark ? "#d8c9ad" : "#5d5145";
-  context.lineWidth = 1.2;
-  context.stroke();
+  lineLayer.draw({width,height,centerX,centerY,radius,matrix:camera.matrix,enabled:lineEnabled});
+  if(lineLayer.transitioning)scheduleRender();
+  symbolLayer.draw({width,height,centerX,centerY,radius,matrix:camera.matrix,enabled:cartographic&&mapOptions.symbols&&camera.zoom>=OVERVIEW_SYMBOL_ZOOM});
+  if(!gpuTopographic){context.beginPath();context.arc(centerX/pixelRatio,centerY/pixelRatio,radius/pixelRatio,0,Math.PI*2);
+    context.strokeStyle=dark?"#d8c9ad":"#5d5145";context.lineWidth=1.2;context.stroke();}
   drawSettlementMarkers(centerX / pixelRatio, centerY / pixelRatio, radius / pixelRatio);
   // Cached geometry still depends on its halo: keep those chunks resident even
   // when no sampling was necessary in this frame.
-  if(camera.zoom>=3.5)for(const tile of visibleTiles.values())
+  if(camera.zoom>=LOCAL_CARTOGRAPHY_ZOOM)for(const tile of visibleTiles.values())
     for(const key of mapData.dependenciesFor(tile))neededChunks.add(key);
-  rasterSnapshot.neededChunks=new Set(neededChunks);
+  if(!gpuTopographic&&rasterSnapshot)rasterSnapshot.neededChunks=new Set(neededChunks);
   setChunkWorkingSet(neededChunks);
-  const snapshotStatus=chunkCache.status;
-  if(snapshotStatus.loaded===snapshotStatus.total&&snapshotStatus.pending===0)
-    globeRenderer.captureSnapshot(canvas,{width,height,centerX,centerY,radius,matrix:camera.matrix});
   updateViewStatus();
   const elapsed=performance.now()-started;
   document.getElementById("sphere-render-time").textContent=`${Math.round(elapsed)} мс`;
@@ -581,42 +726,33 @@ function rotateWorldToView(point) {
 }
 
 function drawSettlementMarkers(centerX, centerY, radius) {
-  context.font = "600 11px Inter, system-ui, sans-serif";
-  context.textBaseline = "middle";
+  const labels=[];
   for (let index = 0; index < metadata.settlements.length; index++) {
     const settlement = metadata.settlements[index];
-    if (camera.zoom >= 8) {
-      for (const land of settlement.usedLands) drawCellOutline(land, land.usage > 0 ? "#ac995d" : "#838c82", centerX, centerY, radius, true);
-      const outlined=new Set();
-      for (const building of settlement.buildings) {
-        if(layerSelect.value==="topographic"&&building.buildingTypeId==="garden"&&building.status==="active")continue;
-        const key=`${building.face}:${building.x}:${building.y}`;if(outlined.has(key))continue;outlined.add(key);
-        drawCellOutline(building, layerSelect.value === "topographic" ? "rgba(135,143,116,.55)" : "#d7d4c4", centerX, centerY, radius, false);
-      }
-    }
-    const anchor = settlement.buildings[0];
+    const anchor = settlement.anchor ?? settlement.buildings[0];
     if (!anchor) continue;
     const view = rotateWorldToView(facePoint(anchor.face, anchor.x, anchor.y));
     if (view.z <= 0.02) continue;
     const x = centerX + view.x * radius;
     const y = centerY - view.y * radius;
     if (x < -160 || x > canvas.width / pixelRatio + 20 || y < -20 || y > canvas.height / pixelRatio + 20) continue;
-    const color = settlementColors[index % settlementColors.length];
-    if(camera.zoom < 8 || layerSelect.value !== "topographic" || !mapOptions.symbols) {
-      context.beginPath(); context.arc(x, y, 4.5, 0, Math.PI * 2);
-      context.fillStyle = `rgb(${color.join(" ")})`;context.fill();
-      context.strokeStyle = "#39443a";context.lineWidth = 1.2;context.stroke();
-    }
-    const footprintViews=settlement.buildings.filter(building=>building.id===anchor.id)
+    const footprintId=settlement.buildings[0]?.id;
+    const footprintViews=settlement.buildings.filter(building=>building.id===footprintId)
       .map(building=>rotateWorldToView(facePoint(building.face,building.x,building.y))).filter(view=>view.z>0);
     const labelX=camera.zoom>=8 ? Math.max(x,...footprintViews.map(view=>centerX+view.x*radius))+17 : x+8;
-    context.strokeStyle = layerSelect.value === "topographic" ? "#f4f0df" : dark ? "#19201e" : "#fffdf7";
-    context.lineWidth = 3;
-    context.strokeText(settlement.name, labelX, y);
-    context.fillStyle = layerSelect.value === "topographic" ? "#39443a" : dark ? "#edf2ef" : "#202725";
-    context.fillText(settlement.name, labelX, y);
+    labels.push({key:`settlement:${settlement.id}`,text:settlement.name,x:labelX,y,className:'sphere-map-label'});
   }
-  if (selectedCell) drawCellOutline(selectedCell, "#64f0d1", centerX, centerY, radius, false);
+  for(const [index,label] of cartographicLabels.entries()){const view=rotateWorldToView(label.point);if(view.z<.2)continue;
+    const x=centerX+view.x*radius,y=centerY-view.y*radius;if(x<0||y<0||x>canvas.width/pixelRatio||y>canvas.height/pixelRatio)continue;
+    labels.push({key:`contour:${index}:${label.text}`,text:label.text,x,y,className:'sphere-map-label sphere-contour-label'});}
+  const active=new Set();
+  for(const label of labels){active.add(label.key);let element=mapLabelNodes.get(label.key);
+    if(!element){element=document.createElement('span');mapLabelNodes.set(label.key,element);labelLayer.append(element);}
+    if(element.className!==label.className)element.className=label.className;
+    if(element.textContent!==label.text)element.textContent=label.text;
+    element.style.left=`${label.x.toFixed(2)}px`;element.style.top=`${label.y.toFixed(2)}px`;
+  }
+  for(const [key,element] of mapLabelNodes)if(!active.has(key)){element.remove();mapLabelNodes.delete(key);}
 }
 
 function drawCellOutline(cell, color, centerX, centerY, radius, dashed) {
@@ -643,7 +779,7 @@ function updateViewStatus() {
   document.getElementById("sphere-zoom-out").disabled = camera.zoom <= MIN_SPHERE_ZOOM;
   document.getElementById("sphere-zoom-in").disabled = camera.zoom >= MAX_SPHERE_ZOOM;
   const status = chunkCache.status;
-  document.getElementById("sphere-lod").textContent = camera.zoom < 3.5 ? "обзор 1:4" :
+  document.getElementById("sphere-lod").textContent = camera.zoom < LOCAL_CARTOGRAPHY_ZOOM ? "обзор 1:4" :
     status.loaded === status.total ? "зоны 1:1" : `1:1 · загрузка ${status.loaded}/${status.total}`;
   document.getElementById("sphere-loaded").textContent = `${status.resident}/192`;
   document.getElementById("sphere-chunk-requests").textContent = String(chunkRequests);
@@ -669,6 +805,7 @@ function applyMapUpdate(update,{refresh=true}={}) {
 
 function applySimulationView(state,{live=false}={}){
   if(simulationView&&state.revision<simulationView.revision){canvas.dataset.rejectedSimulationRevision=String(state.revision);return false;}
+  const previousCartographyRevision=simulationView?.cartographyRevision;
   canvas.dataset.simulationRevision=String(state.revision);
   // Most live frames contain only simulation data. A rare structural frame
   // carries buildings/fields/claims and earns one exact cartographic redraw.
@@ -678,13 +815,23 @@ function applySimulationView(state,{live=false}={}){
     simulationExactPending=mapResult.changedTiles.size>0||!!mapResult.structures;
     if(simulationExactPending)scheduleSimulationReconcile();
   }
+  if(live&&state.cartographyRevision!==undefined&&state.cartographyRevision!==previousCartographyRevision){
+    simulationExactPending=true;scheduleSimulationReconcile();
+  }
   simulationView=state;
-  mobileUnits.update(state.scouts??[],state.day,{animate:live});
+  if(live&&state._riversChanged&&hydrology){
+    hydrology={...hydrology,reaches:state.rivers,revision:state.riverRevision};
+    document.getElementById("sphere-hydrology-status").textContent=
+      `Речная сеть: ${hydrology.reaches.length} участков · рассчитана по текущему стоку.`;
+    scheduleScopeRefresh(0);
+  }
+  mobileUnits.update(state.scouts??[],state.wildlife??[],state.day,{animate:live});
   sampleWeather=createWeatherSampler(state.weatherMap,metadata.faceSize);
   sampleClimate=createClimateSampler(state.weatherMap);
   const homes=new Map(state.cities.flatMap(city=>city.homes??[]).map(home=>[home.id,home]));
+  for(const city of state.cities){const settlement=metadata.settlements.find(item=>item.id===city.id);if(settlement&&city.center)settlement.anchor=city.center;}
   for(const city of metadata.settlements)for(const building of city.buildings){
-    const home=homes.get(building.id);if(home){building.status=home.status;building.residents=home.residents;}
+    const home=homes.get(building.id);if(home){building.status=home.status;building.residents=home.residents;building.floodedDays=home.floodedDays??0;}
   }
   if(live)scheduleInterfaceWork("weather",()=>{updateWeatherLegend();updateWeatherSummary();},90);
   else{
@@ -753,12 +900,14 @@ function refreshSelection() {
     industries.map(site=>`${site.name}: ${site.totalBatches.toFixed(2)} партий; лес ${Math.round(site.forestBiomass*100)}%, почва ${Math.round(site.soilQuality*100)}%. ${site.blockedReason??site.lastConstraintKey??""}`).join(" ") +
     (simulationView?.cities.flatMap(city=>city.homes??[]).filter(b=>b.face===selectedCell.face&&b.x===selectedCell.x&&b.y===selectedCell.y)
       .map(b=>buildingConditionText(b,simulationView.lifecycleRules)).join("; ")??"");
-  if(sampleWeather)selection.textContent+=' '+weatherText(sampleWeather(locateFace(facePoint(selectedCell.face,selectedCell.x,selectedCell.y))),{water:sample.elevation<=metadata.seaLevelMeters||lakeDepth>1});
+  if(sampleWeather)selection.textContent+=' '+weatherText(sampleWeather(locateFace(facePoint(selectedCell.face,selectedCell.x,selectedCell.y))),{water:lakeDepth>1});
   document.getElementById("sphere-land-controls").hidden = !land;
+  document.getElementById("sphere-meteorite-controls").hidden = false;
   document.getElementById("sphere-land-toggle").textContent = land?.usage > 0 ? "Прекратить использование угодья" : "Возобновить использование угодья";
 }
 
 function beginCameraInteraction(settleDelay=150) {
+  if(camera.zoom<LOCAL_CARTOGRAPHY_ZOOM)incrementalCartography=true;
   cameraInteraction=true;
   clearTimeout(chunkRenderTimer);
   clearTimeout(cameraSettleTimer);
@@ -833,8 +982,8 @@ function showTooltip(location, event) {
     `влажность ${Math.round(sample.moisture * 100)}% · лес ${Math.round(sample.forest * 100)}%${owner}` +
     (lakeDepthAt(location)>1 ? ` · расчётное озеро (сток 1:${hydrology?.stride??4})` : "");
   tooltip.append(title, detail);
-  if(sample.elevation>metadata.seaLevelMeters&&lakeDepthAt(location)<=1){const plants=wildPlants(metadata.biosphere,metadata.seed,location.point,sample);if(plants.length){const flora=document.createElement('span');flora.textContent='Дикие растения (обзор): '+plants.map(c=>c.name).join(', ');tooltip.append(flora);}}
-  if(sampleWeather){const weather=document.createElement('span');weather.className='tooltip-weather';weather.textContent=weatherText(sampleWeather(location),{water:sample.elevation<=metadata.seaLevelMeters||lakeDepthAt(location)>1});tooltip.append(weather);}
+  if(lakeDepthAt(location)<=1){const plants=wildPlants(metadata.biosphere,metadata.seed,location.point,sample);if(plants.length){const flora=document.createElement('span');flora.textContent='Дикие растения (обзор): '+plants.map(c=>c.name).join(', ');tooltip.append(flora);}}
+  if(sampleWeather){const weather=document.createElement('span');weather.className='tooltip-weather';weather.textContent=weatherText(sampleWeather(location),{water:lakeDepthAt(location)>1});tooltip.append(weather);}
   const local=simulationView?.cities.flatMap(city=>city.homes??[]).filter(b=>b.face===location.face&&b.x===cellX&&b.y===cellY)??[];
   for(const b of local.slice(0,2)){const state=document.createElement("span");state.textContent=buildingHoverText(b);tooltip.append(state);}
   if(local.length>2){const more=document.createElement("span");more.textContent=`Ещё объектов: ${local.length-2}. Нажмите на зону для подробностей.`;tooltip.append(more);}
@@ -852,6 +1001,8 @@ function resize() {
   pixelRatio = Math.min(1.25, window.devicePixelRatio || 1, Math.sqrt(2_100_000/cssPixels));
   canvas.width = Math.max(1, Math.round(rect.width * pixelRatio));
   canvas.height = Math.max(1, Math.round(rect.height * pixelRatio));
+  lineLayer.resize(rect.width,rect.height,pixelRatio);
+  symbolLayer.resize(rect.width,rect.height,pixelRatio);
   mobileUnits.resize(rect.width,rect.height,pixelRatio);
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   drag = null;
@@ -948,9 +1099,25 @@ document.getElementById("sphere-land-toggle").addEventListener("click", async ev
     status.textContent = error.message;
   } finally { button.disabled = false; }
 });
+document.getElementById("sphere-meteorite").addEventListener("click",async event=>{
+  if(!selectedCell)return;const button=event.currentTarget,status=document.getElementById("sphere-land-status");button.disabled=true;
+  const radiusCells=Number(document.getElementById("sphere-meteorite-radius").value),depthMeters=Number(document.getElementById("sphere-meteorite-depth").value);
+  try{
+    const response=await fetch('/api/sphere/terrain/meteorite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...selectedCell,radiusCells,depthMeters})});
+    if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error??`HTTP ${response.status}`);}
+    const packet=parseRenderPacket(await response.arrayBuffer());globeRenderer.applyRenderPacket(packet,{animatePatches:true});
+    chunkCache.invalidate();rasterSnapshot=null;incrementalCartography=false;committedCartographyLod='';committedGpuContours=null;
+    const oceanCells=Number(response.headers.get('X-WorldGen-Ocean-Cells-Added')??0),oceanVolume=Number(response.headers.get('X-WorldGen-Ocean-Volume-Delta-M3')??0);
+    const water=oceanCells>0?`океан вошёл в ${oceanCells.toLocaleString('ru-RU')} зон · приток ${oceanVolume.toLocaleString('ru-RU',{maximumFractionDigits:0})} м³`:
+      'связи с океаном нет; кратер остаётся сухим до осадков и стока';
+    status.textContent=`Метеорит: ${response.headers.get('X-WorldGen-Changed-Cells')??'—'} зон · баланс грунта ${response.headers.get('X-WorldGen-Balance-Error-Cm')??'—'} см · ${water} · пересчёт ${response.headers.get('X-WorldGen-Recompute-Ms')??'—'} мс. Осадки и быстрый поверхностный сток считаются посуточно; медленный грунтовый горизонт будет следующим слоем.`;
+    scheduleRender();
+  }catch(error){status.textContent=`Метеорит не применён: ${error.message}`;}finally{button.disabled=false;}
+});
 new ResizeObserver(resize).observe(canvas.parentElement);
 
 async function initialize() {
+let exactSurfacePromise=Promise.resolve(false);
 const [metadataResponse, previewResponse, atlasResponse] = await Promise.all([
   fetch("/api/sphere", {cache:"no-store"}),
   fetch("/api/sphere/preview?stride=4", {cache:"no-store"}),
@@ -960,21 +1127,27 @@ if (!metadataResponse.ok || !previewResponse.ok || !atlasResponse.ok) throw new 
 metadata = await metadataResponse.json();
 preview = await previewResponse.json();
 if(!metadata.worldId||metadata.worldId!==preview.worldId)throw new Error("Сервер обновлён во время загрузки. Обновите страницу.");
+document.getElementById("sphere-seed").textContent=String(metadata.seed);
+document.getElementById("sphere-world-id").textContent=metadata.worldId.slice(0,8);
 mapData=new SphereMapData({worldId:metadata.worldId,faceSize:metadata.faceSize,chunkSize:metadata.chunkSize,faces:metadata.faces});
 try{
   globeRenderer.initialize({preview,seaLevel:metadata.seaLevelMeters,seed:metadata.seed,faceSize:metadata.faceSize});
   void globeRenderer.loadStarTexture('/assets/2k_stars_milky_way.jpg').then(()=>scheduleRender());
-  void globeRenderer.loadExactSurface(`/api/sphere/gpu-surface?worldId=${encodeURIComponent(metadata.worldId)}`).then(loaded=>{
+  exactSurfacePromise=globeRenderer.loadRenderPacket(`/api/sphere/render/surface?worldId=${encodeURIComponent(metadata.worldId)}`).then(async loaded=>{
     if(loaded)document.getElementById("sphere-gpu-status").textContent=`WebGL2 · точная поверхность ${metadata.faceSize}² × 6`;
+    await globeRenderer.loadRenderPacket(`/api/sphere/render/territory?worldId=${encodeURIComponent(metadata.worldId)}`);
+    await globeRenderer.loadRenderPacket(`/api/sphere/render/deformation?worldId=${encodeURIComponent(metadata.worldId)}`);
     scheduleRender();
-  }).catch(error=>console.warn("Exact GPU surface unavailable",error));
+    return loaded;
+  }).catch(error=>{console.warn("Exact GPU surface unavailable",error);return false;});
 }
 catch(error){globeRenderer.available=false;globeRenderer.error=error;console.warn("WebGL2 globe disabled",error);}
 document.getElementById("sphere-gpu-status").textContent=globeRenderer.available?`WebGL2 · ${metadata.faceSize}² × 6`:"Canvas fallback";
 atlas = await atlasResponse.json();
 drawSymbol = createSymbolRenderer(atlas);
+await symbolLayer.initialize(atlas);
 const legend=document.getElementById("sphere-map-legend");
-for(const id of ["conifer","bare_tree","fruit_tree","berry_bush","grain","nut_tree","snow","wetland","river","contour","house","well","field","chicken","cow","game","resource_camp","trail","construction","ruin","boundary"]) {
+for(const id of ["conifer","bare_tree","fruit_tree","berry_bush","grain","nut_tree","snow","wetland","river","contour","house","well","field","orchard","forester_lodge","quarry","chicken","cow","game","resource_camp","trail","construction","ruin","boundary"]) {
   const symbol=atlas.symbols.find(item=>item.id===id);
   const entry=document.createElement("span");
   entry.append(symbolSvg(atlas,symbol),document.createTextNode(symbol.label));legend.append(entry);
@@ -998,7 +1171,8 @@ for (const settlement of metadata.settlements) {
   option.value = settlement.id; option.textContent = settlement.name; settlementSelect.append(option);
 }
 settlementSelect.addEventListener("change", () => {
-  const anchor = metadata.settlements.find(item => item.id === settlementSelect.value)?.buildings[0];
+  const settlement=metadata.settlements.find(item => item.id === settlementSelect.value);
+  const anchor = settlement?.anchor ?? settlement?.buildings[0];
   if (!anchor) return;
   cancelZoomMotion();camera.focus(facePoint(anchor.face, anchor.x, anchor.y), 24);
   hideTooltip(); scheduleRender();scheduleScopeRefresh();
@@ -1014,7 +1188,12 @@ parcelSelect.addEventListener("change", () => {
 });
 resize();
 void loadHydrology();
+// Do not open the live stream until the immutable base and the cumulative
+// territorial state are both on the GPU. Otherwise an early live patch can
+// be overwritten by the later full-surface upload.
+await exactSurfacePromise;
 simulationController=await connectSphereSimulation({onState:applySimulationView,biosphere:metadata.biosphere,processes:metadata.processes??[],activities:metadata.activities??[],mapQuery:()=>mapData.query(),getScope:currentViewScope,
+  onRenderPacket:(buffer,bytes)=>{if(globeRenderer.applyRenderPacket(parseRenderPacket(buffer))){canvas.dataset.liveGpuBytes=String(bytes);scheduleRender();}},
   scheduleUi:work=>scheduleInterfaceWork("simulation",work,90),
   onFocus:site=>{selectedCell={face:site.face,x:site.x,y:site.y};cancelZoomMotion();camera.focus(facePoint(site.face,site.x,site.y),48);hideTooltip();refreshSelection();scheduleRender();scheduleScopeRefresh();}});
 scheduleScopeRefresh(0);
@@ -1031,14 +1210,17 @@ async function loadHydrology() {
     if(!response.ok) throw new Error(`HTTP ${response.status}`);
     const next=await response.json();
     if(next.worldId&&next.worldId!==metadata.worldId)throw new Error("Мир на сервере заменён. Обновите страницу");
-    for(const reach of next.reaches)reach.displayPoints=roundSpherePath(reach.points);
     const hydroFaces=new Map(next.faces.map(face=>[face.face,face]));
     const sampler=createLakeSurfaceSampler({faceSize:metadata.faceSize,resolution:next.resolution,
       readDepth:(face,x,y)=>hydroFaces.get(face).lakeDepth[y*next.resolution+x],
       readShore:next.faces.every(face=>face.lakeShore)?(face,x,y)=>hydroFaces.get(face).lakeShore[y*next.resolution+x]:undefined});
     // Publish one complete data revision, never new shores with the old sampler.
     hydrology=next;sampleLakeSurface=sampler;
-    status.textContent=`Речная сеть: ${hydrology.reaches.length} участков · расчёт стока 1:${hydrology.stride}, без сезонности и эрозии.`;
+    // The exact GPU water texture now contains both the connected ocean and
+    // inland lakes. Hydrology JSON remains useful for reaches and inspection,
+    // but must not paint a second, stale lake mask over terrain patches.
+    scheduleRender();
+    status.textContent=`Речная сеть: ${hydrology.reaches.length} участков · рассчитана по текущему стоку, русла меняются постепенно.`;
     const select=document.getElementById("sphere-nature");
     select.replaceChildren(select.options[0]);
     const ranked=[...hydrology.reaches].sort((a,b)=>b.points.length-a.points.length).slice(0,8);

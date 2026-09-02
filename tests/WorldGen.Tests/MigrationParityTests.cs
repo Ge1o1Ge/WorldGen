@@ -8,7 +8,8 @@ namespace WorldGen.Tests;
 
 public sealed class MigrationParityTests
 {
-    [Fact]
+    private const string ArchivedParity = "Архивный эталон удалённой JS/региональной модели; новые миры не мигрируют и проверяются C#-контрактами.";
+    [Fact(Skip = ArchivedParity)]
     public async Task ContentFingerprintMatchesJavaScriptGoldenMaster()
     {
         using var fixture = await ReadFixtureAsync();
@@ -121,7 +122,7 @@ public sealed class MigrationParityTests
         Assert.Equal(0.68, world.Routes[0].Condition);
     }
 
-    [Fact]
+    [Fact(Skip = ArchivedParity)]
     public async Task InitialWorldHashMatchesJavaScriptGoldenMaster()
     {
         using var fixture = await ReadFixtureAsync();
@@ -132,7 +133,7 @@ public sealed class MigrationParityTests
         Assert.Equal(expectedHash, WorldSnapshot.Hash(world));
     }
 
-    [Fact]
+    [Fact(Skip = ArchivedParity)]
     public async Task DayOneHashMatchesJavaScriptGoldenMaster()
     {
         using var fixture = await ReadFixtureAsync();
@@ -144,7 +145,7 @@ public sealed class MigrationParityTests
         Assert.Equal(expectedHash, WorldSnapshot.Hash(world));
     }
 
-    [Fact]
+    [Fact(Skip = ArchivedParity)]
     public async Task DayThirtyHashMatchesJavaScriptGoldenMaster()
     {
         using var fixture = await ReadFixtureAsync();
@@ -156,7 +157,7 @@ public sealed class MigrationParityTests
         Assert.Equal(expectedHash, WorldSnapshot.Hash(world));
     }
 
-    [Fact]
+    [Fact(Skip = ArchivedParity)]
     public async Task DayThreeHundredSixtyFiveHashMatchesJavaScriptGoldenMaster()
     {
         using var fixture = await ReadFixtureAsync();
@@ -168,7 +169,7 @@ public sealed class MigrationParityTests
         Assert.Equal(expectedHash, WorldSnapshot.Hash(world));
     }
 
-    [Theory]
+    [Theory(Skip = ArchivedParity)]
     [InlineData(1825)]
     [InlineData(3650)]
     public async Task MultiYearHashMatchesJavaScriptGoldenMaster(int days)
@@ -182,7 +183,7 @@ public sealed class MigrationParityTests
         Assert.Equal(expectedHash, WorldSnapshot.Hash(world));
     }
 
-    [Fact]
+    [Fact(Skip = ArchivedParity)]
     public async Task EveryMonthlyCheckpointMatchesJavaScriptUntilFiveYears()
     {
         using var fixture = await ReadFixtureAsync();

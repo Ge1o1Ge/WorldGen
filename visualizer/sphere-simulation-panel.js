@@ -10,6 +10,8 @@ import {renderPrimitivePanel} from "./sphere-primitive-panel.js";
 import {renderBiologyPanel} from './sphere-biology.js';
 import {renderStoragePanel} from './sphere-storage-panel.js';
 import {renderProcessPanel} from './sphere-process-panel.js';
+import {renderHerdReport,renderScoutReport,structuredJournalEvents} from './sphere-settlement-reports.js?v=reports1';
+import {calendarPosition,interpolateWorldDay} from './world-clock.js';
 
 export function plantDiscoveryName(event,biosphere){
   if(event?.type!=="plant_discovered")return null;
@@ -19,26 +21,26 @@ export function plantDiscoveryName(event,biosphere){
   return Number(plant.foodValue)>0?"Найдено съедобное растение":"Найдено техническое растение";
 }
 
-export async function connectSphereSimulation({onState,onFocus,biosphere,processes=[],activities=[],mapQuery=()=>"",scheduleUi=work=>work(),getScope=()=>({key:"world",level:"world",cityIds:null,label:"Весь мир",context:"Все поселения"})}) {
+export async function connectSphereSimulation({onState,onFocus,onRenderPacket=()=>{},biosphere,processes=[],activities=[],mapQuery=()=>"",scheduleUi=work=>work(),getScope=()=>({key:"world",level:"world",cityIds:null,label:"Весь мир",context:"Все поселения"})}) {
   let state=null;
   let lastScopeKey="";
   const resourceTiers=productionTiers(processes,activities);
   const speedButtons=[...document.querySelectorAll(".sphere-speed")],play=document.getElementById("sphere-play");
   const status=document.getElementById("sphere-sim-status"),sites=document.getElementById("sphere-industry");
   const homes=document.getElementById("sphere-home");
-  let liveFrame=0,pendingLive=null;
+  let liveFrame=0,pendingLive=null,clockFrame=0,displayedDay=0;
   const socketUrl=`${location.protocol==="https:"?"wss":"ws"}://${location.host}/api/sphere/live`;
-  const channel=new SimulationLiveChannel({url:socketUrl,onStatus:()=>controls(),onError:error=>{
+  const channel=new SimulationLiveChannel({url:socketUrl,onStatus:()=>controls(),onBinary:(buffer,bytes)=>onRenderPacket(buffer,bytes),onError:error=>{
     status.textContent=`Поток симуляции остановлен: ${error.message}. Мир больше не продвигается этой вкладкой.`;controls();
   },onMessage:async(message,bytes)=>{
     if(message.type==="state"){
-      const playbackStatus=document.getElementById("sphere-playback-status");playbackStatus.dataset.serverDay=String(message.day);playbackStatus.dataset.serverRevision=String(message.revision);
+      const playbackStatus=document.getElementById("sphere-playback-status");playbackStatus.dataset.serverDay=String(message.day);playbackStatus.dataset.serverRevision=String(message.revision);playbackStatus.dataset.patchDuration=String(message.playbackDurationMs??"");playbackStatus.dataset.patchSequence=String(message.sequence??"");
       pendingLive={message,bytes};
       if(!liveFrame)liveFrame=requestAnimationFrame(()=>{
         liveFrame=0;const update=pendingLive;pendingLive=null;
         state=mergeLiveSimulationState(state,update.message);render(state,{live:true});
         const playbackStatus=document.getElementById("sphere-playback-status");playbackStatus.dataset.liveBytes=String(update.bytes);playbackStatus.dataset.renderedDay=String(state.day);
-        channel.acknowledge();
+        channel.acknowledge(update.message.sequence??0);
       });
     }else if(message.type==="paused"){
       document.getElementById("sphere-playback-status").textContent="Синхронизация полной сводки…";
@@ -60,14 +62,12 @@ export async function connectSphereSimulation({onState,onFocus,biosphere,process
     const weighted=(read,fallback=0)=>population?cities.reduce((sum,city)=>sum+read(city)*city.population,0)/population:fallback;
     const foodDays=weighted(city=>city.foodDays),water=weighted(city=>city.settlement?.waterCoverage??0),health=weighted(city=>city.health);
     const housingPopulation=cities.reduce((sum,city)=>sum+Math.min(city.population,city.settlement?.housingCapacity??0),0);
-    const timber=cities.reduce((sum,city)=>sum+(city.stocks.timber??0)+(city.stocks.firewood??0),0);
+    const technology=summarizeKnowledge(cities),explored=cities.reduce((sum,city)=>sum+(city.exploration?.knownCells??0),0);
     const items=[
-      ["Население",population.toLocaleString("ru-RU"),`${cities.length} пос.`,""],
-      ["Пища",`${foodDays.toFixed(1)} дн.`,`средний запас`,foodDays<5?"is-crisis":foodDays<14?"is-warning":""],
-      ["Вода",`${Math.round(water*100)}%`,`суточная обеспеченность`,water<.75?"is-crisis":water<.95?"is-warning":""],
+      ["Люди",population.toLocaleString("ru-RU"),`здоровье ${Math.round(health*100)}% · ${cities.length} пос.`,health<.7?"is-crisis":health<.9?"is-warning":""],
+      ["Снабжение",`${foodDays.toFixed(1)} дн.`,`еды · вода ${Math.round(water*100)}%`,foodDays<5||water<.75?"is-crisis":foodDays<14||water<.95?"is-warning":""],
       ["Жильё",`${population?Math.round(housingPopulation/population*100):0}%`,`населения размещено`,housingPopulation<population?"is-warning":""],
-      ["Здоровье",`${Math.round(health*100)}%`,`среднее по области`,health<.7?"is-crisis":health<.9?"is-warning":""],
-      ["Дерево",`${(timber*1000).toFixed(0)} кг`,`сырьё и топливо`,""]
+      ["Развитие",`${technology.adopted}/${technology.total}`,`технологий · разведано ${explored} зон`,""]
     ];
     if(!cities.length){const empty=document.createElement("span");empty.className="sphere-empty";empty.textContent="В этой области нет наблюдаемых поселений.";host.append(empty);}
     for(const [label,value,note,tone] of items){if(!cities.length)break;const card=document.createElement("div");card.className=`sphere-resource ${tone}`.trim();
@@ -112,10 +112,51 @@ export async function connectSphereSimulation({onState,onFocus,biosphere,process
     for(const [key,value] of Object.entries(groups)){if(value<.01)continue;const row=document.createElement("div"),swatch=document.createElement("i"),label=document.createElement("span"),hours=document.createElement("strong");row.className="sphere-labor-row";row.style.setProperty("--labor-color",palette[key]);label.textContent=labels[key];hours.textContent=`${value.toFixed(1)} ч`;row.title=`${labels[key]}: ${value.toFixed(2)} человеко-часа`;row.append(swatch,label,hours);legend.append(row);}
     host.append(donut,legend);
   }
+  function renderCropHistory(cities,scope,plots=[]){
+    const host=document.getElementById("sphere-crop-history"),rows=new Map();host.replaceChildren();
+    for(const city of cities)for(const [id,history] of Object.entries(city.biology?.cropHistory??{})){
+      const row=rows.get(id)??{id,seasons:0,failed:0,expected:0,harvested:0};row.seasons+=history.seasons??0;row.failed+=history.failedSeasons??0;
+      row.expected+=history.expectedTonnes??0;row.harvested+=history.harvestedTonnes??0;rows.set(id,row);
+    }
+    const visibleCities=new Set(cities.map(city=>city.id));
+    for(const plot of plots.filter(plot=>visibleCities.has(plot.cityId)&&plot.cropId)){
+      const row=rows.get(plot.cropId)??{id:plot.cropId,seasons:0,failed:0,expected:0,harvested:0};
+      row.active=(row.active??0)+1;
+      if(plot.lastProblem)row.problems=[...(row.problems??[]),plot.lastProblem];
+      rows.set(plot.cropId,row);
+    }
+    host.hidden=!rows.size||scope.level==="world";if(host.hidden)return;
+    const title=document.createElement("h4");title.textContent="Урожаи · накопленная история";
+    const table=document.createElement("table");table.className="sphere-crop-table";table.innerHTML="<thead><tr><th>Культура</th><th>уч.</th><th>сез.</th><th>ожид.</th><th>собрано</th><th>%</th><th>сейчас</th></tr></thead>";
+    const body=document.createElement("tbody");const cropName=id=>biosphere?.crops?.find(crop=>crop.id===id)?.name??id;
+    for(const row of [...rows.values()].sort((a,b)=>b.harvested-a.harvested||cropName(a.id).localeCompare(cropName(b.id),"ru"))){
+      const tr=document.createElement("tr"),ratio=row.expected>0?row.harvested/row.expected*100:0;
+      const problems=[...new Set(row.problems??[])];
+      for(const value of [cropName(row.id),String(row.active??0),`${row.seasons}${row.failed?` / −${row.failed}`:""}`,`${(row.expected*1000).toFixed(0)} кг`,`${(row.harvested*1000).toFixed(0)} кг`,`${Math.round(ratio)}%`,problems.join(", ")||"—"]){const td=document.createElement("td");td.textContent=value;tr.append(td);}body.append(tr);
+    }
+    table.append(body);host.append(title,table);
+  }
+  function renderClockDay(day){
+    displayedDay=day;const position=calendarPosition(day);
+    document.getElementById("sphere-day").textContent=String(position.whole);
+    document.getElementById("sphere-calendar-date").textContent=`год ${position.year} · мес. ${position.month} · день ${position.dayOfMonth}`;
+    const time=document.getElementById("sphere-time-progress");time.style.setProperty("--year-progress",`${position.yearDay/360*100}%`);time.setAttribute("aria-valuenow",position.yearDay.toFixed(3));
+    time.setAttribute("aria-valuetext",`Месяц ${position.month}, день ${position.dayOfMonth}`);
+    time.dataset.displayDay=day.toFixed(3);
+  }
   function renderClock(next){
-    document.getElementById("sphere-day").textContent=String(next.day);
-    document.getElementById("sphere-calendar-date").textContent=`год ${Math.floor(next.day/360)+1} · месяц ${Math.floor(next.day%360/30)+1}`;
-    const time=document.getElementById("sphere-time-progress");time.max=String(Math.max(1,next.day));time.value=String(next.day);
+    if(clockFrame)cancelAnimationFrame(clockFrame);clockFrame=0;renderClockDay(next.day);
+  }
+  function animateClock(targetDay,durationMs){
+    if(clockFrame)cancelAnimationFrame(clockFrame);
+    const from=Math.min(displayedDay,targetDay),started=performance.now(),duration=Math.max(80,Math.min(5000,Number(durationMs)||250));let lastPaint=-Infinity;
+    const frame=now=>{const value=interpolateWorldDay(from,targetDay,now-started,duration),finished=value>=targetDay-.0001;
+      // The clock is a DOM animation, not map geometry. Thirty paints per
+      // second remain visually continuous and leave every other refresh slot
+      // available to WebGL, live patches and input handling.
+      if(finished||now-lastPaint>=1000/30){lastPaint=now;renderClockDay(finished?targetDay:value);}
+      if(!finished)clockFrame=requestAnimationFrame(frame);else clockFrame=0;};
+    clockFrame=requestAnimationFrame(frame);
   }
   function render(next,{scopeOnly=false,force=false,live=false}={}) {
     if(state&&next.revision<state.revision)return;
@@ -123,7 +164,7 @@ export async function connectSphereSimulation({onState,onFocus,biosphere,process
     if(live){
       // Acknowledge the server after only the cheap clock update. The journal,
       // charts and detailed cards wait until the map/camera has yielded.
-      renderClock(next);status.textContent=`Получен компактный поток дня ${next.day}. Подробности обновятся после кадра карты.`;controls();
+      animateClock(next.day,next.playbackDurationMs);status.textContent=`Получен патч дня ${next.day}. Подробности обновятся после кадра карты.`;controls();
       scheduleUi(()=>state&&render(state,{scopeOnly:true,force:true}));return;
     }
     const scope=getScope();
@@ -132,9 +173,12 @@ export async function connectSphereSimulation({onState,onFocus,biosphere,process
     const cityIds=scope.cityIds===null?null:new Set(scope.cityIds);
     const scopedCities=cityIds===null?next.cities:next.cities.filter(city=>cityIds.has(city.id));
     renderOverview(next,scopedCities,scope);
+    renderCropHistory(scopedCities,scope,next.biologyPlots??[]);
+    renderHerdReport(scopedCities,scope,biosphere);
+    renderScoutReport(scopedCities,scope,next.scouts??[],biosphere);
     const economy=document.getElementById("sphere-economy");
     economy.querySelector("summary").textContent=scope.level==="world"?`Поселения мира · ${scopedCities.length}`:scope.level==="region"?`Поселения в области · ${scopedCities.length}`:"Поселение: подробности";
-    renderClock(next);
+    if(!channel.playing)renderClock(next);
     document.getElementById("sphere-wildlife-status").textContent=wildlifeSummary(next.wildlife??[]);
     document.getElementById("sphere-name").textContent=next.name;
     document.getElementById("sphere-active-zones").textContent=next.activeZones.toLocaleString("ru-RU");
@@ -144,28 +188,30 @@ export async function connectSphereSimulation({onState,onFocus,biosphere,process
     for(const city of scopedCities) {
       const card=document.createElement("div");card.className="sphere-city-economy";
       card.dataset.cityId=city.id;
-      const title=document.createElement("strong");title.textContent=city.name;
-      const summary=document.createElement("p");summary.textContent=`${city.population.toLocaleString("ru-RU")} жителей · ${city.settlement?.primitive?"свежая еда":"еда"} на ${city.foodDays.toFixed(1)} дн. · здоровье ${Math.round(city.health*100)}%`;
       const life=city.settlement;
-      const detail=document.createElement("p");detail.textContent=life?`Жильё: ${city.population}/${life.housingCapacity} мест · без жилья ${life.unhoused} · вода за день ${next.day?Math.round(life.waterCoverage*100)+"%":"—"}${city.shortage?" · НЕХВАТКА ЕДЫ":""}`:
-        `${city.industries.length} производств · ${city.technologyCount} технологий`;
-      const stocks=document.createElement("p");stocks.textContent=`Запасы: еда ${(city.stocks.food*1000).toFixed(0)} кг, вода ${((city.stocks.water??0)*1000).toFixed(0)} л, древесина ${(city.stocks.timber*1000).toFixed(0)} кг, ткань ${((city.stocks.cloth??0)*1000).toFixed(1)} кг`;
-      card.append(title,summary,detail,stocks);cards.append(card);
+      const heading=document.createElement("div"),title=document.createElement("strong"),place=document.createElement("small");heading.className="sphere-city-heading";title.textContent=city.name;place.textContent=`${city.exploration?.knownCells??0} зон разведано`;heading.append(title,place);
+      const vitals=document.createElement("div");vitals.className="sphere-city-vitals";
+      const metrics=[["Население",city.population.toLocaleString("ru-RU")],["Здоровье",`${Math.round(city.health*100)}%`],["Пища",`${city.foodDays.toFixed(1)} дн.`],["Вода",life?`${Math.round(life.waterCoverage*100)}%`:"—"],["Жильё",life?`${city.population}/${life.housingCapacity}`:"—"],["Технологии",`${city.technology?.adopted??0}/${city.technology?.total??city.technologyCount}`]];
+      for(const [label,value] of metrics){const metric=document.createElement("div"),name=document.createElement("span"),number=document.createElement("strong");metric.className="sphere-city-vital";name.textContent=label;number.textContent=value;metric.append(name,number);vitals.append(metric);}
+      const stocks=document.createElement("p");stocks.className="sphere-city-stockline";stocks.textContent=`Запасы · еда ${(city.stocks.food*1000).toFixed(0)} кг · вода ${((city.stocks.water??0)*1000).toFixed(0)} л · древесина ${((city.stocks.timber??0)*1000).toFixed(0)} кг · ткань ${((city.stocks.cloth??0)*1000).toFixed(1)} кг${city.shortage?" · НЕХВАТКА ЕДЫ":""}`;
+      card.append(heading,vitals,stocks);cards.append(card);
       // Global and regional views intentionally stop at settlement summaries.
       // Household work, proposals and individual buildings only belong to a local view.
       if(life&&scope.level==="local"){
         const labor=document.createElement("p");labor.textContent=next.day?`Труд: ${(life.laborUsedHours+life.industryLaborHours).toFixed(0)}/${life.laborAvailableHours.toFixed(0)} чел·ч; из них ходьба за водой ${life.waterTravelHours.toFixed(1)} ч.`:"Суточный расчёт ещё не выполнялся.";
         const production=document.createElement("p"),names={food:"еда",water:"вода",timber:"древесина",firewood:"топливо",fiber:"волокно",cloth:"ткань"};
         production.textContent="Быт за день: "+(Object.entries(life.production).filter(([,n])=>n>1e-6).map(([id,n])=>`${names[id]??({stone_kit:"каменные комплекты",primitive_bow:"луки",garments:"одежда",hides:"шкуры"})[id]??id} ${(next.resourceUnits?.[id]==="комплект"?n:n*1000).toFixed(1)} ${next.resourceUnits?.[id]==="комплект"?"компл.":id==="water"?"л":"кг"}`).join(" · ")||"—");
-        const skills=document.createElement("p");skills.textContent="Практические навыки: "+(life.discoveries.map(id=>id==="masonry"?"Каменная кладка":next.discoveryNames[id]??id).join(", ")||"охота, собирательство, прибрежный лов");
+        const skills=document.createElement("details"),skillsTitle=document.createElement("summary"),skillsList=document.createElement("p");skills.dataset.panelKey="skills";skillsTitle.textContent=`Практические навыки · ${life.discoveries.length}`;skillsList.textContent=life.discoveries.map(id=>id==="masonry"?"Каменная кладка":next.discoveryNames[id]??id).join(", ")||"охота, собирательство, прибрежный лов";skills.append(skillsTitle,skillsList);
         const knowledge=document.createElement("p"),known=city.worldKnowledge?.settlements.filter(place=>place.cityId!==city.id)??[];
         knowledge.textContent="Сведения о мире: "+(known.length?known.map(place=>`${place.name} (сведения дня ${place.observedDay}, получены ${place.receivedDay})`).join("; "):"другие поселения пока неизвестны")+
           ` · известных событий ${city.worldKnowledge?.observationCount??0}.`;
         const decision=document.createElement("p");decision.textContent=`Решение: ${life.decision}`;
+        const daily=document.createElement("details"),dailyTitle=document.createElement("summary"),dailyGrid=document.createElement("div");daily.className="sphere-city-daily";daily.dataset.panelKey="daily";dailyTitle.textContent="Суточная сводка и сведения";dailyGrid.className="sphere-city-daily-grid";dailyGrid.append(labor,production,knowledge,decision);daily.append(dailyTitle,dailyGrid);
         const tasks=document.createElement("details"),taskTitle=document.createElement("summary"),taskList=document.createElement("ul");taskTitle.textContent="Занятия домохозяйств";
+        tasks.dataset.panelKey="household-tasks";
         const activityHours=new Map();for(const task of life.tasks)activityHours.set(task.activity,(activityHours.get(task.activity)??0)+task.hours);
         for(const [id,hours] of activityHours){const row=document.createElement("li");row.textContent=`${({water:"Доставка воды",cultivate:"Уход за освоенными огородами",move:"Переезд частями",repair:"Ремонт",demolition:"Разбор строений",clay:"Заготовка глины",stone:"Заготовка камня"})[id]??next.activityNames[id]??id}: ${hours.toFixed(1)} чел·ч`;taskList.append(row);}
-        tasks.append(taskTitle,taskList);card.append(labor,production,skills,knowledge,decision,tasks);
+        tasks.append(taskTitle,taskList);card.append(skills,daily,tasks);
         if(life.primitive)card.append(renderPrimitivePanel(city));
         if(life.processes)card.append(renderProcessPanel(city,processes,next.resourceUnits));
         if(life.storage)card.append(renderStoragePanel(city,next.resourceUnits));
@@ -198,13 +244,14 @@ export async function connectSphereSimulation({onState,onFocus,biosphere,process
       household_move_prepared:"Дом для постепенного переезда готов",supply_pressure:"Устойчивое ухудшение снабжения",supply_pressure_relieved:"Снабжение восстановилось",scouting_departed:"Разведчики вышли в путь",scouting_returned:"Получен отчёт разведки",scouting_casualty:"Разведка понесла потери",scouting_lost:"Разведывательная группа пропала",simulation_rules_updated:"Обновлены правила симуляции",
       decision_proposed:"Предложен проект",decision_stage_changed:"Обсуждение проекта",decision_assessed:"Оценена польза решения",settlement_building_demolished:"Постройка разобрана",lightning_fire:"Пожар от молнии",
       plant_discovered:"Найдено растение",crop_sown:"Выполнен посев",crop_harvest:"Собран урожай",crop_failed:"Посев погиб",
-      animal_captured:"Живой отлов",herd_birth:"Приплод стада",herd_death:"Потеря животного",pasture_ready:"Пастбище освоено",
+      animal_captured:"Живой отлов",herd_birth:"Приплод стада",herd_death:"Потеря животного",pasture_ready:"Пастбище освоено",pasture_moved:"Стадо переведено на новое пастбище",crop_loss:"Потери урожая",
       resource_camp_planned:"Выбран промысловый участок",resource_camp_ready:"Промысловый лагерь готов",resource_camp_abandoned:"Промысловый лагерь заброшен"};
     const eventWindow=Number(document.getElementById("sphere-event-window").value);
-    const regionalNoise=new Set(["crop_sown","crop_harvest","herd_birth","household_relocated","household_move_prepared"]);
+    const regionalNoise=new Set(["household_relocated","household_move_prepared"]);
     const worldEvents=new Set(["crisis_started","crisis_ended","lightning_fire","supply_pressure","supply_pressure_relieved","settlement_contact_sent","settlement_founded","household_discovery","decision_assessed"]);
     const filtered=next.events.filter(event=>{
       if(next.day-event.day>eventWindow)return false;
+      if(structuredJournalEvents.has(event.type))return false;
       const eventCity=event.details?.cityId??(next.cities.some(city=>city.id===event.subjectId)?event.subjectId:null);
       if(cityIds!==null&&eventCity&&!cityIds.has(eventCity))return false;
       if(scope.level==="world")return worldEvents.has(event.type);
@@ -254,7 +301,7 @@ export async function connectSphereSimulation({onState,onFocus,biosphere,process
   homes.addEventListener("change",()=>{const home=state?.cities.flatMap(city=>city.homes??[]).find(item=>item.id===homes.value);if(home)onFocus(home);});
   // A hidden embedded panel may still be the user's active simulation. Only an
   // explicit pause or actually leaving this document stops playback.
-  window.addEventListener("pagehide",()=>{if(liveFrame)cancelAnimationFrame(liveFrame);channel.close();});
+  window.addEventListener("pagehide",()=>{if(liveFrame)cancelAnimationFrame(liveFrame);if(clockFrame)cancelAnimationFrame(clockFrame);channel.close();});
   try {await syncFull();channel.connect();controls();}
   catch(error){for(const button of speedButtons)button.disabled=true;play.disabled=true;status.textContent=`Не удалось загрузить симуляцию: ${error.message}`;}
   return {refreshScope(){if(state){lastScopeKey="";render(state,{scopeOnly:true});}},get state(){return state;}};

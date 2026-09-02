@@ -91,6 +91,43 @@ public sealed partial class SettlementSimulationTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task StandingWaterRuinsBuildingsAndRelocatesAFloodedCenterAfterFiveDays()
+    {
+        var (content, definition, economy, rules, _) = await Base.Value;
+        var topology = new CubeSphereTopology(definition.FaceSize);
+        var terrain = new SphericalTerrainGenerator(definition);
+        var hydro = SphericalHydrology.Build(definition, terrain);
+        var water = SurfaceWaterState.FromHydrology(hydro, definition.ZoneSizeMeters * definition.ZoneSizeMeters);
+        var layer = SphericalSettlementLayer.Build(definition, topology, terrain);
+        var simulation = SphericalSimulation.Create(content, definition, economy, topology, terrain, hydro, layer, rules,
+            surfaceWater: water);
+        var city = simulation.World.Cities.Values.OrderBy(value => value.Id, StringComparer.Ordinal).First();
+        var node = simulation.World.Spatial.Nodes[city.SpatialNodeId];
+        var oldCenter = simulation.Addresses[node.AnchorTerritoryId!];
+        var victim = simulation.Development!.State.Buildings.First(building =>
+            building.CityId == city.Id && building.Kind == "house" && building.Status == "active");
+        var floodedLandCell = simulation.Addresses.Where(pair => simulation.World.Spatial.Territories[pair.Key].AssignedCityId == city.Id)
+            .Select(pair => pair.Value).First(cell => cell != oldCenter && cell != victim.Cell);
+        layer.UpsertLand(new UsedLandParcel("flood-test-field", city.Id, floodedLandCell,
+            CityAssetKind.CultivatedField, 1, .1f));
+        water.Depth[water.Index(oldCenter)] = 1;
+        water.Depth[water.Index(victim.Cell)] = 1;
+        water.Depth[water.Index(floodedLandCell)] = 1;
+
+        simulation.Advance(4);
+
+        Assert.Equal("active", victim.Status);
+        Assert.Equal(4, victim.FloodedDays);
+        simulation.Advance(1);
+
+        Assert.Equal("abandoned", victim.Status);
+        Assert.Equal(0, layer.UsedLands.Single(land => land.Id == "flood-test-field").Usage);
+        Assert.Equal(0, simulation.World.Spatial.Territories[SphericalSimulation.ZoneId(victim.Cell)].NaturalState.ForestBiomass);
+        Assert.NotEqual(node.AnchorTerritoryId, simulation.World.Spatial.Nodes[city.SpatialNodeId].AnchorTerritoryId);
+        Assert.Contains(simulation.World.Journal, entry => entry.Type == "settlement_center_relocated");
+    }
+
+    [Fact]
     public async Task ForagersSurviveOneYearWithFiniteLaborAndObservableDevelopment()
     {
         var (simulation, _, _) = await Create(); var development = simulation.Development!;

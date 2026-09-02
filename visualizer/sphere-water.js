@@ -1,5 +1,16 @@
 import {facePoint, locateFace, blend} from "./sphere-cartography.js";
 
+// One signed byte is shared by the GPU fill and vector coastline. Two codes
+// per metre preserve sub-cell intersections while retaining +/-64 m around a
+// bank; sign-changing neighbours normally lie well inside that interval.
+export function waterShoreByte(shore){
+  const encoded=Math.max(0,Math.min(255,Math.round(128+Math.max(-64,Math.min(63.5,shore))*2)));
+  // Code 128 is exactly zero. Never let quantisation erase the wet/dry sign:
+  // the renderer needs an actual sign change to choose a shoreline turn from
+  // the four terrain-relative corner heights.
+  return shore>0?Math.max(129,encoded):Math.min(127,encoded);
+}
+
 // The simulation classifies each microcell with its containing hydrology cell.
 // Interpolating coarse *depths* expands a deep lake far onto dry land. Interpolate
 // bounded wet/dry coverage on the microcell lattice instead, independent of LOD.

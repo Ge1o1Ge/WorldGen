@@ -11,11 +11,12 @@ export const groupedField=b=>kind(b)==="garden"&&b.status==="active";
 const corners=(cell,size)=>[[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]].map(([x,y])=>facePoint(cell.face,cell.x+x,cell.y+y,size));
 
 // World-space union: shared edges cancel even across cube-face seams. Never depends on the camera.
-export function buildFieldGroups(settlement,size,allSettlements=[settlement]){
-  const fields=settlement.buildings.filter(groupedField).sort((a,b)=>a.id.localeCompare(b.id));
+export function buildFieldGroups(settlement,size,allSettlements=[settlement],landUse="field",plotKinds=new Map()){
+  const type=b=>plotKinds.get(b.id)??"field";
+  const fields=settlement.buildings.filter(b=>groupedField(b)&&type(b)===landUse).sort((a,b)=>a.id.localeCompare(b.id));
   const cells=new Map(fields.map(b=>[`${b.face}:${b.x}:${b.y}`,b]));
   const protectedCorners=new Set(allSettlements.flatMap(s=>[
-    ...s.buildings.filter(b=>s.id!==settlement.id||!groupedField(b)),...(s.usedLands??[]).filter(l=>l.usage>0)
+    ...s.buildings.filter(b=>s.id!==settlement.id||!groupedField(b)||type(b)!==landUse),...(s.usedLands??[]).filter(l=>l.usage>0)
   ]).flatMap(b=>corners(b,size).map(key)));
   const edges=new Map(),neighbors=new Map([...cells.values()].map(b=>[b.id,new Set()]));
   for(const cell of cells.values()){
@@ -59,17 +60,18 @@ export function buildFieldGroups(settlement,size,allSettlements=[settlement]){
     const center=unit(members.map(b=>facePoint(b.face,b.x,b.y,size)).reduce((sum,p)=>({x:sum.x+p.x,y:sum.y+p.y,z:sum.z+p.z}),{x:0,y:0,z:0}));
     // Pick an actual field cell, not the centroid (which can lie in a hole or on a house).
     const anchor=members.map(cell=>({cell,point:facePoint(cell.face,cell.x,cell.y,size)})).sort((a,b)=>dot(b.point,center)-dot(a.point,center)||a.cell.id.localeCompare(b.cell.id))[0].point;
-    groups.push({id:first.id,members:members.map(b=>b.id),rings,anchor});
+    groups.push({id:first.id,landUse,members:members.map(b=>b.id),rings,anchor});
   }
   return groups;
 }
 
 export class FieldGeometryCache {
   constructor(){this.stamp="";this.groups=[];this.builds=0;}
-  get(settlements,size){
+  get(settlements,size,plots=[]){
+    const plotKinds=new Map(plots.map(plot=>[plot.id,plot.landUse??"field"]));
     const stamp=JSON.stringify([size,settlements.map(s=>[s.id,s.buildings.map(b=>[b.id,b.face,b.x,b.y,kind(b),groupedField(b)]),
-      (s.usedLands??[]).map(l=>[l.id,l.face,l.x,l.y,l.usage>0])])]);
-    if(stamp!==this.stamp){this.groups=settlements.flatMap(s=>buildFieldGroups(s,size,settlements));this.stamp=stamp;this.builds++;}
+      (s.usedLands??[]).map(l=>[l.id,l.face,l.x,l.y,l.usage>0])]),[...plotKinds].sort()]);
+    if(stamp!==this.stamp){this.groups=settlements.flatMap(s=>[...buildFieldGroups(s,size,settlements,"field",plotKinds),...buildFieldGroups(s,size,settlements,"orchard",plotKinds)]);this.stamp=stamp;this.builds++;}
     return this.groups;
   }
 }
@@ -80,9 +82,9 @@ export function drawFieldGroups(ctx,groups,project,{symbols=true,drawSymbol=()=>
     for(const ring of group.rings){const points=ring.map(project);if(points.some(p=>!p)){complete=false;continue;}
       points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();}
     // Clip complete polygons only: no invented closing chord across the far hemisphere.
-    if(complete){ctx.fillStyle="rgba(185,169,111,.09)";ctx.fill("evenodd");}
-    ctx.strokeStyle=color;ctx.lineWidth=.9;ctx.lineJoin="round";ctx.stroke();
-    const anchor=project(group.anchor);if(symbols&&anchor)drawSymbol(ctx,"field",anchor.x,anchor.y,24,.8);
+    if(complete){ctx.fillStyle=group.landUse==="orchard"?"rgba(84,130,77,.075)":"rgba(185,169,111,.09)";ctx.fill("evenodd");}
+    ctx.strokeStyle=group.landUse==="orchard"?"#6f8b61":color;ctx.lineWidth=.9;ctx.lineJoin="round";ctx.stroke();
+    const anchor=project(group.anchor);if(symbols&&anchor)drawSymbol(ctx,group.landUse==="orchard"?"orchard":"field",anchor.x,anchor.y,24,group.landUse==="orchard"?.86:.8);
     ctx.restore();
   }
 }

@@ -9,7 +9,7 @@ public sealed partial class SettlementSimulation
         if (BiologyRules is null) return false;
         var low = city.Stocks["timber"] < Target(city, "timber") * .6 || city.Stocks["firewood"] < Target(city, "firewood") * .5;
         if (!low) return false;
-        var nearby = Routes(Anchor(city)).Cost.Where(p => p.Value < 8 && terrain[p.Key].Terrain != "water").Select(p => terrain[p.Key]).ToArray();
+        var nearby = Routes(Anchor(city)).Cost.Where(p => p.Value < 8 && !OpenWater(p.Key)).Select(p => terrain[p.Key]).ToArray();
         return nearby.Length > 0 && nearby.Max(t => EncounterRate(t, "timber")) < .35;
     }
     private void MaterializeCamp(ResourceCampState camp)
@@ -32,7 +32,7 @@ public sealed partial class SettlementSimulation
                 dailyWeather[cell] = SphericalWeather.Sample(sky, Rules.Primitive!, topology.ToUnitVector(cell), patch.TemperatureC, Math.Max(0, sky.LastDay), world.Calendar.DaysPerYear, sky.Ground[patch.Id]);
             }
         }
-        routes.Clear(); cachedWeatherMap = null;
+        routes.Clear(); cachedWeatherMap = null; cachedWeatherLiveMap = null;
     }
     private double RunResourceCamps(CityState city, double available, DailyTelemetry telemetry)
     {
@@ -89,7 +89,7 @@ public sealed partial class SettlementSimulation
             }
             var origin = camp.Path[0];
             if (camp.Path.Any(c => surveyTerrain!(c).Water)) { bio.Status = "Путь к промысловому лагерю недоступен"; continue; }
-            var candidates = Routes(camp.Cell).Cost.Where(p => p.Value <= r.CampRadiusCells * 1.7 && terrain[p.Key].Terrain != "water" && layer.Construction.GetOccupiedCapacity(p.Key) == 0)
+            var candidates = Routes(camp.Cell).Cost.Where(p => p.Value <= r.CampRadiusCells * 1.7 && !OpenWater(p.Key) && layer.Construction.GetOccupiedCapacity(p.Key) == 0)
                 .OrderByDescending(p => EncounterRate(terrain[p.Key], "timber") / (1 + p.Value * .1)).ToArray();
             var best = candidates.FirstOrDefault();
             if (candidates.Length == 0 || Stock(terrain[best.Key], "timber") < .001)

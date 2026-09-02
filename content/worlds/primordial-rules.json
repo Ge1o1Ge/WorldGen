@@ -195,6 +195,16 @@
       "practiceHours": 5000
     },
     {
+      "id": "forestry",
+      "name": "Лесничество",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": ["woodworking", "horticulture"],
+      "practice": "wood",
+      "practiceHours": 9000,
+      "staged": true
+    },
+    {
       "id": "weaving",
       "name": "Плетение и ткачество",
       "domain": "craft",
@@ -322,7 +332,7 @@
       "name": "Каменный тракт",
       "domain": "construction",
       "baseline": false,
-      "prerequisites": ["building", "stone_axes"],
+      "prerequisites": ["quarrying"],
       "practice": "construction",
       "practiceHours": 14000,
       "staged": true
@@ -475,6 +485,16 @@
       "prerequisites": ["bloomery_smelting", "woodworking"],
       "practice": "wood",
       "practiceHours": 18000,
+      "staged": true
+    },
+    {
+      "id": "quarrying",
+      "name": "Карьерная добыча камня",
+      "domain": "construction",
+      "baseline": false,
+      "prerequisites": ["hand_tools", "oral_accounting", "building"],
+      "practice": "stone",
+      "practiceHours": 8000,
       "staged": true
     },
     {
@@ -955,6 +975,34 @@
       "targetOutputPerPerson": 0.015,
       "maximumBatchesPerPersonPerDay": 0.01,
       "priority": 10
+    },
+    {
+      "id": "smelt_bloomery_iron",
+      "name": "Сыродутная плавка железа",
+      "technology": "bloomery_smelting",
+      "practice": "smelting",
+      "inputs": { "iron_ore": 0.12, "charcoal": 0.08, "clay": 0.015 },
+      "requiredStocks": { "stone_kit": 0.1 },
+      "outputs": { "iron": 0.035 },
+      "targetResource": "iron",
+      "laborHoursPerBatch": 16,
+      "targetOutputPerPerson": 0.0015,
+      "maximumBatchesPerPersonPerDay": 0.012,
+      "priority": 12
+    },
+    {
+      "id": "forge_hand_tools",
+      "name": "Ковка железного инструмента",
+      "technology": "hand_tools",
+      "practice": "smithing",
+      "inputs": { "iron": 0.04, "charcoal": 0.018, "timber": 0.01 },
+      "requiredStocks": { "stone_kit": 0.1 },
+      "outputs": { "tools": 0.035 },
+      "targetResource": "tools",
+      "laborHoursPerBatch": 12,
+      "targetOutputPerPerson": 0.015,
+      "maximumBatchesPerPersonPerDay": 0.02,
+      "priority": 13
     }
   ],
   "materials": [

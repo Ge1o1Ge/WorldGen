@@ -103,4 +103,35 @@ public sealed class SphericalHydrologyTests
             }
         }
     }
+
+    [Fact]
+    public void CornerTouchingWaterDoesNotActAsABasinSpillway()
+    {
+        var pitCell = new CellAddress(CubeFace.PositiveZ, 5, 5);
+        var diagonalSea = new CellAddress(CubeFace.PositiveZ, 6, 6);
+        var hydro = SphericalHydrology.FromSamples(12, 0, cell => Sample(
+            cell == diagonalSea ? -1 : cell == pitCell ? 5 : 20));
+        var pit = hydro.Index(pitCell);
+
+        // A point contact is not a hydrologic connection: water must cross one
+        // of the four 20 m edge-neighbours before reaching the diagonal sea cell.
+        Assert.Equal(20, hydro.Surface[pit]);
+        Assert.True(hydro.IsLake(pit));
+        Assert.All(hydro.Topology.GetNeighbors(pitCell), neighbor =>
+            Assert.Equal(20, hydro.Surface[hydro.Index(neighbor)]));
+    }
+
+    [Fact]
+    public void PointOnlyLakeChainIsRemovedButAnIsolatedPondRemains()
+    {
+        var first = new CellAddress(CubeFace.PositiveZ, 4, 4);
+        var second = new CellAddress(CubeFace.PositiveZ, 5, 5);
+        var pond = new CellAddress(CubeFace.PositiveZ, 8, 8);
+        var hydro = SphericalHydrology.FromSamples(12, 0, cell => Sample(cell.Face == CubeFace.NegativeZ
+            ? -1 : cell == first || cell == second || cell == pond ? 5 : 20));
+
+        Assert.False(hydro.IsLake(hydro.Index(first)));
+        Assert.False(hydro.IsLake(hydro.Index(second)));
+        Assert.True(hydro.IsLake(hydro.Index(pond)));
+    }
 }

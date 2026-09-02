@@ -74,6 +74,11 @@ h2 { font-size: 14px; font-weight: 650; }
 .controls button:hover { background: var(--surface-raised); }
 .controls button:disabled { opacity: .55; cursor: wait; }
 .controls .primary { border-color: var(--active); background: var(--active); color: var(--bg); }
+.sphere-meteorite-controls { display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;padding:9px;border:1px solid var(--border);border-radius:7px;background:color-mix(in srgb,var(--surface-raised) 70%,transparent);font-size:11px; }
+.sphere-meteorite-controls strong,.sphere-meteorite-controls button { grid-column:1/-1; }
+.sphere-meteorite-controls label { display:flex;align-items:center;gap:4px;color:var(--muted); }
+.sphere-meteorite-controls input { width:68px;min-height:28px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);padding:3px 5px; }
+.sphere-meteorite-controls button { min-height:32px;border:1px solid #a45e00;border-radius:6px;background:var(--surface);color:var(--text);cursor:pointer; }
 
 .statusbar {
   gap: 20px;
@@ -301,11 +306,18 @@ h2 { font-size: 14px; font-weight: 650; }
 .sphere-map-wrap { border: 0; border-radius: 0; background: #e8e5d6; }
 #sphere-globe,
 #sphere-map,
+#sphere-lines,
+#sphere-symbols,
 #sphere-mobile-units { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 #sphere-globe { z-index: 0; pointer-events: none; }
 #sphere-map { z-index: 1; background: transparent; }
-#sphere-mobile-units { z-index: 2; pointer-events: none; }
-#sphere-weather-effects { z-index: 3; }
+#sphere-lines { z-index: 2; pointer-events: none; }
+#sphere-symbols { z-index: 3; pointer-events: none; }
+#sphere-labels { position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden; }
+.sphere-map-label { position:absolute;transform:translateY(-50%);white-space:nowrap;color:#39443a;font:600 11px Inter,system-ui,sans-serif;text-shadow:-1px -1px 0 #f4f0df,1px -1px 0 #f4f0df,-1px 1px 0 #f4f0df,1px 1px 0 #f4f0df; }
+.sphere-contour-label { transform:translate(-50%,-50%);color:#a07a53;font:11px Georgia,serif;font-weight:400; }
+#sphere-mobile-units { z-index: 5; pointer-events: none; }
+#sphere-weather-effects { z-index: 6; }
 
 .sphere-journal,
 .sphere-time-deck,
@@ -384,17 +396,35 @@ h2 { font-size: 14px; font-weight: 650; }
 .sphere-event-list .empty { color: var(--muted); }
 .sphere-journal .sphere-selection { margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; line-height: 1.5; }
 .sphere-journal .sphere-city-economy { padding: 11px 0; }
+.sphere-city-heading { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.sphere-city-heading small { color:var(--muted); font-size:9px; }
+.sphere-city-vitals { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; margin-top:8px; }
+.sphere-city-vital { padding:6px 7px; border-radius:5px; background:rgb(137 155 144 / .10); }
+.sphere-city-vital span,.sphere-city-vital strong { display:block; }
+.sphere-city-vital span { color:var(--muted); font-size:8px; }.sphere-city-vital strong { margin-top:1px; font-size:11px; font-variant-numeric:tabular-nums; }
+.sphere-city-stockline { margin:7px 0 0 !important; color:var(--muted); font-size:9px !important; line-height:1.45; }
+.sphere-city-daily { margin-top:8px; }.sphere-city-daily > summary { cursor:pointer; font-size:10px; font-weight:650; }
+.sphere-city-daily-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:7px; }
+.sphere-city-daily-grid p { margin:0 !important; padding:6px; border-radius:5px; background:rgb(137 155 144 / .08); }
 .sphere-settlement-details[open] > summary { margin-bottom: 8px; }
 .sphere-diagnostics .statusbar { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; margin-top: 10px; padding: 0; border: 0; min-height: 0; font-size: 10px; }
 .sphere-diagnostics p { margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.35; }
 
 .sphere-time-deck { top: 12px; left: 398px; right: 172px; min-width: 390px; border-radius: 11px; }
 .sphere-time-row { display: grid; grid-template-columns: auto minmax(140px, 1fr) auto; align-items: center; gap: 15px; min-height: 54px; padding: 8px 12px; }
-.sphere-date { display: grid; grid-template-columns: auto auto; gap: 0 8px; min-width: 132px; }
+.sphere-date { display: grid; grid-template-columns: 8.5ch minmax(0,1fr); gap: 0 8px; width: 190px; min-width: 190px; font-variant-numeric: tabular-nums; }
 .sphere-date .sphere-kicker { grid-column: 1 / -1; }
-.sphere-date strong { font-size: 13px; }
-.sphere-date > span:last-child { color: var(--muted); font-size: 11px; }
-#sphere-time-progress { width: 100%; accent-color: #65836a; pointer-events: none; }
+.sphere-date strong { overflow: hidden; font-size: 13px; white-space: nowrap; }
+.sphere-date > span:last-child { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.sphere-calendar-scale { --year-progress:0%; position:relative; width:100%; height:31px; overflow:hidden; border:1px solid rgb(137 155 144 / .26); border-radius:6px; background:#1a2420; }
+.sphere-calendar-seasons { display:grid; grid-template-columns:repeat(12,1fr); height:16px; color:rgb(220 227 217 / .62); font-size:7px; line-height:16px; text-align:center; text-transform:uppercase; }
+.sphere-calendar-seasons span { overflow:hidden; border-right:1px solid rgb(255 255 255 / .08); }
+.sphere-calendar-seasons .is-winter { grid-column:1 / 3; background:rgb(91 131 148 / .25); }.sphere-calendar-seasons .is-spring { grid-column:3 / 6; background:rgb(101 145 104 / .23); }
+.sphere-calendar-seasons .is-summer { grid-column:6 / 9; background:rgb(180 150 69 / .22); }.sphere-calendar-seasons .is-autumn { grid-column:9 / 12; background:rgb(151 100 63 / .22); }
+.sphere-calendar-seasons .is-winter-tail { grid-column:12 / 13; background:rgb(91 131 148 / .25); color:transparent; }
+.sphere-calendar-months { display:grid; grid-template-columns:repeat(12,1fr); height:14px; }
+.sphere-calendar-months i { position:relative; border-right:1px solid rgb(207 221 211 / .2); }.sphere-calendar-months i::after { content:attr(data-month); }
+.sphere-calendar-marker { position:absolute; top:0; bottom:0; left:var(--year-progress); width:2px; transform:translateX(-1px); background:#c5dfc6; box-shadow:0 0 5px rgb(197 223 198 / .65); }
 .sphere-playback-controls { display: flex; gap: 5px; }
 .sphere-playback-controls button,
 .sphere-camera-controls button { min-height: 30px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); cursor: pointer; font-size: 11px; }
@@ -417,11 +447,26 @@ h2 { font-size: 14px; font-weight: 650; }
 .sphere-climate-month { display: grid; grid-template-rows: 12px 34px 10px; align-items: end; height: 100%; min-width: 0; text-align: center; }
 .sphere-climate-month strong { overflow: hidden; color: var(--muted); font-size: 7px; font-weight: 500; font-variant-numeric: tabular-nums; text-overflow: clip; white-space: nowrap; }
 .sphere-climate-track { position: relative; height: 32px; border-bottom: 1px solid rgba(198,213,201,.16); }
-.sphere-climate-bar { position: absolute; right: 18%; bottom: 0; left: 18%; min-height: 2px; border-radius: 2px 2px 0 0; background: linear-gradient(#d7b93e,#877a37); opacity: .9; }
-.sphere-climate-chart[data-field="rain"] .sphere-climate-bar { background: linear-gradient(#72a9c5,#446f8a); }
-.sphere-climate-chart[data-field="wind"] .sphere-climate-bar { background: linear-gradient(#7bb1a7,#456f69); }
+.sphere-climate-bar { position:absolute; bottom:0; min-height:2px; border-radius:2px 2px 0 0; }
+.sphere-climate-bar.is-average { right:12%; left:12%; background:linear-gradient(#d7b93e,#877a37); opacity:.55; }
+.sphere-climate-bar.is-latest { right:17%; width:22%; background:linear-gradient(#f1cf4a,#a58c31); opacity:.95; }
+.sphere-climate-chart[data-field="rain"] .sphere-climate-bar.is-average { background:linear-gradient(#72a9c5,#446f8a); }.sphere-climate-chart[data-field="rain"] .sphere-climate-bar.is-latest { background:linear-gradient(#9ccce2,#558ca8); }
+.sphere-climate-chart[data-field="wind"] .sphere-climate-bar.is-average { background:linear-gradient(#7bb1a7,#456f69); }.sphere-climate-chart[data-field="wind"] .sphere-climate-bar.is-latest { background:linear-gradient(#a6d0c8,#5e9087); }
+.sphere-climate-wind-arrow { position:absolute; top:2px; left:50%; color:#d7ece7; font-size:9px; font-style:normal; line-height:1; transform-origin:center; }
 .sphere-climate-month small { overflow: hidden; color: var(--muted); font-size: 7px; text-transform: uppercase; }
 .sphere-climate-month.is-missing .sphere-climate-track::after { content: ""; position: absolute; right: 35%; bottom: 2px; left: 35%; height: 1px; background: rgba(198,213,201,.22); }
+.sphere-crop-history { margin-top:9px; padding:7px; border:1px solid var(--border); border-radius:6px; background:rgb(137 155 144 / .06); }
+.sphere-crop-history h4 { margin:0 0 5px; font-size:10px; }.sphere-crop-table { width:100%; border-collapse:collapse; font-size:8px; }
+.sphere-crop-table th { color:var(--muted); font-weight:500; text-align:right; }.sphere-crop-table th:first-child,.sphere-crop-table td:first-child { text-align:left; }
+.sphere-crop-table td { padding:3px 2px; border-top:1px solid rgb(137 155 144 / .13); text-align:right; font-variant-numeric:tabular-nums; }
+.sphere-herd-history { border-color:rgb(126 158 119 / .32); background:rgb(126 158 119 / .07); }
+.sphere-scout-history { border-color:rgb(111 145 158 / .36); background:rgb(111 145 158 / .07); }
+.sphere-herd-table td:nth-child(3),.sphere-scout-table td:nth-child(2),.sphere-scout-table td:nth-child(5),.sphere-scout-table td:nth-child(6) { text-align:left; }
+.sphere-scout-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:3px; margin-bottom:5px; }
+.sphere-scout-metrics span { padding:4px 3px; border-radius:4px; background:rgb(137 155 144 / .09); color:var(--muted); font-size:7px; text-align:center; }
+.sphere-scout-metrics strong { display:block; color:var(--text); font-size:10px; font-variant-numeric:tabular-nums; }
+.sphere-scout-active { margin:0 0 5px; padding:4px 5px; border-left:2px solid #7495a1; background:rgb(80 120 135 / .08); }
+.sphere-scout-active p { margin:2px 0; color:var(--muted); font-size:8px; line-height:1.35; }
 
 .sphere-map-toolbar { top: 12px; right: 12px; display: flex; align-items: center; gap: 5px; padding: 6px; border-radius: 10px; }
 .sphere-brand { display: none; }
@@ -452,6 +497,7 @@ h2 { font-size: 14px; font-weight: 650; }
 @media (max-width: 700px) {
   .sphere-time-deck { left: 8px; right: 8px; top: 8px; min-width: 0; }
   .sphere-time-row { grid-template-columns: 1fr auto; gap: 8px; }
+  .sphere-date { width: min(190px,100%); min-width: 0; }
   #sphere-time-progress { grid-column: 1 / -1; grid-row: 2; }
   .sphere-climate-row { display: none; }
   .sphere-climate-history { display: none; }

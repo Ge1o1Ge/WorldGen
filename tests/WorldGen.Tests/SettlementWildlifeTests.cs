@@ -35,6 +35,33 @@ public sealed partial class SettlementSimulationTests
     }
 
     [Fact]
+    public async Task CalmWildlifeDoesNotBounceBetweenTwoCellsAndEventuallyForgetsAnOldThreat()
+    {
+        var sim = await CreateFood(); var development = sim.Development!;
+        var topology = new CubeSphereTopology(sim.World.Spatial.Grid.Height);
+        var interval = development.Rules.Subsistence!.Wildlife.QuietMoveIntervalDays;
+        var selected = development.State.Wildlife!.Select((group, index) => (group, index)).First(item =>
+            (sim.World.Day + item.index) % interval == 0 && topology.GetNeighbors(item.group.Center).Count(c =>
+                sim.World.Spatial.Territories.TryGetValue(SphericalSimulation.ZoneId(c), out var territory) &&
+                territory.Terrain == "land" && territory.NaturalState.ForestBiomass > .02) > 2);
+        var group = selected.group;
+        var previous = topology.GetNeighbors(group.Center).First(c =>
+            sim.World.Spatial.Territories.TryGetValue(SphericalSimulation.ZoneId(c), out var territory) &&
+            territory.Terrain == "land" && territory.NaturalState.ForestBiomass > .02);
+        group.PreviousCenter = previous; group.Alert = 0; group.Threat = null;
+        typeof(SettlementSimulation).GetMethod("AdvanceWildlife", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .Invoke(development, null);
+        Assert.NotEqual(previous, group.Center);
+
+        var halfLife = development.Rules.Subsistence.Wildlife.AlertHalfLifeDays;
+        while (sim.World.Day <= halfLife * 2 + 2) sim.Advance(1);
+        group.Alert = development.Rules.Subsistence.Wildlife.FleeThreshold * .1;
+        group.Threat = topology.GetNeighbors(group.Center)[0]; group.LastHuntedDay = 0;
+        development.RecoverNaturalSites();
+        Assert.Null(group.Threat);
+    }
+
+    [Fact]
     public async Task FishingRetainsLargeStockButEachCatchMakesFurtherFishingHarderAndRecoveryTakesYears()
     {
         var sim = await CreateFood(); var development = sim.Development!;

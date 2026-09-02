@@ -36,11 +36,11 @@ export function interpolateUnitPath(points,progress){
 }
 
 export class MobileUnitLayer{
-  constructor(canvas,{pointForCell,project,now=()=>performance.now(),request=fn=>requestAnimationFrame(fn),cancel=id=>cancelAnimationFrame(id),duration=4200}={}){
-    Object.assign(this,{canvas,pointForCell,project,now,request,cancel,duration});this.context=canvas.getContext("2d");this.units=new Map();this.completed=new Map();this.frame=0;this.pixelRatio=1;this.worldDay=0;
+  constructor(canvas,{pointForCell,project,drawWildlife=()=>{},wildlifeVisible=()=>true,now=()=>performance.now(),request=fn=>requestAnimationFrame(fn),cancel=id=>cancelAnimationFrame(id),duration=4200,fps=30}={}){
+    Object.assign(this,{canvas,pointForCell,project,drawWildlife,wildlifeVisible,now,request,cancel,duration,fps});this.context=canvas.getContext("2d");this.units=new Map();this.wildlife=new Map();this.completed=new Map();this.frame=0;this.pixelRatio=1;this.worldDay=0;this.lastPaint=0;
   }
   resize(width,height,pixelRatio=1){this.pixelRatio=pixelRatio;this.canvas.width=Math.max(1,Math.round(width*pixelRatio));this.canvas.height=Math.max(1,Math.round(height*pixelRatio));this.canvas.style.width=`${width}px`;this.canvas.style.height=`${height}px`;this.render();}
-  update(scouts,worldDay,{animate=true}={}){
+  update(scouts,wildlife,worldDay,{animate=true}={}){
     this.worldDay=worldDay;const incoming=new Set(),started=this.now();
     for(const scout of scouts??[]){
       const key=expeditionKey(scout),marker=movementKey(scout);incoming.add(scout.id);
@@ -55,10 +55,19 @@ export class MobileUnitLayer{
       this.units.set(scout.id,{scout,key,marker,path,point:path.at(-1),started,duration:animate&&path.length>1?this.duration:0});
     }
     for(const [id,unit] of this.units)if(!incoming.has(id)&&unit.scout.phase!=="lost")this.units.delete(id);
+    const wildlifeIds=new Set();
+    for(const group of wildlife??[]){
+      wildlifeIds.add(group.id);const existing=this.wildlife.get(group.id),target=this.pointForCell(group);
+      const changed=!existing||!sameCell(existing.group,group),path=changed&&existing?.point?[existing.point,target]:[target];
+      this.wildlife.set(group.id,{group,path,point:changed?existing?.point??target:existing?.point??target,started,duration:animate&&changed?this.duration:0});
+    }
+    for(const id of this.wildlife.keys())if(!wildlifeIds.has(id))this.wildlife.delete(id);
     for(const [key,day] of this.completed)if(worldDay-day>400)this.completed.delete(key);
     this.render();this.start();
   }
-  start(){if(this.frame)return;const tick=()=>{this.frame=0;const active=this.render();if(active)this.frame=this.request(tick);};this.frame=this.request(tick);}
+  start(){if(this.frame)return;const tick=timestamp=>{this.frame=0;const now=Number.isFinite(timestamp)?timestamp:this.now(),interval=1000/this.fps;
+    let active=true;if(now-this.lastPaint>=interval){this.lastPaint=now;active=this.render();}
+    if(active)this.frame=this.request(tick);};this.frame=this.request(tick);}
   render(){
     const ctx=this.context,ratio=this.pixelRatio;ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,this.canvas.width/ratio,this.canvas.height/ratio);let active=false;
     for(const [id,unit] of this.units){
@@ -67,6 +76,11 @@ export class MobileUnitLayer{
       if(progress>=1&&unit.scout.phase==="returned"){this.completed.set(unit.key,this.worldDay);this.units.delete(id);continue;}
       if(unit.scout.phase==="lost"&&this.worldDay-(unit.scout.lostDay??this.worldDay)>14){this.units.delete(id);continue;}
       const screen=this.project(unit.point);if(!screen||screen.z<=.012)continue;this.drawPennant(ctx,screen.x,screen.y,unit.scout);
+    }
+    if(this.wildlifeVisible())for(const unit of this.wildlife.values()){
+      const elapsed=this.now()-unit.started,progress=unit.duration?Math.min(1,elapsed/unit.duration):1;
+      unit.point=interpolateUnitPath(unit.path,progress)??unit.point;if(progress<1)active=true;
+      const screen=this.project(unit.point);if(!screen||screen.z<=.012)continue;this.drawWildlife(ctx,screen.x,screen.y,unit.group);
     }
     return active;
   }
@@ -82,5 +96,5 @@ export class MobileUnitLayer{
     if(scout.travelMode==="raft"){ctx.strokeStyle="#43809a";ctx.beginPath();ctx.moveTo(-9,11);ctx.quadraticCurveTo(0,15,9,11);ctx.moveTo(-7,9);ctx.lineTo(7,9);ctx.stroke();}
     ctx.restore();
   }
-  dispose(){if(this.frame)this.cancel(this.frame);this.frame=0;this.units.clear();this.completed.clear();}
+  dispose(){if(this.frame)this.cancel(this.frame);this.frame=0;this.units.clear();this.wildlife.clear();this.completed.clear();}
 }

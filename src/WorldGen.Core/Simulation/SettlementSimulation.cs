@@ -24,9 +24,21 @@ public sealed partial class SettlementSimulation
     private readonly Dictionary<CellAddress, double> waterTaken = new();
     private int routingDay = -1;
     private readonly Func<CellAddress,Territory>? materialize;
+    private SurfaceWaterState? surfaceWater;
     public SettlementRules Rules { get; }
     public SettlementDevelopmentState State => world.SettlementDevelopment!;
     public bool IsForager => State.IsForager;
+
+    public void SetSurfaceWaterState(SurfaceWaterState value)
+    {
+        surfaceWater = value ?? throw new ArgumentNullException(nameof(value));
+        routes.Clear(); routingDay = -1;
+    }
+
+    private bool OpenWater(CellAddress cell) => surfaceWater?.IsOpenWater(cell) ??
+        terrain.TryGetValue(cell, out var local) && local.Terrain == "water";
+    private bool River(CellAddress cell) => surfaceWater?.IsRiver(cell) ??
+        terrain.TryGetValue(cell, out var local) && local.Water.DistanceToRiver == 0;
 
     public SettlementSimulation(WorldState world, ContentCatalog content, SettlementRules rules, CubeSphereTopology topology,
         SphericalSettlementLayer layer, IReadOnlyDictionary<string, CellAddress> addresses, bool foragers = false,
@@ -129,17 +141,47 @@ public sealed partial class SettlementSimulation
 
     public void RecoverNaturalSites()
     {
+        ApplySurfaceWaterEffects();
         AdvancePrimitiveWeather();
         RecoverHarvestPressure();
         AdvanceWildlife();
         AgeBuildingsAndRechargeWells();
         var cultivated = State.Buildings.Where(b => b.Kind == "garden" && Standing(b)).Select(b => b.Cell).ToHashSet();
+        var grazed = State.Cities.Values.SelectMany(city => city.Biology is null ? Enumerable.Empty<HerdState>() : city.Biology.Herds.Values)
+            .Where(herd => herd.Count > 0 && herd.PastureWork >= 24 && herd.Pasture is not null)
+            .Select(herd => herd.Pasture!.Value).ToHashSet();
         var meadow = Rules.Lifecycle is { } fieldRules ? State.Buildings.Where(b => b.Field?.FallowSinceDay is { } day && world.Day - day < fieldRules.MeadowRecoveryDays).Select(b => b.Cell).ToHashSet() : [];
         foreach (var territory in terrain.Values)
         {
             var natural = territory.NaturalState;
+            var soil = natural.Soil;
+            var cell = addresses[territory.Id];
+            if (OpenWater(cell))
+            {
+                natural.ForestBiomass = 0;
+                soil.GrazingBiomass = 0;
+                if (State.WildStocks.TryGetValue(territory.Id, out var floodedStocks))
+                    foreach (var id in new[] { "forage", "fiber" })
+                        if (floodedStocks.ContainsKey(id)) floodedStocks[id] = 0;
+                continue;
+            }
             if (Rules.Lifecycle is null || !cultivated.Contains(addresses[territory.Id]))
                 natural.SoilQuality += (territory.Fertility - natural.SoilQuality) * (Rules.Lifecycle?.FallowRecoveryPerDay ?? .00045);
+            if (!cultivated.Contains(addresses[territory.Id]))
+            {
+                soil.Nutrients += (territory.Fertility - soil.Nutrients) * .0007;
+                soil.OrganicMatter += (Math.Clamp(.2 + territory.ForestCover * .65, .1, 1) - soil.OrganicMatter) * .0005;
+                soil.Compaction *= .998;
+                soil.Pests *= .996;
+                foreach (var family in soil.Pathogens.Keys.ToArray())
+                {
+                    soil.Pathogens[family] *= .997;
+                    if (soil.Pathogens[family] < .00001) soil.Pathogens.Remove(family);
+                }
+            }
+            if (!grazed.Contains(addresses[territory.Id]))
+                soil.GrazingBiomass = Math.Min(1, soil.GrazingBiomass + .0025 * WeatherGrowth(addresses[territory.Id]));
+            natural.ManagedForestCare *= .985;
             foreach (var id in new[] { "timber", "fish" })
             {
                 if (id == "timber" && (cultivated.Contains(addresses[territory.Id]) || meadow.Contains(addresses[territory.Id]))) continue;
@@ -147,7 +189,8 @@ public sealed partial class SettlementSimulation
                 var capacity = Capacity(territory, id);
                 if (id == "timber" && Rules.Subsistence is not null)
                     capacity *= Math.Max(0, 1 - layer.Construction.GetOccupiedCapacity(addresses[territory.Id]) / (double)layer.Construction.GetCapacity(addresses[territory.Id]));
-                SetStock(territory, id, value + Math.Max(0, capacity - value) * RecoveryRate(id) * WeatherGrowth(addresses[territory.Id]));
+                var management = id == "timber" ? 1 + Math.Clamp(natural.ManagedForestCare, 0, 1) : 1;
+                SetStock(territory, id, value + Math.Max(0, capacity - value) * RecoveryRate(id) * WeatherGrowth(addresses[territory.Id]) * management);
             }
             if (!State.WildStocks.TryGetValue(territory.Id, out var stocks)) continue;
             foreach (var id in stocks.Keys.ToArray())
@@ -158,13 +201,119 @@ public sealed partial class SettlementSimulation
         }
     }
 
+    private void ApplySurfaceWaterEffects()
+    {
+        if (surfaceWater is null) return;
+
+        foreach (var building in State.Buildings.Where(b => b.Status != "demolished").OrderBy(b => b.Id, StringComparer.Ordinal).ToArray())
+        {
+            if (!OpenWater(building.Cell))
+            {
+                building.FloodedDays = 0;
+                continue;
+            }
+            if (!Standing(building)) continue;
+            building.FloodedDays++;
+            if (building.FloodedDays < 5) continue;
+
+            if (building.Kind == "garden")
+            {
+                building.Status = "demolished";
+                building.Residents = 0;
+                layer.Construction.Remove(building.Id);
+                if (State.Cities[building.CityId].Biology is { } biology) biology.Plots.Remove(building.Id);
+                Journal.Record(world, "settlement_field_washed_away", building.Id,
+                    building.CauseEventId is null ? [] : [building.CauseEventId],
+                    new JsonObject { ["cityId"] = building.CityId, ["daysFlooded"] = building.FloodedDays });
+            }
+            else
+            {
+                Abandon(building, "Пять дней непрерывного затопления; постройка превращена в руины");
+            }
+        }
+
+        foreach (var land in layer.UsedLands.OrderBy(item => item.Id, StringComparer.Ordinal).ToArray())
+        {
+            if (land.Usage <= 0 || !OpenWater(land.Cell))
+            {
+                State.FloodedLandDays.Remove(land.Id);
+                continue;
+            }
+            var days = State.FloodedLandDays.GetValueOrDefault(land.Id) + 1;
+            State.FloodedLandDays[land.Id] = days;
+            if (days < 5) continue;
+            layer.SetLandUsage(land.Id, 0);
+            Journal.Record(world, "settlement_land_washed_away", land.Id, [], new JsonObject
+            {
+                ["cityId"] = land.CityId,
+                ["kind"] = land.Kind.ToString(),
+                ["daysFlooded"] = days
+            });
+        }
+
+        foreach (var city in world.Cities.Values.OrderBy(c => c.Id, StringComparer.Ordinal))
+            AdvanceFloodedCenter(city);
+    }
+
+    private void AdvanceFloodedCenter(CityState city)
+    {
+        var life = State.Cities[city.Id];
+        var node = world.Spatial.Nodes[city.SpatialNodeId];
+        if (node.AnchorTerritoryId is null || !addresses.TryGetValue(node.AnchorTerritoryId, out var anchor)) return;
+        if (!OpenWater(anchor))
+        {
+            life.CenterFloodedDays = 0;
+            return;
+        }
+        life.CenterFloodedDays++;
+        if (life.CenterFloodedDays < 5 || State.Scouting?.KnownCells.GetValueOrDefault(city.Id) is not { } known) return;
+
+        var candidates = known.Select(ParseZoneCell).Where(cell => cell is not null).Select(cell => cell!.Value)
+            .Where(cell => cell != anchor && !OpenWater(cell))
+            .OrderByDescending(cell => State.Buildings.Count(b => b.CityId == city.Id && b.Cell == cell && Standing(b)))
+            .ThenByDescending(cell => Math.Max(0, -surfaceWater!.ShoreAt(cell)))
+            .ThenByDescending(cell => topology.ToUnitVector(anchor).Dot(topology.ToUnitVector(cell)))
+            .ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal)
+            .ToArray();
+        if (candidates.Length == 0) return;
+
+        var target = candidates[0];
+        var territory = terrain.TryGetValue(target, out var existing) ? existing : materialize?.Invoke(target);
+        if (territory is null || territory.AssignedCityId.Length > 0 && territory.AssignedCityId != city.Id) return;
+        terrain[target] = territory;
+        territory.AssignedCityId = city.Id;
+        var targetId = SphericalSimulation.ZoneId(target);
+        var children = (node.ChildTerritoryIds ?? []).Contains(targetId, StringComparer.Ordinal)
+            ? node.ChildTerritoryIds
+            : (node.ChildTerritoryIds ?? []).Append(targetId).ToArray();
+        world.Spatial.Nodes[node.Id] = node with { AnchorTerritoryId = targetId, ChildTerritoryIds = children };
+        life.CenterFloodedDays = 0;
+        life.LastRelocationDay = world.Day;
+        routes.Clear(); routingDay = -1;
+        Journal.Record(world, "settlement_center_relocated", city.Id, [], new JsonObject
+        {
+            ["from"] = SphericalSimulation.ZoneId(anchor),
+            ["to"] = targetId,
+            ["reason"] = "Прежний центр находился под стоячей водой пять дней"
+        });
+    }
+
+    private static CellAddress? ParseZoneCell(string id)
+    {
+        var parts = id.Split(':');
+        return parts.Length == 4 && parts[0] == "sphere" && Enum.TryParse<CubeFace>(parts[1], out var face) &&
+            int.TryParse(parts[2], out var x) && int.TryParse(parts[3], out var y)
+            ? new CellAddress(face, x, y)
+            : null;
+    }
+
     private double PoolCapacity(string pool) => pools[pool].Capacity;
     public double RecoveryRate(string pool) => pools[pool].RecoveryPerDay * (Rules.Subsistence?.RecoveryScale(pool) ?? 1);
     public double Capacity(Territory t, string pool) => pool == "game" && State.Wildlife is not null ? WildlifeAt(t, capacity: true) : PoolCapacity(pool) * (pool switch
     {
-        "forage" => t.Terrain == "water" ? 0 : t.Fertility * (.4 + t.ForestCover * .6),
-        "game" => t.Terrain == "water" ? 0 : t.ForestCover,
-        "fiber" => t.Terrain == "water" ? 0 : t.Moisture * .8,
+        "forage" => OpenWater(addresses[t.Id]) ? 0 : t.Fertility * (.4 + t.ForestCover * .6),
+        "game" => OpenWater(addresses[t.Id]) ? 0 : t.ForestCover,
+        "fiber" => OpenWater(addresses[t.Id]) ? 0 : t.Moisture * .8,
         _ => t.ResourcePotential.GetValueOrDefault(pool)
     });
 
@@ -201,9 +350,19 @@ public sealed partial class SettlementSimulation
         return taken;
     }
 
+    public double ExtractionDifficulty(Territory t, string pool)
+    {
+        if (pool is not ("clay" or "stone" or "iron_ore")) return 1;
+        var capacity = Math.Max(1e-9, Capacity(t, pool));
+        var depth = t.NaturalState.ExtractedBatches.GetValueOrDefault(pool) / capacity;
+        var grade = Math.Clamp(t.ResourcePotential.GetValueOrDefault(pool), .02, 1);
+        var exponent = pool == "clay" ? 1.8 : pool == "stone" ? 3.4 : 6.5;
+        return Math.Clamp(Math.Exp(depth * exponent) / Math.Sqrt(grade), 1, 250);
+    }
+
     public double LimitIndustry(Territory t, RecipeDefinition recipe, double batches) =>
         recipe.SitePotential is { } pool && pools.ContainsKey(pool)
-            ? Math.Min(batches, Stock(t, pool) / Math.Max(1e-9, recipe.Outputs.Values.Sum())) : batches;
+            ? Math.Min(batches / ExtractionDifficulty(t, pool), Stock(t, pool) / Math.Max(1e-9, recipe.Outputs.Values.Sum())) : batches;
 
     public bool UseIndustryResource(Territory t, RecipeDefinition recipe, double batches)
     {
@@ -244,6 +403,7 @@ public sealed partial class SettlementSimulation
             life.LaborAvailableHours = population * city.WorkerShare * multiplier * Rules.WorkHoursPerDay;
             var scoutingHours = RunScouting(city, telemetry);
             scoutingHours += RunResourceCamps(city, Math.Max(0,life.LaborAvailableHours-scoutingHours),telemetry);
+            scoutingHours += RunManagedLandSites(city, Math.Max(0, life.LaborAvailableHours - scoutingHours), telemetry);
             scoutingHours += SearchSeeds(city, Math.Max(0,life.LaborAvailableHours-scoutingHours),telemetry);
             scoutingHours += FarmCrops(city, Math.Max(0,life.LaborAvailableHours-scoutingHours),telemetry);
             scoutingHours += ProcessCropFood(city, Math.Max(0,life.LaborAvailableHours-scoutingHours),telemetry);
@@ -369,7 +529,7 @@ public sealed partial class SettlementSimulation
         if (Rules.Lifecycle is not null) return CollectStoredWater(city, home, budget, requested, telemetry);
         var life = State.Cities[city.Id]; var route = Routes(home.Cell);
         var wells = State.Buildings.Where(b => b.CityId == city.Id && b.Kind == "well" && b.Status == "active").Select(b => b.Cell).ToHashSet();
-        var candidates = route.Cost.Keys.Where(c => terrain[c].Terrain != "water" && (terrain[c].Water.DistanceToRiver == 0 || wells.Contains(c)))
+        var candidates = route.Cost.Keys.Where(c => !OpenWater(c) && (River(c) || wells.Contains(c)))
             .Where(c => waterTaken.GetValueOrDefault(c) < 2)
             .OrderBy(c => route.Cost[c]).ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal);
         var source = candidates.Cast<CellAddress?>().FirstOrDefault();
@@ -417,7 +577,8 @@ public sealed partial class SettlementSimulation
             var used = building.Kind == "house" ? building.Residents > 0 || Moving(building) || life.HousingCapacity - Rules.ResidentsPerHouse < Population(city) * 1.05 :
                 building.Kind == "garden" ? world.Day < building.ReadyDay || FieldDormant(building.Cell) || life.Tasks.Any(task => task.Activity == "cultivate" && task.Destination == building.Cell) :
                 (building.Kind is "warehouse" or "granary") ? storageUsed :
-                life.Tasks.Any(task => task.Destination == building.Cell && (task.HomeId == building.Id || task.Activity == "water"));
+                life.Tasks.Any(task => task.HomeId == building.Id ||
+                    (task.Destination == building.Cell && task.Activity == "water"));
             building.UnusedDays = used ? 0 : building.UnusedDays + 1;
         }
         var project = State.Buildings.FirstOrDefault(b => b.CityId == city.Id && b.Status == "building");
@@ -540,7 +701,7 @@ public sealed partial class SettlementSimulation
         Journal.Record(world, "settlement_building_abandoned", building.Id, building.CauseEventId is null ? [] : [building.CauseEventId],
             new JsonObject { ["cityId"] = building.CityId, ["reason"] = reason });
     }
-    private bool Free(CellAddress cell) => terrain[cell].Terrain != "water" &&
+    private bool Free(CellAddress cell) => !OpenWater(cell) &&
         !State.Cities.Values.Any(c=>c.Biology?.Herds.Values.Any(h=>h.Pasture==cell&&h.Count>0)==true) &&
         !layer.UsedLands.Any(l => l.Cell == cell && l.Usage > 0) && layer.Construction.GetOccupiedCapacity(cell) < layer.Construction.GetCapacity(cell);
     private CellAddress? FindBuildingSite(CityState city, CellAddress anchor, bool requireGroundwater = false) => Routes(anchor).Cost.Keys
@@ -557,7 +718,7 @@ public sealed partial class SettlementSimulation
             var t = terrain[cell]; var stock = Stock(t, pool);
             // A winter shortcut does not automatically invent ice fishing or
             // harvesting resources through a closed ice cover.
-            if (t.Terrain == "water") continue;
+            if (OpenWater(cell)) continue;
             if (stock <= 1e-8 || pool != "fish" && layer.Construction.GetOccupiedCapacity(cell) != 0) continue;
             var score = Rules.Subsistence is not null ? EncounterRate(t, pool) * Math.Max(0, 1 - distance * 2 * world.Spatial.Grid.ZoneSizeMeters / Rules.WalkingMetersPerHour / Rules.WorkHoursPerDay) :
                 stock / Math.Max(.001, Capacity(t, pool)) / (1 + distance * .12);
@@ -568,9 +729,9 @@ public sealed partial class SettlementSimulation
     }
     private double WaterDistance(CellAddress cell, string cityId, bool quick = false)
     {
-        if (terrain[cell].Water.DistanceToRiver == 0 || State.Buildings.Any(b => b.CityId == cityId && b.Kind == "well" && b.Status == "active" && b.Cell == cell)) return 0;
+        if (River(cell) || State.Buildings.Any(b => b.CityId == cityId && b.Kind == "well" && b.Status == "active" && b.Cell == cell)) return 0;
         if (quick) return double.PositiveInfinity;
-        return Routes(cell).Cost.Where(p => terrain[p.Key].Terrain != "water" && (terrain[p.Key].Water.DistanceToRiver == 0 || State.Buildings.Any(b => b.CityId == cityId && b.Kind == "well" && b.Status == "active" && b.Cell == p.Key)))
+        return Routes(cell).Cost.Where(p => !OpenWater(p.Key) && (River(p.Key) || State.Buildings.Any(b => b.CityId == cityId && b.Kind == "well" && b.Status == "active" && b.Cell == p.Key)))
             .Select(p => p.Value).DefaultIfEmpty(double.PositiveInfinity).Min();
     }
 
@@ -584,9 +745,10 @@ public sealed partial class SettlementSimulation
             if (priority.Item1 > tree.Cost[cell]) continue;
             foreach (var next in topology.GetNeighbors(cell))
             {
-                if (!terrain.TryGetValue(next, out var t) || t.Terrain == "water" && !IcePassable(next)) continue;
-                var ice = t.Terrain == "water" || terrain[cell].Terrain == "water";
-                var cost = tree.Cost[cell] + (ice ? 1.2 : 1 + t.ForestCover * .6 + Math.Abs(t.ElevationMeters - terrain[cell].ElevationMeters) / 100) *
+                if (!terrain.TryGetValue(next, out var t) || OpenWater(next) && !IcePassable(next)) continue;
+                var ice = OpenWater(next) || OpenWater(cell);
+                var riverCrossing = !ice && (River(next) || River(cell));
+                var cost = tree.Cost[cell] + (ice ? 1.2 : (1 + t.ForestCover * .6 + Math.Abs(t.ElevationMeters - terrain[cell].ElevationMeters) / 100) * (riverCrossing ? 1.35 : 1)) *
                     (ice ? 1 : 1 - trailStrength.GetValueOrDefault((cell, next)) * trailRules.MaximumCostReduction) * WeatherWalking(next);
                 if (cost > 60 || tree.Cost.TryGetValue(next, out var old) && old <= cost) continue;
                 tree.Cost[next] = cost; tree.Previous[next] = cell; queue.Enqueue(next, (cost, sequence++));
@@ -599,7 +761,7 @@ public sealed partial class SettlementSimulation
         if (travelers <= 0) return;
         for (var i = 1; i < path.Count; i++)
         {
-            if (terrain.TryGetValue(path[i - 1], out var a) && a.Terrain == "water" || terrain.TryGetValue(path[i], out var b) && b.Terrain == "water") continue;
+            if (OpenWater(path[i - 1]) || OpenWater(path[i])) continue;
             var key = EdgeKey(path[i - 1], path[i]);
             if (!edges.TryGetValue(key, out var edge)) edges[key] = edge = new LocalTrailState { From = path[i - 1], To = path[i] };
             edge.Strength += (1 - edge.Strength) * (1 - Math.Exp(-travelers / trailRules.TrafficForStrongTrail)); edge.Passages += travelers;

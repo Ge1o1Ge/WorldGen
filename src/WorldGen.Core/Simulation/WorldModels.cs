@@ -31,6 +31,7 @@ public sealed class WorldState
     public int NextKnowledgeTransferId { get; set; } = 1;
     public InformationState Information { get; set; } = new();
     public List<JournalEvent> Journal { get; set; } = [];
+    public JournalArchiveState JournalArchive { get; set; } = new();
     public TelemetryState Telemetry { get; set; } = new();
     public SettlementDevelopmentState? SettlementDevelopment { get; set; }
     public required Dictionary<string, SeededRandom> RandomStreams { get; init; }
@@ -192,6 +193,18 @@ public sealed record InformationState
 public sealed record TelemetryState
 {
     public List<DailyTelemetry> Daily { get; set; } = [];
+}
+
+/// <summary>
+/// Fixed-size summary of journal rows removed from the live causal window.
+/// Counts preserve long-term diagnostics without retaining every JsonObject.
+/// </summary>
+public sealed record JournalArchiveState
+{
+    public long RemovedEvents { get; set; }
+    public int? FirstDay { get; set; }
+    public int? ThroughDay { get; set; }
+    public Dictionary<string, long> CountsByType { get; set; } = new(StringComparer.Ordinal);
 }
 
 public sealed record ActiveEffectState(double Multiplier, int EndDay, string StartEventId, string TerritoryId, string Label, bool Endogenous);

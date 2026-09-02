@@ -26,6 +26,7 @@ public static class SimulationEngine
         Information.Advance(world);
         world.Telemetry.Daily.Add(telemetry);
         if (world.Telemetry.Daily.Count > 730) world.Telemetry.Daily.RemoveAt(0);
+        WorldHistory.Compact(world);
         world.Day++;
         return world;
     }

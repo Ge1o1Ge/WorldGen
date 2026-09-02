@@ -146,12 +146,12 @@ public sealed partial class SettlementSimulation
     {
         if (kind == "scouting") return SurveyTerrain(cell) is { } scout && (!scout.Water || Knows(city, "rafts"));
         return terrain.TryGetValue(cell, out var t) &&
-        t.AssignedCityId == city.Id && t.Terrain != "water" && Free(cell) &&
+        t.AssignedCityId == city.Id && !OpenWater(cell) && Free(cell) &&
         (kind != "garden" || Rules.Subsistence is not null && State.Cities[city.Id].Discoveries.Contains("gardening") &&
             layer.Construction.GetOccupiedCapacity(cell) == 0 && t.Fertility >= .35 && CanCultivate(cell) && CanStartCropPlot(city,cell)) &&
         (kind != "well" || State.Cities[city.Id].Discoveries.Contains("well") && t.Moisture >= .42 && t.ElevationMeters < 450 &&
-            (Rules.Lifecycle is null || t.Water.DistanceToRiver != 0 && !State.Buildings.Any(b => b.Cell == cell && b.Kind == "well" && Standing(b)))) &&
-        (BuildingRule(kind).Site != "river" || t.Water.DistanceToRiver == 0) &&
+            (Rules.Lifecycle is null || !River(cell) && !State.Buildings.Any(b => b.Cell == cell && b.Kind == "well" && Standing(b)))) &&
+        (BuildingRule(kind).Site != "river" || River(cell)) &&
         (BuildingRule(kind).Site != "wind" || t.ForestCover <= .3 && t.ElevationMeters >= 20);
     }
 
@@ -225,6 +225,26 @@ public sealed partial class SettlementSimulation
             var sites = Sites("well");
             if (sites.Length > 0) ideas.Add(new("well", "well", "water", "Сократить труд на доставку воды", Rules.Decisions!.Complexity["well"], sites));
         }
+        if (life.Discoveries.Contains("forestry") && RemoteWoodPressure(city) &&
+            !State.Buildings.Any(b => b.CityId == city.Id && b.Kind == "forester_lodge" && Standing(b)))
+        {
+            var sites = Routes(anchor).Cost.Keys.Where(c => ValidCouncilSite(city, "forester_lodge", c) && Routes(anchor).Cost[c] >= 2 && terrain[c].ForestCover > .2)
+                .OrderBy(c => terrain[c].NaturalState.ForestBiomass + Routes(anchor).Cost[c] * .025)
+                .ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal).Take(3).ToArray();
+            if (sites.Length > 0) ideas.Add(new("forester-lodge", "forester_lodge", "construction",
+                "Лес вокруг поселения истощён; семье лесничего нужен постоянный дальний участок",
+                Rules.Decisions!.Complexity["forester_lodge"], sites));
+        }
+        if (life.Discoveries.Contains("quarrying") && city.Stocks.GetValueOrDefault("stone") < 1 &&
+            !State.Buildings.Any(b => b.CityId == city.Id && b.Kind == "quarry" && Standing(b)))
+        {
+            var sites = Routes(anchor).Cost.Keys.Where(c => ValidCouncilSite(city, "quarry", c) && terrain[c].ResourcePotential.GetValueOrDefault("stone") > .12)
+                .OrderByDescending(c => terrain[c].ResourcePotential["stone"] / (1 + Routes(anchor).Cost[c] * .06))
+                .ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal).Take(3).ToArray();
+            if (sites.Length > 0) ideas.Add(new("quarry", "quarry", "construction",
+                "Поверхностного камня недостаточно; требуется постоянная карьерная разработка",
+                Rules.Decisions!.Complexity["quarry"], sites));
+        }
         if (Rules.Primitive is { } primitive)
             foreach (var rule in Rules.Buildings.Where(rule => rule.Technology is not null).OrderBy(rule => rule.Id, StringComparer.Ordinal))
             {
@@ -285,7 +305,7 @@ public sealed partial class SettlementSimulation
                 else if (building.Status == "active" && (building.Kind is "warehouse" or "granary") && life.Storage is { } storage)
                     benefit = Math.Clamp(storage.UsedByBuildingKind.GetValueOrDefault(building.Kind) /
                         Math.Max(.001, storage.CapacityByBuildingKind.GetValueOrDefault(building.Kind)) * 2 - 1, -1, 1);
-                else if (building.Status == "active" && building.Kind == "well" && terrain[building.Cell].Water.DistanceToRiver != 0)
+                else if (building.Status == "active" && building.Kind == "well" && !River(building.Cell))
                 {
                     var delivered = life.Tasks.Where(t => t.Activity == "water" && t.Destination == building.Cell).Sum(t => t.Output);
                     benefit = Math.Clamp((delivered / Math.Max(.001, life.WaterCollected) - .1) / .3, -1, 1);

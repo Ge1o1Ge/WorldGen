@@ -13,8 +13,12 @@ public sealed partial class SettlementSimulation
     private double[] climateDayTemperature = [];
     private double[] climateDayRain = [];
     private double[] climateDayWind = [];
+    private double[] climateDayWindX = [];
+    private double[] climateDayWindY = [];
+    private double[] climateDayWindZ = [];
     private int[] climateDayCounts = [];
     private object? cachedWeatherMap;
+    private object? cachedWeatherLiveMap;
 
     private void InitializeWeatherSurface()
     {
@@ -33,7 +37,9 @@ public sealed partial class SettlementSimulation
         surfaceWeather = new LocalWeather[count]; surfaceWind = new UnitVector3[count];
         var climateCells = 6 * grid.ClimateResolution * grid.ClimateResolution;
         climateDayTemperature = new double[climateCells]; climateDayRain = new double[climateCells];
-        climateDayWind = new double[climateCells]; climateDayCounts = new int[climateCells];
+        climateDayWind = new double[climateCells]; climateDayWindX = new double[climateCells];
+        climateDayWindY = new double[climateCells]; climateDayWindZ = new double[climateCells];
+        climateDayCounts = new int[climateCells];
         for (var i = 0; i < count; i++)
         {
             weatherPoints[i] = mesh.ToUnitVector(new((CubeFace)(i / (resolution * resolution)), i % resolution, i / resolution % resolution));
@@ -53,12 +59,26 @@ public sealed partial class SettlementSimulation
             grid.ClimateTemperatureSum = new double[length];
             grid.ClimateRainSum = new double[length];
             grid.ClimateWindSum = new double[length];
+            grid.ClimateWindXSum = new double[length]; grid.ClimateWindYSum = new double[length]; grid.ClimateWindZSum = new double[length];
+            grid.LatestClimateYear = Enumerable.Repeat(-1, ClimateMonths).ToArray();
+            grid.LatestClimateSampleDays = new int[ClimateMonths];
+            grid.LatestClimateTemperatureSum = new double[length]; grid.LatestClimateRainSum = new double[length];
+            grid.LatestClimateWindSum = new double[length]; grid.LatestClimateWindXSum = new double[length];
+            grid.LatestClimateWindYSum = new double[length]; grid.LatestClimateWindZSum = new double[length];
             return;
         }
         if (grid.ClimateResolution != resolution || grid.ClimateSampleDays.Length != ClimateMonths ||
             grid.ClimateTemperatureSum.Length != length || grid.ClimateRainSum.Length != length || grid.ClimateWindSum.Length != length ||
-            grid.ClimateSampleDays.Any(n => n < 0) ||
-            grid.ClimateTemperatureSum.Concat(grid.ClimateRainSum).Concat(grid.ClimateWindSum).Any(v => !double.IsFinite(v)))
+            grid.ClimateWindXSum.Length != length || grid.ClimateWindYSum.Length != length || grid.ClimateWindZSum.Length != length ||
+            grid.LatestClimateYear.Length != ClimateMonths || grid.LatestClimateSampleDays.Length != ClimateMonths ||
+            grid.LatestClimateTemperatureSum.Length != length || grid.LatestClimateRainSum.Length != length || grid.LatestClimateWindSum.Length != length ||
+            grid.LatestClimateWindXSum.Length != length || grid.LatestClimateWindYSum.Length != length || grid.LatestClimateWindZSum.Length != length ||
+            grid.ClimateSampleDays.Any(n => n < 0) || grid.LatestClimateSampleDays.Any(n => n < 0) ||
+            grid.ClimateTemperatureSum.Concat(grid.ClimateRainSum).Concat(grid.ClimateWindSum)
+                .Concat(grid.ClimateWindXSum).Concat(grid.ClimateWindYSum).Concat(grid.ClimateWindZSum)
+                .Concat(grid.LatestClimateTemperatureSum).Concat(grid.LatestClimateRainSum).Concat(grid.LatestClimateWindSum)
+                .Concat(grid.LatestClimateWindXSum).Concat(grid.LatestClimateWindYSum).Concat(grid.LatestClimateWindZSum)
+                .Any(v => !double.IsFinite(v)))
             throw new InvalidOperationException("Некорректная история климата в снимке");
     }
     private void AdvanceWeatherSurface()
@@ -73,7 +93,8 @@ public sealed partial class SettlementSimulation
         if (advance)
         {
             Array.Clear(climateDayTemperature); Array.Clear(climateDayRain);
-            Array.Clear(climateDayWind); Array.Clear(climateDayCounts);
+            Array.Clear(climateDayWind); Array.Clear(climateDayWindX); Array.Clear(climateDayWindY); Array.Clear(climateDayWindZ);
+            Array.Clear(climateDayCounts);
         }
         for (var i = 0; i < weatherPoints.Length; i++)
         {
@@ -90,7 +111,7 @@ public sealed partial class SettlementSimulation
             if (advance) AccumulateClimateCell(grid, i, surfaceWeather[i], surfaceWind[i]);
         }
         if (advance) FinishClimateDay(grid, sky.LastDay);
-        cachedWeatherMap = null;
+        cachedWeatherMap = null; cachedWeatherLiveMap = null;
     }
     private void AccumulateClimateCell(WeatherSurfaceGrid grid, int source, LocalWeather weather, UnitVector3 wind)
     {
@@ -100,21 +121,40 @@ public sealed partial class SettlementSimulation
         var x=local%sourceResolution;var y=local/sourceResolution;
         var target=(face*resolution+Math.Min(resolution-1,y*resolution/sourceResolution))*resolution+Math.Min(resolution-1,x*resolution/sourceResolution);
         climateDayTemperature[target]+=weather.TemperatureC;climateDayRain[target]+=weather.RainMm;
-        climateDayWind[target]+=Math.Sqrt(wind.X*wind.X+wind.Y*wind.Y+wind.Z*wind.Z);climateDayCounts[target]++;
+        climateDayWind[target]+=Math.Sqrt(wind.X*wind.X+wind.Y*wind.Y+wind.Z*wind.Z);
+        climateDayWindX[target]+=wind.X;climateDayWindY[target]+=wind.Y;climateDayWindZ[target]+=wind.Z;climateDayCounts[target]++;
     }
     private void FinishClimateDay(WeatherSurfaceGrid grid, int day)
     {
         var cellCount = climateDayCounts.Length;
         var yearDay = ((day % world.Calendar.DaysPerYear) + world.Calendar.DaysPerYear) % world.Calendar.DaysPerYear;
         var month = Math.Min(ClimateMonths - 1, yearDay * ClimateMonths / world.Calendar.DaysPerYear);
+        var year = Math.Max(0, day / world.Calendar.DaysPerYear);
         var offset = month * cellCount;
+        if (grid.LatestClimateYear[month] != year)
+        {
+            grid.LatestClimateYear[month] = year; grid.LatestClimateSampleDays[month] = 0;
+            Array.Clear(grid.LatestClimateTemperatureSum, offset, cellCount); Array.Clear(grid.LatestClimateRainSum, offset, cellCount);
+            Array.Clear(grid.LatestClimateWindSum, offset, cellCount); Array.Clear(grid.LatestClimateWindXSum, offset, cellCount);
+            Array.Clear(grid.LatestClimateWindYSum, offset, cellCount); Array.Clear(grid.LatestClimateWindZSum, offset, cellCount);
+        }
         for (var i = 0; i < cellCount; i++)
         {
             grid.ClimateTemperatureSum[offset + i] += climateDayTemperature[i] / climateDayCounts[i];
             grid.ClimateRainSum[offset + i] += climateDayRain[i] / climateDayCounts[i];
             grid.ClimateWindSum[offset + i] += climateDayWind[i] / climateDayCounts[i];
+            grid.ClimateWindXSum[offset + i] += climateDayWindX[i] / climateDayCounts[i];
+            grid.ClimateWindYSum[offset + i] += climateDayWindY[i] / climateDayCounts[i];
+            grid.ClimateWindZSum[offset + i] += climateDayWindZ[i] / climateDayCounts[i];
+            grid.LatestClimateTemperatureSum[offset + i] += climateDayTemperature[i] / climateDayCounts[i];
+            grid.LatestClimateRainSum[offset + i] += climateDayRain[i] / climateDayCounts[i];
+            grid.LatestClimateWindSum[offset + i] += climateDayWind[i] / climateDayCounts[i];
+            grid.LatestClimateWindXSum[offset + i] += climateDayWindX[i] / climateDayCounts[i];
+            grid.LatestClimateWindYSum[offset + i] += climateDayWindY[i] / climateDayCounts[i];
+            grid.LatestClimateWindZSum[offset + i] += climateDayWindZ[i] / climateDayCounts[i];
         }
         grid.ClimateSampleDays[month]++;
+        grid.LatestClimateSampleDays[month]++;
     }
     public object? WeatherMap()
     {
@@ -144,7 +184,17 @@ public sealed partial class SettlementSimulation
                 // seasonal model is historical observation.
                 temperature = ClimateValues(grid.ClimateTemperatureSum, grid.ClimateSampleDays, grid.ClimateResolution, 10),
                 rain = ClimateValues(grid.ClimateRainSum, grid.ClimateSampleDays, grid.ClimateResolution, 10),
-                wind = ClimateValues(grid.ClimateWindSum, grid.ClimateSampleDays, grid.ClimateResolution, 100)
+                wind = ClimateValues(grid.ClimateWindSum, grid.ClimateSampleDays, grid.ClimateResolution, 100),
+                windX = ClimateValues(grid.ClimateWindXSum, grid.ClimateSampleDays, grid.ClimateResolution, 10000),
+                windY = ClimateValues(grid.ClimateWindYSum, grid.ClimateSampleDays, grid.ClimateResolution, 10000),
+                windZ = ClimateValues(grid.ClimateWindZSum, grid.ClimateSampleDays, grid.ClimateResolution, 10000),
+                latestSampleDays = grid.LatestClimateSampleDays,
+                latestTemperature = ClimateValues(grid.LatestClimateTemperatureSum, grid.LatestClimateSampleDays, grid.ClimateResolution, 10),
+                latestRain = ClimateValues(grid.LatestClimateRainSum, grid.LatestClimateSampleDays, grid.ClimateResolution, 10),
+                latestWind = ClimateValues(grid.LatestClimateWindSum, grid.LatestClimateSampleDays, grid.ClimateResolution, 100),
+                latestWindX = ClimateValues(grid.LatestClimateWindXSum, grid.LatestClimateSampleDays, grid.ClimateResolution, 10000),
+                latestWindY = ClimateValues(grid.LatestClimateWindYSum, grid.LatestClimateSampleDays, grid.ClimateResolution, 10000),
+                latestWindZ = ClimateValues(grid.LatestClimateWindZSum, grid.LatestClimateSampleDays, grid.ClimateResolution, 10000)
             },
             local = new
             {
@@ -153,10 +203,54 @@ public sealed partial class SettlementSimulation
                 snow = local.Select(p => Q(State.Atmosphere.Ground[p.Value.Id].Snow, 10)).ToArray(),
                 ice = local.Select(p => Q(State.Atmosphere.Ground[p.Value.Id].IceMeters, 1000)).ToArray(),
                 // Negative = water closed; positive = actual local walking cost.
-                walking = local.Select(p => p.Value.Terrain == "water" && !IcePassable(p.Key) ? -1 : Q(WeatherWalking(p.Key) * (p.Value.Terrain == "water" ? 1.2 : 1), 100)).ToArray()
+                walking = local.Select(p => OpenWater(p.Key) && !IcePassable(p.Key) ? -1 : Q(WeatherWalking(p.Key) * (OpenWater(p.Key) ? 1.2 : River(p.Key) ? 1.35 : 1), 100)).ToArray()
             }
         };
         return cachedWeatherMap;
+    }
+    /// <summary>Daily transport view. Historical climatology and thousands of
+    /// exact settlement cells stay in the last full snapshot and are merged by
+    /// the client; sending them every five seconds only creates GC pressure.</summary>
+    public object? WeatherLiveMap()
+    {
+        if (State.Atmosphere?.Surface is not { } grid) return null;
+        if (cachedWeatherLiveMap is not null) return cachedWeatherLiveMap;
+        static int Q(double value, double scale) => (int)Math.Round(value * scale);
+        cachedWeatherLiveMap = new
+        {
+            revision = State.Atmosphere.LastDay,
+            grid.Resolution,
+            safeIceMeters = Rules.Primitive!.Winter!.SafeIceMeters,
+            temperature = surfaceWeather.Select(w => Q(w.TemperatureC, 10)).ToArray(),
+            rain = surfaceWeather.Select(w => Q(w.RainMm, 10)).ToArray(),
+            snow = grid.Snow.Select(v => Q(v, 10)).ToArray(),
+            ice = grid.Ice.Select(v => Q(v, 1000)).ToArray(),
+            leafOff = grid.LeafOff.Select(v => v ? 1 : 0).ToArray(),
+            windX = surfaceWind.Select(v => Q(v.X, 10000)).ToArray(),
+            windY = surfaceWind.Select(v => Q(v.Y, 10000)).ToArray(),
+            windZ = surfaceWind.Select(v => Q(v.Z, 10000)).ToArray()
+        };
+        return cachedWeatherLiveMap;
+    }
+
+    /// <summary>Typed forcing for the exact hydrology grid. The transport layer
+    /// consumes this directly; it never has to parse its own JSON projection.</summary>
+    public SurfaceWaterWeatherForcing? SurfaceWaterForcing()
+    {
+        if (State.Atmosphere?.Surface is not { } grid || surfaceWeather.Length == 0) return null;
+        var precipitation = new float[surfaceWeather.Length];
+        var evaporation = new float[surfaceWeather.Length];
+        for (var index = 0; index < surfaceWeather.Length; index++)
+        {
+            var weather = surfaceWeather[index];
+            precipitation[index] = weather.TemperatureC > 0 ? (float)Math.Max(0, weather.RainMm) : 0;
+            // A deliberately modest potential-evaporation approximation. It is
+            // spatially coherent with the atmosphere and can later be replaced
+            // by the energy-balance model without changing the water solver.
+            evaporation[index] = (float)Math.Clamp(.35 + Math.Max(0, weather.TemperatureC) * .08 +
+                Math.Max(0, weather.Wind) * .2, 0, 8);
+        }
+        return new(grid.Resolution, precipitation, evaporation);
     }
     private static int[] ClimateValues(double[] sums, int[] days, int resolution, double scale)
     {

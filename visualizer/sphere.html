@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>WorldGen — живой мир</title>
-  <link rel="stylesheet" href="/styles.css?v=world-interface1">
+  <link rel="stylesheet" href="/styles.css?v=world-interface2">
 </head>
 <body class="sphere-page">
   <main class="sphere-interface">
@@ -13,6 +13,9 @@
       <div class="map-wrap sphere-map-wrap">
         <canvas id="sphere-globe" aria-hidden="true"></canvas>
         <canvas id="sphere-map" role="img" aria-label="Вращаемая сферическая топографическая карта мира"></canvas>
+        <canvas id="sphere-lines" aria-hidden="true"></canvas>
+        <canvas id="sphere-symbols" aria-hidden="true"></canvas>
+        <div id="sphere-labels" aria-hidden="true"></div>
         <canvas id="sphere-mobile-units" aria-label="Подвижные группы мира"></canvas>
         <canvas id="sphere-weather-effects" aria-hidden="true"></canvas>
         <div id="sphere-tooltip" class="map-tooltip" role="tooltip" hidden></div>
@@ -56,6 +59,9 @@
             </label>
           </div>
           <p class="sphere-section-note">На дальнем масштабе остаются только события, заметные для всей области.</p>
+          <div id="sphere-crop-history" class="sphere-crop-history" hidden></div>
+          <div id="sphere-herd-history" class="sphere-crop-history sphere-herd-history" hidden></div>
+          <div id="sphere-scout-history" class="sphere-crop-history sphere-scout-history" hidden></div>
           <ol id="sphere-sim-events" class="sphere-event-list"></ol>
         </section>
 
@@ -63,6 +69,12 @@
           <h3 id="sphere-selection-title">Выбранная зона</h3>
           <div id="sphere-selection" class="sphere-selection">Нажмите на поверхность для подробностей</div>
           <div id="sphere-land-controls" class="controls" hidden><button id="sphere-land-toggle" type="button">Изменить использование</button></div>
+          <div id="sphere-meteorite-controls" class="sphere-meteorite-controls" hidden>
+            <strong>Динамический рельеф</strong>
+            <label>радиус <input id="sphere-meteorite-radius" type="number" min="2" max="48" step="1" value="6"> зон</label>
+            <label>глубина <input id="sphere-meteorite-depth" type="number" min="0.01" max="2000" step="0.01" value="120"> м</label>
+            <button id="sphere-meteorite" type="button">Удар метеорита</button>
+          </div>
           <p id="sphere-land-status" role="status"></p>
         </section>
 
@@ -76,9 +88,11 @@
           <summary>Диагностика карты</summary>
           <div class="statusbar">
             <span>зон <strong id="sphere-zones">—</strong></span><span>треугольников <strong id="sphere-triangles">—</strong></span>
+            <span>seed <strong id="sphere-seed">—</strong></span><span>мир <strong id="sphere-world-id">—</strong></span>
             <span>чанков <strong id="sphere-chunks">—</strong></span><span>просмотр <strong id="sphere-lod">—</strong></span>
             <span>в памяти <strong id="sphere-loaded">0/192</strong></span><span>рельеф <strong id="sphere-memory">—</strong></span>
             <span>кадр <strong id="sphere-render-time">—</strong></span><span>геометрия <strong id="sphere-geometry-builds">0</strong></span>
+            <span>GPU-линии <strong id="sphere-line-status">проверка…</strong></span>
             <span>среда <strong id="sphere-land-builds">0</strong></span><span>чанк-запросы <strong id="sphere-chunk-requests">0</strong></span>
             <span>обновления <strong id="sphere-map-updates">0</strong></span><span>подложка <strong id="sphere-raster-builds">0</strong></span>
             <span>GPU <strong id="sphere-gpu-status">проверка…</strong></span>
@@ -97,7 +111,11 @@
     <section class="sphere-time-deck" aria-label="Календарь и погода области">
       <div class="sphere-time-row">
         <div class="sphere-date"><span class="sphere-kicker">Время мира</span><strong>День <span id="sphere-day">0</span></strong><span id="sphere-calendar-date">год 1 · месяц 1</span></div>
-        <input id="sphere-time-progress" type="range" min="0" max="1" value="0" aria-label="Текущее положение времени мира" aria-readonly="true">
+        <div id="sphere-time-progress" class="sphere-calendar-scale" role="progressbar" aria-label="Положение внутри календарного года" aria-valuemin="0" aria-valuemax="360" aria-valuenow="0">
+          <div class="sphere-calendar-seasons" aria-hidden="true"><span class="is-winter">зима</span><span class="is-spring">весна</span><span class="is-summer">лето</span><span class="is-autumn">осень</span><span class="is-winter-tail">зима</span></div>
+          <div class="sphere-calendar-months" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <b class="sphere-calendar-marker" aria-hidden="true"></b>
+        </div>
         <div class="sphere-playback-controls" aria-label="Скорость симуляции">
           <button class="sphere-speed is-active" data-speed="1" type="button" disabled aria-pressed="true">1×</button>
           <button class="sphere-speed" data-speed="7" type="button" disabled aria-pressed="false">7×</button>
@@ -129,7 +147,7 @@
       <details id="sphere-layer-menu" class="sphere-layer-menu">
         <summary>Слои</summary>
         <div class="sphere-layer-popover">
-          <label>Срез карты<select id="sphere-layer" aria-label="Информационный срез карты"><option value="topographic">Топографический</option><option value="political">Влияние поселений</option><option value="biome">Биомы</option><option value="elevation">Высота</option><option value="moisture">Влажность</option><option value="forest">Лес</option></select></label>
+          <label>Срез карты<select id="sphere-layer" aria-label="Информационный срез карты"><option value="topographic">Топографический</option><option value="political">Влияние поселений</option><option value="biome">Биомы</option><option value="elevation">Высота</option><option value="moisture">Влажность</option><option value="forest">Лес</option><option value="stone">Залежи камня</option><option value="iron_ore">Железная руда</option></select></label>
           <fieldset><legend>Топография</legend><label><input type="checkbox" id="sphere-show-contours" checked> Горизонтали</label><label><input type="checkbox" id="sphere-show-water" checked> Вода</label><label><input type="checkbox" id="sphere-show-symbols" checked> Знаки</label><label><input type="checkbox" id="sphere-show-wildlife" checked> Животные</label><label><input type="checkbox" id="sphere-show-boundaries" checked> Влияние</label></fieldset>
           <fieldset><legend>Погода</legend><label>Окраска<select id="sphere-weather-layer"><option value="none">Нет</option><option value="temperature">Температура</option><option value="rain">Осадки</option><option value="wind">Ветер</option></select></label><label><input type="checkbox" id="sphere-weather-motion" checked> Явления и ветер</label><label><input type="checkbox" id="sphere-show-winter" checked> Зимний покров</label></fieldset>
           <details><summary>Условные знаки</summary><div id="sphere-map-legend" class="topo-legend"></div><a class="nav-link" href="/topographic-atlas.html">Полный атлас ↗</a></details>
@@ -144,6 +162,6 @@
 
     <div class="sphere-camera-controls" aria-label="Масштаб карты"><button id="sphere-zoom-in" type="button" aria-label="Приблизить">+</button><output id="sphere-zoom-level" aria-live="polite">1.0×</output><button id="sphere-zoom-out" type="button" aria-label="Отдалить">−</button><button id="sphere-reset" type="button">Мир</button></div>
   </main>
-  <script type="module" src="/sphere.js?v=batched-climate1"></script>
+  <script type="module" src="/sphere.js?v=world-ui20"></script>
 </body>
 </html>

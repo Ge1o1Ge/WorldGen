@@ -5,6 +5,7 @@ namespace WorldGen.Core.Simulation;
 
 public sealed partial class SettlementSimulation
 {
+    private const double PastureAnnualFeedTonnes = 10 * .003 * 365;
     private string? WildAnimal(CellAddress cell)
     {
         if (BiologyRules is not { } rules) return null;
@@ -18,9 +19,14 @@ public sealed partial class SettlementSimulation
     {
         var r = BiologyRules!; var life = State.Cities[city.Id]; var bio = life.Biology!; var p = life.Primitive!;
         p.HerdCareHours = p.HerdFeedToday = 0;
-        if (!Knows(city, "taming")) return 0;
+        var canTame = Knows(city, "taming");
+        // A captured wild animal can be kept before taming is understood. It
+        // still needs food, water and care; breeding and products remain gated
+        // by the species technology below. Without an existing captive animal
+        // the settlement cannot start local capture work prematurely.
+        if (!canTame && !bio.Herds.Values.Any(herd => herd.Count > 0)) return 0;
         var origin = Anchor(city); var routesFromHome = Routes(origin); var budget = Math.Min(available, life.LaborAvailableHours * r.AnimalLaborShare); var spent = 0d;
-        var reachable = routesFromHome.Cost.Where(p => p.Value < 18 && terrain[p.Key].Terrain != "water").Select(p => p.Key).ToHashSet();
+        var reachable = routesFromHome.Cost.Where(p => p.Value < 18 && !OpenWater(p.Key)).Select(p => p.Key).ToHashSet();
         var wild = (State.Wildlife ?? []).Where(g => g.SpeciesId is not null && reachable.Contains(g.Center) && g.Biomass > 0)
             .OrderBy(g => routesFromHome.Cost[g.Center]).ThenBy(g => g.Id, StringComparer.Ordinal).ToArray();
         foreach (var g in wild) bio.KnownAnimals.Add(g.SpeciesId!);
@@ -28,7 +34,7 @@ public sealed partial class SettlementSimulation
         {
             if (!bio.Herds.TryGetValue(a.Id, out var herd))
             {
-                if (!wild.Any(g => g.SpeciesId == a.Id) || bio.Herds.Values.Count(h => h.Count > 0) >= 3) continue;
+                if (!canTame || !wild.Any(g => g.SpeciesId == a.Id) || bio.Herds.Values.Count(h => h.Count > 0) >= 3) continue;
                 bio.Herds[a.Id] = herd = new();
             }
             if (herd.LastDay == world.Day) continue; herd.LastDay = world.Day;
@@ -36,17 +42,62 @@ public sealed partial class SettlementSimulation
             foreach (var young in herd.Young.Where(y => world.Day - y.BirthDay >= a.MaturityDays).ToArray())
             { var females = (young.Count + 1) / 2; herd.Females += females; herd.Males += young.Count - females; herd.Young.Remove(young); }
             var target = Math.Clamp((int)(Population(city) * .003 / a.BodyTonnes), 2, 12);
+            var otherPastures = bio.Herds.Where(pair => pair.Key != a.Id && pair.Value.Count > 0 && pair.Value.Pasture is not null)
+                .Select(pair => pair.Value.Pasture!.Value).ToHashSet();
+            if (herd.Pasture is { } duplicate && otherPastures.Contains(duplicate))
+            {
+                var owner = bio.Herds.Where(pair => pair.Value.Count > 0 && pair.Value.Pasture == duplicate)
+                    .Select(pair => pair.Key).Order(StringComparer.Ordinal).First();
+                if (!StringComparer.Ordinal.Equals(owner, a.Id))
+                {
+                    layer.SetLandUsage("pasture:" + city.Id + ":" + a.Id, 0);
+                    herd.Pasture = null; herd.PastureWork = 0; herd.PastureStartedDay = -1; herd.PastureForageConsumed = 0;
+                }
+            }
+            if (herd.Count > 0 && herd.Pasture is { } oldPasture && herd.PastureWork >= 24)
+            {
+                var oldSoil = terrain[oldPasture].NaturalState.Soil;
+                var exhausted = oldSoil.GrazingBiomass < .12 || herd.PastureStartedDay >= 0 && world.Day - herd.PastureStartedDay >= world.Calendar.DaysPerYear;
+                if (exhausted)
+                {
+                    layer.SetLandUsage("pasture:" + city.Id + ":" + a.Id, 0);
+                    herd.PreviousPastures.Add(oldPasture);
+                    if (herd.PreviousPastures.Count > 6) herd.PreviousPastures.RemoveAt(0);
+                    var avoided = herd.PreviousPastures.ToHashSet();
+                    var next = reachable.Where(c => !avoided.Contains(c) && !otherPastures.Contains(c) && Free(c) && terrain[c].AssignedCityId == city.Id && terrain[c].NaturalState.ForestBiomass < .55)
+                        .OrderByDescending(c => terrain[c].NaturalState.Soil.GrazingBiomass / (1 + routesFromHome.Cost[c] * .06))
+                        .ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal).Select(c => (CellAddress?)c).FirstOrDefault();
+                    herd.Pasture = next; herd.PastureWork = 0; herd.PastureStartedDay = next is null ? -1 : world.Day; herd.PastureForageConsumed = 0;
+                    if (next is not null) Journal.Record(world, "pasture_moved", city.Id, details: new JsonObject
+                    {
+                        ["cityId"] = city.Id, ["species"] = a.Id,
+                        ["from"] = SphericalSimulation.ZoneId(oldPasture), ["to"] = SphericalSimulation.ZoneId(next.Value),
+                        ["reason"] = oldSoil.GrazingBiomass < .12 ? "Кормовая растительность выедена" : "Плановая смена выпаса"
+                    });
+                }
+            }
             var from = herd.Pasture ?? origin;
             if (!routesFromHome.Cost.TryGetValue(from, out var routeCost)) continue;
             var careNeed = herd.Count * a.CareHoursPerDay;
             var feedNeed = (herd.Females + herd.Males + herd.Young.Sum(y => y.Count) * .5) * a.FeedPerDay;
             var waterNeed = herd.Count * a.WaterPerDay;
-            var feedCell = herd.Pasture is { } pasture && Stock(terrain[pasture], "forage") > feedNeed ? pasture : BestResourceSite(origin, "forage");
+            var preparedPasture = herd.Pasture is { } pasture && herd.PastureWork >= 24 ? pasture : (CellAddress?)null;
+            var feedCell = preparedPasture ?? BestResourceSite(origin, "forage");
             var transport = herd.Count > 0 ? routeCost * 2 * world.Spatial.Grid.ZoneSizeMeters / Rules.WalkingMetersPerHour : 0;
             var neededHours = careNeed + feedNeed / .004 + transport;
+            var feedAvailable = preparedPasture is { } managed
+                ? terrain[managed].NaturalState.Soil.GrazingBiomass * PastureAnnualFeedTonnes
+                : feedCell is { } f ? Stock(terrain[f], "forage") : 0;
             var coverage = Math.Clamp(Math.Min((budget - spent) / Math.Max(.0001, neededHours), Math.Min(
-                city.Stocks["water"] / Math.Max(.000001, waterNeed), feedCell is { } f ? Stock(terrain[f], "forage") / Math.Max(.000001, feedNeed) : 0)), 0, 1);
-            var fed = feedCell is { } fc ? Extract(terrain[fc], "forage", feedNeed * coverage) : 0;
+                city.Stocks["water"] / Math.Max(.000001, waterNeed), feedAvailable / Math.Max(.000001, feedNeed))), 0, 1);
+            var fed = feedNeed * coverage;
+            if (preparedPasture is { } grazingSite)
+            {
+                var soil = terrain[grazingSite].NaturalState.Soil;
+                soil.GrazingBiomass = Math.Max(0, soil.GrazingBiomass - fed / PastureAnnualFeedTonnes);
+                soil.LastGrazedDay = world.Day; herd.PastureForageConsumed += fed;
+            }
+            else if (feedCell is { } fc) fed = Extract(terrain[fc], "forage", fed);
             city.Stocks["water"] -= waterNeed * coverage; Add(telemetry.IndustrialConsumptionByResource, "water", waterNeed * coverage);
             var used = neededHours * coverage; spent += used; p.HerdFeedToday += fed;
             if (herd.Count > 0)
@@ -62,8 +113,9 @@ public sealed partial class SettlementSimulation
                 herd.Deaths++; Journal.Record(world, "herd_death", city.Id, details: new JsonObject { ["cityId"] = city.Id, ["species"] = a.Id, ["reason"] = "Недостаток корма, воды или ухода" });
             }
             if (herd.Count > 0 && herd.Pasture is null)
-                herd.Pasture = reachable.Where(c => Free(c) && terrain[c].AssignedCityId == city.Id && terrain[c].NaturalState.ForestBiomass < .55)
-                    .OrderBy(c => routesFromHome.Cost[c] - terrain[c].NaturalState.SoilQuality * 2).Select(c => (CellAddress?)c).FirstOrDefault();
+                herd.Pasture = reachable.Where(c => !otherPastures.Contains(c) && Free(c) && terrain[c].AssignedCityId == city.Id && terrain[c].NaturalState.ForestBiomass < .55)
+                    .OrderBy(c => routesFromHome.Cost[c] - terrain[c].NaturalState.Soil.GrazingBiomass * 2).Select(c => (CellAddress?)c).FirstOrDefault();
+            if (herd.Pasture is not null && herd.PastureStartedDay < 0) herd.PastureStartedDay = world.Day;
             if (herd.Pasture is { } land && herd.PastureWork < 24 && budget > spent)
             {
                 var setup = Math.Min(budget - spent, 24 - herd.PastureWork); herd.PastureWork += setup; spent += setup;
@@ -75,6 +127,9 @@ public sealed partial class SettlementSimulation
                 RegisterPasture(city.Id, a.Id, grazing);
                 var soil = terrain[grazing].NaturalState;
                 soil.SoilQuality = Math.Min(Math.Min(1, terrain[grazing].Fertility + .2), soil.SoilQuality + herd.Count * a.ManurePerDay * coverage);
+                soil.Soil.Nutrients = Math.Min(1, soil.Soil.Nutrients + herd.Count * a.ManurePerDay * coverage * .7);
+                soil.Soil.OrganicMatter = Math.Min(1, soil.Soil.OrganicMatter + herd.Count * a.ManurePerDay * coverage * .35);
+                soil.Soil.Compaction = Math.Min(1, soil.Soil.Compaction + herd.Count * a.BodyTonnes * .00008);
                 if (herd.Females > 0 && herd.Males > 0 && coverage > .95 && herd.Health > .7 && Knows(city, a.Technology) && herd.Count < target * 2)
                 {
                     herd.PregnancyDays++;
@@ -102,7 +157,7 @@ public sealed partial class SettlementSimulation
                     life.Tasks.Add(new("camp:" + city.Id, "animal_product:" + product.ResourceId, grazing, labor, amount));
                 }
             }
-            if (budget - spent > 0 && herd.Count < target && city.Stocks["food"] > Population(city) * city.FoodPerPersonPerDay)
+            if (canTame && budget - spent > 0 && herd.Count < target && city.Stocks["food"] > Population(city) * city.FoodPerPersonPerDay)
             {
                 var group = wild.FirstOrDefault(g => g.SpeciesId == a.Id && g.Biomass >= a.BodyTonnes);
                 if (group is not null)

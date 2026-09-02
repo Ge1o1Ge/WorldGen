@@ -7,7 +7,7 @@ namespace WorldGen.Core.Topology;
 /// </summary>
 public sealed class SphericalHydrology
 {
-    public const string GeneratorVersion = "priority-flood-v2";
+    public const string GeneratorVersion = "priority-flood-v3";
     public const float LakeDepthThreshold = 1;
     public const float MinimumRiverRunoff = 55;
 
@@ -16,6 +16,7 @@ public sealed class SphericalHydrology
         Topology = new CubeSphereTopology(resolution);
         SeaLevel = seaLevel;
         Elevation = elevation;
+        Moisture = moisture;
         Surface = new float[elevation.Length];
         Downstream = Enumerable.Repeat(-1, elevation.Length).ToArray();
         Runoff = new float[elevation.Length];
@@ -42,7 +43,10 @@ public sealed class SphericalHydrology
         while (queue.TryDequeue(out var current, out _))
         {
             order[count++] = current;
-            var neighborCount = NeighborIndices(current, neighbors);
+            // Basins are connected through shared cell edges. Treating corner-only
+            // contacts as spillways produced pairs of one-cell lakes which touched
+            // at a point and rendered as a blue staircase.
+            var neighborCount = CardinalNeighborIndices(current, neighbors);
             for (var n = 0; n < neighborCount; n++)
             {
                 var neighbor = neighbors[n];
@@ -60,7 +64,9 @@ public sealed class SphericalHydrology
             if (Downstream[current] < 0) continue;
             var point = Topology.ToUnitVector(Address(current));
             var bestSlope = 0d;
-            var neighborCount = NeighborIndices(current, neighbors);
+            // Once the spill surface is known, diagonal choices are useful for a
+            // less Manhattan-like river course. They must not define basin topology.
+            var neighborCount = DrainageNeighborIndices(current, neighbors);
             for (var n = 0; n < neighborCount; n++)
             {
                 var next = neighbors[n];
@@ -80,6 +86,7 @@ public sealed class SphericalHydrology
             var current = order[i];
             if (Downstream[current] >= 0) Runoff[Downstream[current]] += Runoff[current];
         }
+        LakeMask = BuildLakeMask();
         LakeShore = BuildLakeShore();
 
         void Seed(int index, float surface)
@@ -94,15 +101,19 @@ public sealed class SphericalHydrology
     public int Resolution => Topology.FaceSize;
     public float SeaLevel { get; }
     public float[] Elevation { get; }
+    public float[] Moisture { get; }
     public float[] Surface { get; }
     public int[] Downstream { get; }
     public float[] Runoff { get; }
     public float RunoffWeight { get; }
+    /// <summary>Topologically cleaned flooded cells. A one-cell pond remains
+    /// valid, but point-only chains of lake cells do not form a water body.</summary>
+    public bool[] LakeMask { get; }
     /// <summary>Signed lake depth relative to the water threshold, extended onto the
     /// dry shore using the neighboring basin's level, never by zero-clamping depths.</summary>
     public float[] LakeShore { get; }
 
-    public bool IsLake(int index) => Elevation[index] > SeaLevel && Surface[index] - Elevation[index] > LakeDepthThreshold;
+    public bool IsLake(int index) => LakeMask[index];
     public bool IsWater(int index) => Elevation[index] <= SeaLevel || IsLake(index);
     public bool IsRiver(int index) => !IsWater(index) && Runoff[index] >= MinimumRiverRunoff;
     public bool IsFreshWater(int index) => IsLake(index) || IsRiver(index);
@@ -141,7 +152,21 @@ public sealed class SphericalHydrology
         return new SphericalHydrology(resolution, seaLevel, elevation, moisture, runoffWeight);
     }
 
-    private int NeighborIndices(int index, Span<int> result)
+    private int CardinalNeighborIndices(int index, Span<int> result)
+    {
+        var x = index % Resolution; var y = index / Resolution % Resolution;
+        if (x > 0 && y > 0 && x < Resolution - 1 && y < Resolution - 1)
+        {
+            result[0] = index - Resolution; result[1] = index - 1;
+            result[2] = index + 1; result[3] = index + Resolution;
+            return 4;
+        }
+        var count = 0;
+        foreach (var cell in Topology.GetNeighbors(Address(index))) result[count++] = Index(cell);
+        return count;
+    }
+
+    private int DrainageNeighborIndices(int index, Span<int> result)
     {
         var x = index % Resolution; var y = index / Resolution % Resolution;
         if (x > 0 && y > 0 && x < Resolution - 1 && y < Resolution - 1)
@@ -165,7 +190,10 @@ public sealed class SphericalHydrology
             var level = Surface[i] > Elevation[i] && Elevation[i] > SeaLevel ? Surface[i] : float.NegativeInfinity;
             if (!float.IsFinite(level))
             {
-                var count = NeighborIndices(i, neighbors);
+                // Extend the basin's physical level through the complete 3x3
+                // shoreline stencil. The resulting signed height field lets the
+                // renderer choose ambiguous diagonal turns from terrain slope.
+                var count = DrainageNeighborIndices(i, neighbors);
                 for (var n = 0; n < count; n++)
                 {
                     var j = neighbors[n];
@@ -175,9 +203,36 @@ public sealed class SphericalHydrology
             // Far inland the sentinel is finite and dry. A dry center can never
             // be reclassified by a neighboring, higher basin across a ridge.
             var signed = float.IsFinite(level) ? level - Elevation[i] - LakeDepthThreshold : -LakeDepthThreshold;
-            field[i] = IsLake(i) ? Surface[i] - Elevation[i] - LakeDepthThreshold : Math.Min(0, signed);
+            field[i] = IsLake(i)
+                ? Math.Max(.01f, Surface[i] - Elevation[i] - LakeDepthThreshold)
+                : Math.Min(-.01f, signed);
         }
         return field;
+    }
+
+    private bool[] BuildLakeMask()
+    {
+        var candidates = Elevation.Select((height, index) =>
+            height > SeaLevel && Surface[index] - height > LakeDepthThreshold).ToArray();
+        var result = (bool[])candidates.Clone();
+        Span<int> cardinal = stackalloc int[8]; Span<int> drainage = stackalloc int[8];
+        for (var index = 0; index < candidates.Length; index++)
+        {
+            if (!candidates[index]) continue;
+            var cardinalCount = CardinalNeighborIndices(index, cardinal);
+            var edgeNeighbor = false;
+            for (var n = 0; n < cardinalCount; n++) edgeNeighbor |= candidates[cardinal[n]];
+            if (edgeNeighbor) continue;
+            var drainageCount = DrainageNeighborIndices(index, drainage); var cornerNeighbor = false;
+            for (var n = 0; n < drainageCount; n++)
+            {
+                var neighbor = drainage[n]; var isCardinal = false;
+                for (var c = 0; c < cardinalCount; c++) isCardinal |= cardinal[c] == neighbor;
+                if (!isCardinal && candidates[neighbor]) { cornerNeighbor = true; break; }
+            }
+            if (cornerNeighbor) result[index] = false;
+        }
+        return result;
     }
 
     public int Index(CellAddress cell) => ((int)cell.Face * Resolution + cell.Y) * Resolution + cell.X;

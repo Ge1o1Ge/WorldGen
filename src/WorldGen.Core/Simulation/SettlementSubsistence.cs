@@ -11,7 +11,8 @@ public sealed partial class SettlementSimulation
         ? Math.Pow(Math.Clamp(Stock(t, pool) / Math.Max(1e-9, Capacity(t, pool)), 0, 1), Rules.Subsistence.EncounterExponent) :
         Rules.Subsistence is { } rules && pool is "forage" or "game" or "fish"
         ? rules.PrimitiveEfficiency[pool] * Math.Pow(Math.Clamp(Stock(t, pool) / Math.Max(1e-9, Capacity(t, pool)), 0, 1), rules.EncounterExponent) /
-            (1 + (State.HarvestPressure?.GetValueOrDefault(t.Id)?.GetValueOrDefault(pool) ?? 0) + (pool == "game" ? WildlifeAlert(t) : 0)) : 1;
+            (1 + (State.HarvestPressure?.GetValueOrDefault(t.Id)?.GetValueOrDefault(pool) ?? 0) + (pool == "game" ? WildlifeAlert(t) : 0)) :
+        pool is "clay" or "stone" or "iron_ore" ? 1 / ExtractionDifficulty(t, pool) : 1;
 
     private void RecordHarvestPressure(Territory t, string pool, double amount)
     {
@@ -26,7 +27,7 @@ public sealed partial class SettlementSimulation
         // Local disturbance remains after a mobile group has fled the hunters.
         if (pool == "game")
             foreach (var adjacent in topology.GetNeighbors(addresses[t.Id]))
-                if (terrain.TryGetValue(adjacent, out var neighbor) && neighbor.Terrain != "water") AddPressure(neighbor.Id, increase * .35);
+                if (terrain.TryGetValue(adjacent, out var neighbor) && !OpenWater(adjacent)) AddPressure(neighbor.Id, increase * .35);
     }
     private void RecoverHarvestPressure()
     {
@@ -52,6 +53,8 @@ public sealed partial class SettlementSimulation
         {
             yield return new("clay", "Сбор глины", "clay", .002, .15, "clay", null, new Dictionary<string, double>());
             yield return new("stone", "Заготовка камня", "stone", .0005, .15, "stone", Rules.Primitive is null ? "masonry" : "building", new Dictionary<string, double>());
+            if (Knows(city, "bloomery_smelting"))
+                yield return new("iron_ore", "Поиск поверхностной и болотной руды", "iron_ore", .00008, .08, "iron_ore", null, new Dictionary<string, double>());
         }
     }
     private bool ReadyGarden(DwellingState b) => b.Kind == "garden" && b.Status == "active" && b.ReadyDay <= world.Day;

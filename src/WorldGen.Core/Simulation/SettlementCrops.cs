@@ -15,11 +15,12 @@ public sealed partial class SettlementSimulation
     }
     private CropRule[] WildCrops(CellAddress cell)
     {
+        if (OpenWater(cell)) return [];
         if (wildCrops.TryGetValue(cell, out var cached)) return cached;
         var p = topology.ToUnitVector(cell);
         var local = terrain.GetValueOrDefault(cell);
         var surface = local is null ? planetTerrain?.SampleSurface(p) : null;
-        var water = local?.Terrain == "water" || surface?.Biome == SphericalBiome.Ocean;
+        var water = OpenWater(cell);
         var temperature = local?.TemperatureC ?? surface?.TemperatureC ?? 0;
         var moisture = local?.Moisture ?? surface?.Moisture ?? 0;
         var forest = local?.ForestCover ?? surface?.ForestCover ?? 0;
@@ -29,7 +30,41 @@ public sealed partial class SettlementSimulation
     }
     private double CropSuitability(CropRule crop, CellAddress cell)
     {
-        var t = terrain[cell]; return t.Terrain == "water" ? 0 : Biosphere.Suitability(crop.Habitat, t.TemperatureC, t.Moisture, Math.Clamp(t.ForestCover, crop.Habitat.MinForest, crop.Habitat.MaxForest));
+        var t = terrain[cell]; return OpenWater(cell) ? 0 : Biosphere.Suitability(crop.Habitat, t.TemperatureC, t.Moisture, Math.Clamp(t.ForestCover, crop.Habitat.MinForest, crop.Habitat.MaxForest));
+    }
+    private double SoilYieldFactor(CropRule crop, CellAddress cell, CropPlotState plot, LocalWeather weather)
+    {
+        var soil = terrain[cell].NaturalState.Soil;
+        // Retentive soil buffers a dry spell, while free-draining soil buffers
+        // waterlogging. It cannot create water, so the effect stays deliberately small.
+        var retainedWater = Math.Clamp(weather.SoilWater + (soil.MoistureRetention - .5) *
+            (weather.SoilWater < .5 ? .22 : -.12), 0, 1);
+        var moisture = Math.Clamp(1 - Math.Abs(retainedWater - Math.Clamp((crop.Habitat.MinMoisture + crop.Habitat.MaxMoisture) * .5, 0, 1)) * 1.45, .2, 1);
+        var fertility = .25 + soil.Nutrients * .5 + soil.OrganicMatter * .25;
+        var structure = 1 - soil.Rockiness * (crop.MatureYears > 0 ? .18 : .42) - soil.Compaction * .35;
+        var disease = 1 - Math.Clamp(soil.Pathogens.GetValueOrDefault(crop.Family), 0, .85) * (crop.MatureYears > 0 ? .65 : .8);
+        var pests = 1 - Math.Clamp(soil.Pests, 0, .8) * .7;
+        plot.PestPressure = soil.Pests;
+        plot.DiseasePressure = soil.Pathogens.GetValueOrDefault(crop.Family);
+        return Math.Clamp(fertility * structure * moisture * disease * pests, .04, 1);
+    }
+    private void AdvanceCropProblems(CropRule crop, CellAddress cell, CropPlotState plot, LocalWeather weather, double careCoverage)
+    {
+        var soil = terrain[cell].NaturalState.Soil;
+        var warm = Math.Clamp((weather.TemperatureC - 8) / 18, 0, 1);
+        var wet = Math.Clamp(weather.SoilWater + (soil.MoistureRetention - .5) * .16, 0, 1);
+        var index = (int)cell.Face * 1000000 + cell.X * 1024 + cell.Y;
+        var outbreak = SphericalWeather.Random(world.Spatial.Grid.Seed, world.Day, index) < .0012 * (.3 + warm + wet) ? .08 : 0;
+        soil.Pests = Math.Clamp(soil.Pests + warm * .00032 + outbreak - (.00045 + careCoverage * .00065), 0, 1);
+        var pathogen = soil.Pathogens.GetValueOrDefault(crop.Family);
+        pathogen = Math.Clamp(pathogen + warm * wet * (crop.MatureYears > 0 ? .00018 : .00035) - (crop.MatureYears > 0 ? .00008 : 0), 0, 1);
+        soil.Pathogens[crop.Family] = pathogen;
+        var drought = Math.Max(0, crop.Habitat.MinMoisture - wet);
+        var waterlogging = Math.Max(0, wet - crop.Habitat.MaxMoisture);
+        var heat = Math.Max(0, weather.TemperatureC - crop.Habitat.MaxTemperature) / 20;
+        plot.WeatherStress += drought * .025 + waterlogging * .018 + heat * .012 + weather.Storm * .0008;
+        var dailyStress = drought * .025 + waterlogging * .018 + heat * .012 + pathogen * .0014 + soil.Pests * .0012;
+        if (dailyStress > 0) plot.Health = Math.Max(0, plot.Health - dailyStress);
     }
     private bool CanSow(CropRule crop, CellAddress cell)
     {
@@ -97,7 +132,7 @@ public sealed partial class SettlementSimulation
         if (BiologyRules is not { } r || available <= 0) return 0;
         var anchor = Anchor(city); var routesFromHome = Routes(anchor); var bio = State.Cities[city.Id].Biology!;
         // Only a reached and worked patch teaches species; no planet-wide search.
-        var sites = routesFromHome.Cost.Where(p => p.Value < 16 && terrain[p.Key].Terrain != "water" && Stock(terrain[p.Key], "forage") > .001)
+        var sites = routesFromHome.Cost.Where(p => p.Value < 16 && !OpenWater(p.Key) && Stock(terrain[p.Key], "forage") > .001)
             .OrderBy(p => p.Value).ThenBy(p => SphericalSimulation.ZoneId(p.Key), StringComparer.Ordinal).Take(180).ToArray();
         var candidates = sites.SelectMany(p => WildCrops(p.Key).Select(c => (Cell: p.Key, Distance: p.Value, Crop: c)))
             .Where(p => p.Crop.Habitat.MinForest <= .05 || terrain[p.Cell].NaturalState.ForestBiomass > .05)
@@ -157,10 +192,16 @@ public sealed partial class SettlementSimulation
                     {
                         var seeds = selected.SeedTonnes * area; city.Stocks[selected.SeedResource] -= seeds; Add(telemetry.IndustrialConsumptionByResource, selected.SeedResource, seeds);
                         plot.CropId = selected.Id; plot.Area = area; plot.Health = 1; plot.AgeDays = plot.DegreeDays = 0; plot.SeedSaved = false;
+                        plot.IsOrchard = selected.MatureYears > 0; plot.WeatherStress = plot.PestPressure = plot.DiseasePressure = 0; plot.LastProblem = null;
                         plot.Phase = area < .9 ? "размножение семян" : selected.MatureYears > 0 ? "молодые посадки" : "посев";
                         hours = selected.PlantHours * area + travel;
-                        if (Knows(city, "crop_rotation") && plot.LastFamily is { } family && family != selected.Family && selected.Family == "legume")
-                            terrain[b.Cell].NaturalState.SoilQuality = Math.Min(1, terrain[b.Cell].NaturalState.SoilQuality + .025 * area);
+                        if (Knows(city, "crop_rotation") && plot.LastFamily is { } family && family != selected.Family)
+                        {
+                            var soil = terrain[b.Cell].NaturalState.Soil;
+                            soil.Pathogens[family] = soil.Pathogens.GetValueOrDefault(family) * .72;
+                            if (selected.Family == "legume") soil.Nutrients = Math.Min(1, soil.Nutrients + .018 * area);
+                            terrain[b.Cell].NaturalState.SoilQuality = Math.Min(1, terrain[b.Cell].NaturalState.SoilQuality + (selected.Family == "legume" ? .012 : .003) * area);
+                        }
                         Journal.Record(world, "crop_sown", b.Id, details: new JsonObject { ["cityId"] = city.Id, ["crop"] = selected.Id, ["area"] = area, ["seedTonnes"] = seeds });
                     }
                 }
@@ -176,20 +217,37 @@ public sealed partial class SettlementSimulation
                     var visit = hours > 0 ? 0 : travel;
                     var tended = Math.Min(Math.Max(0, budget - hours - visit), growing > 0 ? care : 0);
                     if (tended > 0) hours += tended + visit;
-                    if (growing > 0) plot.Health = Math.Clamp(plot.Health + (tended / Math.Max(.001, care) - .6) * .006, 0, 1);
+                    var careCoverage = growing > 0 ? Math.Clamp(tended / Math.Max(.001, care), 0, 1) : 0;
+                    if (growing > 0) plot.Health = Math.Clamp(plot.Health + (careCoverage - .6) * .006, 0, 1);
+                    AdvanceCropProblems(crop, b.Cell, plot, w, careCoverage);
                     if (w.TemperatureC < crop.FrostTolerance && crop.MatureYears == 0) plot.Health = Math.Max(0, plot.Health - .12);
                     if (crop.MatureYears == 0 && plot.AgeDays > world.Calendar.DaysPerYear) plot.Health = Math.Max(0, plot.Health - .12);
                     plot.DegreeDays += growing * (.35 + .65 * plot.Health);
                     if (plot.Health <= .05)
                     {
+                        if (!bio.CropHistory.TryGetValue(id, out var history)) bio.CropHistory[id] = history = new();
+                        history.FailedSeasons++;
                         plot.CropId = null; plot.Area = 0; plot.Phase = "посев погиб"; plot.FailedSeasons++;
                         Journal.Record(world, "crop_failed", b.Id, details: new JsonObject { ["cityId"] = city.Id, ["crop"] = id, ["reason"] = "Мороз или недостаточный уход" });
                     }
                     else if (plot.AgeDays >= crop.MatureYears * world.Calendar.DaysPerYear && plot.DegreeDays >= crop.DegreeDays && growing > 0 &&
                         (crop.MatureYears == 0 || plot.LastHarvestDay < 0 || world.Day - plot.LastHarvestDay >= 250))
                     {
-                        plot.HarvestRemaining = crop.YieldTonnes * plot.Area * plot.Health * terrain[b.Cell].NaturalState.SoilQuality * CropSuitability(crop, b.Cell);
-                        plot.Phase = "созревший урожай"; plot.SeedSaved = false;
+                        var expected = crop.YieldTonnes * plot.Area * Math.Max(.25, terrain[b.Cell].Fertility) * CropSuitability(crop, b.Cell);
+                        var soilFactor = SoilYieldFactor(crop, b.Cell, plot, w);
+                        var weatherFactor = Math.Clamp(1 - plot.WeatherStress, .12, 1);
+                        plot.HarvestRemaining = expected * plot.Health * soilFactor * weatherFactor;
+                        if (!bio.CropHistory.TryGetValue(id, out var history)) bio.CropHistory[id] = history = new();
+                        history.Seasons++; history.ExpectedTonnes += expected; history.LastExpectedDay = world.Day;
+                        var realized = expected > 0 ? plot.HarvestRemaining / expected : 0;
+                        plot.LastProblem = realized < .45 ? plot.DiseasePressure > .35 ? "болезни почвы" : plot.PestPressure > .3 ? "вредители" : plot.WeatherStress > .35 ? "погодный стресс" : "истощение земли" : null;
+                        plot.Phase = plot.LastProblem is null ? "созревший урожай" : "ослабленный урожай: " + plot.LastProblem;
+                        plot.SeedSaved = false;
+                        if (plot.LastProblem is not null) Journal.Record(world, "crop_loss", b.Id, details: new JsonObject
+                        {
+                            ["cityId"] = city.Id, ["crop"] = id, ["reason"] = plot.LastProblem,
+                            ["expectedTonnes"] = expected, ["availableTonnes"] = plot.HarvestRemaining
+                        });
                     }
                     else if (growing <= 0) plot.Phase = "сезонный покой";
                 }
@@ -203,6 +261,12 @@ public sealed partial class SettlementSimulation
                         city.Stocks[crop.SeedResource] += reserve; city.Stocks[crop.HarvestResource] += harvest - reserve;
                         Add(telemetry.ProductionByResource, crop.SeedResource, reserve); Add(telemetry.ProductionByResource, crop.HarvestResource, harvest - reserve);
                         bio.HarvestedTonnes += harvest; plot.TotalHarvested += harvest; bio.HarvestedCrops.Add(id); plot.FailedSeasons = 0; RecordSoilHarvest(b.Cell, harvest);
+                        var soil = terrain[b.Cell].NaturalState.Soil;
+                        soil.Nutrients = Math.Max(.03, soil.Nutrients - harvest * (crop.Family == "legume" ? .0025 : .007));
+                        soil.OrganicMatter = Math.Max(.05, soil.OrganicMatter - harvest * .0015);
+                        soil.Pathogens[crop.Family] = Math.Clamp(soil.Pathogens.GetValueOrDefault(crop.Family) + harvest * .002, 0, 1);
+                        if (!bio.CropHistory.TryGetValue(id, out var history)) bio.CropHistory[id] = history = new();
+                        history.HarvestedTonnes += harvest; history.LastHarvestDay = world.Day;
                         if (!plot.SeedSaved) { plot.SeedSaved = true; Journal.Record(world, "crop_harvest", b.Id, details: new JsonObject { ["cityId"] = city.Id, ["crop"] = id, ["area"] = plot.Area }); }
                     }
                     plot.HarvestRemaining *= .995;
@@ -210,7 +274,7 @@ public sealed partial class SettlementSimulation
                     {
                         plot.HarvestRemaining = 0; plot.LastHarvestDay = world.Day; plot.DegreeDays = 0; plot.LastFamily = crop.Family;
                         if (crop.MatureYears == 0) { plot.CropId = null; plot.Area = 0; plot.Phase = "подготовка следующего посева"; }
-                        else plot.Phase = "многолетние посадки";
+                        else { plot.Phase = "многолетние посадки"; plot.WeatherStress *= .35; }
                     }
                 }
             }

@@ -12,7 +12,7 @@ public sealed partial class SettlementSimulation
 
     private (bool Land, double Forest) WildlifeTerrain(CellAddress cell)
     {
-        if (terrain.TryGetValue(cell, out var t)) return (t.Terrain != "water" && layer.Construction.GetOccupiedCapacity(cell) == 0, t.NaturalState.ForestBiomass);
+        if (terrain.TryGetValue(cell, out var t)) return (!OpenWater(cell) && layer.Construction.GetOccupiedCapacity(cell) == 0, t.NaturalState.ForestBiomass);
         if (wildlifeTerrain.TryGetValue(cell, out var cached)) return cached;
         var sample = surveyTerrain?.Invoke(cell);
         var value = (sample is { Water: false }, sample?.Forest ?? 0);
@@ -25,7 +25,7 @@ public sealed partial class SettlementSimulation
         {
             var groups = new List<WildlifeGroupState>(); var size = Rules.Subsistence!.Wildlife.SeedPatchSize;
             // Each initial component is connected even where a sea cuts a patch.
-            foreach (var patch in terrain.Where(p => p.Value.Terrain != "water" && p.Value.ForestCover > 0)
+            foreach (var patch in terrain.Where(p => !OpenWater(p.Key) && p.Value.ForestCover > 0)
                 .GroupBy(p => (p.Key.Face, X: p.Key.X / size, Y: p.Key.Y / size)).OrderBy(g => g.Key.Face).ThenBy(g => g.Key.X).ThenBy(g => g.Key.Y))
             {
                 var remaining = patch.Select(p => p.Key).ToHashSet();
@@ -113,6 +113,9 @@ public sealed partial class SettlementSimulation
         {
             var group = State.Wildlife[i];
             group.Alert *= Math.Pow(.5, 1 / rules.AlertHalfLifeDays);
+            if (group.Alert < rules.FleeThreshold * .2 &&
+                group.LastHuntedDay >= 0 && world.Day - group.LastHuntedDay > rules.AlertHalfLifeDays * 2)
+                group.Threat = null;
             var habitat = WildlifeTerrain(group.Center);
             var growth = Math.Max(0, group.Capacity - group.Biomass) * RecoveryRate("game") * (habitat.Land ? Math.Clamp(habitat.Forest * 2, 0, 1) : 0) * WeatherGrowth(group.Center);
             group.Biomass += growth; group.Regrown += growth;
@@ -128,7 +131,27 @@ public sealed partial class SettlementSimulation
             var currentDistance = Distance(group.Center);
             if (fleeing) candidates = candidates.Where(c => Distance(c) > currentDistance + 1e-9).ToArray();
             if (candidates.Length == 0) continue; // No teleporting through water or blocked terrain.
-            var next = candidates.OrderByDescending(c => fleeing ? Distance(c) : WildlifeTerrain(c).Forest)
+            // A calm group keeps some momentum and avoids immediately stepping
+            // back to the cell it just left. The previous deterministic
+            // "best forest, then id" rule made herds oscillate between two
+            // cells and look stationary on the map.
+            var quietCandidates = candidates.Length > 1
+                ? candidates.Where(c => c != group.PreviousCenter).ToArray()
+                : candidates;
+            if (quietCandidates.Length == 0) quietCandidates = candidates;
+            var heading = group.PreviousCenter == group.Center ? (UnitVector3?)null : UnitVector3.Normalize(
+                topology.ToUnitVector(group.Center).X - topology.ToUnitVector(group.PreviousCenter).X,
+                topology.ToUnitVector(group.Center).Y - topology.ToUnitVector(group.PreviousCenter).Y,
+                topology.ToUnitVector(group.Center).Z - topology.ToUnitVector(group.PreviousCenter).Z);
+            double QuietScore(CellAddress cell)
+            {
+                var momentum = heading is { } direction ? StepAlignment(group.Center, cell, direction) : 0;
+                var habitatScore = Math.Clamp(WildlifeTerrain(cell).Forest, 0, 1);
+                var variation = StableRoll(group.Id + ":wander", world.Day / Math.Max(1, rules.QuietMoveIntervalDays),
+                    (int)cell.Face * 1000000 + cell.Y * topology.FaceSize + cell.X);
+                return habitatScore * .62 + momentum * .28 + variation * .10;
+            }
+            var next = quietCandidates.OrderByDescending(c => fleeing ? Distance(c) : QuietScore(c))
                 .ThenBy(SphericalSimulation.ZoneId, StringComparer.Ordinal).First();
             group.PreviousCenter = group.Center; group.Center = next; group.LastMoveDay = world.Day; group.Moves++;
         }

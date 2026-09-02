@@ -49,6 +49,7 @@ public static class WorldSnapshot
         };
         // Keep legacy snapshots byte-compatible when this optional subsystem is absent.
         if (world.SettlementDevelopment is not null) snapshot["settlementDevelopment"] = ToNode(world.SettlementDevelopment);
+        if (world.JournalArchive.RemovedEvents > 0) snapshot["journalArchive"] = ToNode(world.JournalArchive);
         return snapshot;
     }
 
@@ -100,6 +101,7 @@ public static class WorldSnapshot
             NextKnowledgeTransferId = snapshot["nextKnowledgeTransferId"]!.GetValue<int>(),
             Information = Required<InformationState>(snapshot, "information"),
             Journal = Required<List<JournalEvent>>(snapshot, "journal"),
+            JournalArchive = snapshot["journalArchive"]?.Deserialize<JournalArchiveState>(SerializerOptions) ?? new(),
             Telemetry = Required<TelemetryState>(snapshot, "telemetry"),
             SettlementDevelopment = snapshot["settlementDevelopment"]?.Deserialize<SettlementDevelopmentState>(SerializerOptions),
             RandomStreams = streams

@@ -39,15 +39,18 @@ test('winter switches only the glyph and keeps evergreens distinct',()=>{
 test('monthly climate uses observed coarse history and preserves missing months',()=>{
   const d=data(),n=2,cells=6*n*n,missing=-2147483648;
   d.climate={resolution:n,months:12,sampleDays:[30,20,...Array(10).fill(0)],
-    temperature:Array(12*cells).fill(missing),rain:Array(12*cells).fill(missing),wind:Array(12*cells).fill(missing)};
+    latestSampleDays:[30,20,...Array(10).fill(0)],temperature:Array(12*cells).fill(missing),rain:Array(12*cells).fill(missing),wind:Array(12*cells).fill(missing),
+    latestTemperature:Array(12*cells).fill(missing),latestRain:Array(12*cells).fill(missing),latestWind:Array(12*cells).fill(missing)};
   for(let cell=0;cell<cells;cell++){
     d.climate.temperature[cell]=100;d.climate.rain[cell]=20;d.climate.wind[cell]=8;
     d.climate.temperature[cells+cell]=140;d.climate.rain[cells+cell]=50;d.climate.wind[cells+cell]=12;
+    d.climate.latestTemperature[cell]=80;d.climate.latestRain[cell]=30;d.climate.latestWind[cell]=10;
+    d.climate.latestTemperature[cells+cell]=150;d.climate.latestRain[cells+cell]=40;d.climate.latestWind[cells+cell]=14;
   }
   const sample=createClimateSampler(d),locations=[locateFace(facePoint('PositiveX',1,1,8)),locateFace(facePoint('NegativeY',2,3,8))];
   const series=climateSeries(sample,locations);
-  assert.deepEqual(series[0],{month:0,sampleDays:30,temperature:10,rain:2,wind:.08});
-  assert.deepEqual(series[1],{month:1,sampleDays:20,temperature:14,rain:5,wind:.12});
+  assert.equal(series[0].temperature,10);assert.equal(series[0].latestTemperature,8);assert.equal(series[0].sampleDays,30);
+  assert.equal(series[1].rain,5);assert.equal(series[1].latestRain,4);assert.equal(series[1].wind,.12);assert.equal(series[1].latestWind,.14);
   assert.equal(series[2].temperature,null);assert.equal(series[2].sampleDays,0);
 });
 function fakeCanvas(){const ctx=new Proxy({createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)})},{get:(o,k)=>o[k]??(()=>{})});return {width:0,height:0,dataset:{},getContext:()=>ctx};}

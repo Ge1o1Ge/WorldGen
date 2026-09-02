@@ -76,7 +76,7 @@
     "siteMajority": 0.6, "siteMargin": 0.1,
     "minimumDiscussionDays": 2, "siteStableDays": 2, "expiryDays": 90,
     "evaluationDays": 30, "maximumEvaluationDays": 120, "retainedResults": 12,
-    "complexity": { "house": 1, "well": 1.5, "warehouse": 1.4, "granary": 1.8, "water_mill": 3.2, "windmill": 3.8, "animal_mill": 2.6, "relocation": 1 }
+    "complexity": { "house": 1, "well": 1.5, "warehouse": 1.4, "granary": 1.8, "forester_lodge": 2.2, "quarry": 3.4, "water_mill": 3.2, "windmill": 3.8, "animal_mill": 2.6, "relocation": 1 }
   },
   "exploration": {
     "windowDays": 14, "pressureDays": 7, "supplyRadiusCost": 12,
@@ -131,6 +131,14 @@
     { "id": "granary", "laborHours": 240, "materials": { "timber": 0.35 }, "storageCapacity": 10,
       "storage": { "decayMultiplier": 0.18, "fallbackDecayMultiplier": 0.7,
         "preferred": ["resource:food", "resource:winter_food", "food_raw", "food_intermediate", "food_direct", "food_preserved", "crop", "seed"] } },
+    { "id": "forester_lodge", "laborHours": 520, "materials": { "timber": 0.45, "stone": 0.08 }, "storageCapacity": 2.5,
+      "technology": "forestry",
+      "storage": { "decayMultiplier": 0.65, "fallbackDecayMultiplier": 0.85,
+        "preferred": ["material", "fuel", "seed"] } },
+    { "id": "quarry", "laborHours": 900, "materials": { "timber": 0.3, "stone": 0.15, "tools": 0.08 }, "storageCapacity": 3,
+      "technology": "quarrying",
+      "storage": { "decayMultiplier": 0.8, "fallbackDecayMultiplier": 0.9,
+        "preferred": ["resource:stone", "ore", "equipment"] } },
     { "id": "water_mill", "laborHours": 1200, "materials": { "timber": 0.8, "stone": 0.5, "mechanism_kit": 1, "millstone": 1 },
       "technology": "water_mill", "site": "river" },
     { "id": "windmill", "laborHours": 1800, "materials": { "timber": 1.2, "stone": 0.4, "mechanism_kit": 1, "millstone": 1, "sail": 1 },

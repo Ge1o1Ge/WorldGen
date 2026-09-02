@@ -25,7 +25,7 @@ public sealed partial class SettlementSimulation
     private ScoutTerrain? SurveyTerrain(CellAddress cell)
     {
         if (!terrain.TryGetValue(cell, out var t)) return surveyTerrain?.Invoke(cell);
-        return new(t.Terrain == "water", t.Water.DistanceToRiver == 0, t.ElevationMeters, t.TemperatureC, t.Moisture,
+        return new(OpenWater(cell), River(cell), t.ElevationMeters, t.TemperatureC, t.Moisture,
             t.NaturalState.ForestBiomass, new[] { "forage", "game", "fish" }.Sum(pool => Capacity(t, pool) * RecoveryRate(pool) * WeatherGrowth(cell)));
     }
 
@@ -35,7 +35,7 @@ public sealed partial class SettlementSimulation
         var life = State.Cities[city.Id]; var need = Population(city) * city.FoodPerPersonPerDay;
         var accessible = State.Buildings.Where(b => b.CityId == city.Id && b.Status == "active" && b.Kind == "house")
             .SelectMany(b => Routes(b.Cell).Cost.Where(p => p.Value <= rule.SupplyRadiusCost).Select(p => p.Key)).Distinct()
-            .Where(c => terrain[c].AssignedCityId == city.Id && terrain[c].Terrain != "water").ToArray();
+            .Where(c => terrain[c].AssignedCityId == city.Id && !OpenWater(c)).ToArray();
         var renewable = 0d; var stock = 0d;
         foreach (var cell in accessible)
             foreach (var pool in new[] { "forage", "game", "fish" })
@@ -255,6 +255,20 @@ public sealed partial class SettlementSimulation
         var north = UnitVector3.Normalize(origin.Y * east.Z - origin.Z * east.Y,
             origin.Z * east.X - origin.X * east.Z, origin.X * east.Y - origin.Y * east.X);
         var recent = State.Scouting.RecentDirections.GetValueOrDefault(city.Id) ?? [];
+        // Reports are actionable knowledge. If the settlement knows where an
+        // animal lives but still has no viable herd, the council can point the
+        // next expedition at that observation instead of rotating through a
+        // fixed set of empty compass sectors.
+        var wantedAnimals = WantedAnimals(city);
+        var reportedTarget = State.Cities[city.Id].Supply?.Reports
+            .OrderByDescending(report => report.ReceivedDay)
+            .SelectMany(report => report.AnimalSites ?? [])
+            .Where(observation => observation.CapturableAnimals?.Any(wantedAnimals.Contains) == true)
+            .Where(observation => canUseWater || SurveyTerrain(observation.Cell) is { Water: false })
+            .OrderByDescending(observation => observation.ObservedDay)
+            .ThenBy(observation => SphericalSimulation.ZoneId(observation.Cell), StringComparer.Ordinal)
+            .FirstOrDefault();
+        if (reportedTarget is not null) return reportedTarget.Cell;
         var offset = (int)Math.Floor(StableRoll(city.Id + ":sector", 0, 0) * 12) % 12;
         var candidates = new List<(CellAddress Cell, UnitVector3 Bearing, int Unknown, double Repeat, double Tie)>();
         for (var index = 0; index < 12; index++)
@@ -263,7 +277,7 @@ public sealed partial class SettlementSimulation
             var bearing = UnitVector3.Normalize(east.X * Math.Cos(angle) + north.X * Math.Sin(angle),
                 east.Y * Math.Cos(angle) + north.Y * Math.Sin(angle), east.Z * Math.Cos(angle) + north.Z * Math.Sin(angle));
             var current = home; var unknown = 0; var rayVisited = new HashSet<CellAddress> { home };
-            for (var step = 0; step < 8; step++)
+            for (var step = 0; step < 32; step++)
             {
                 var steps = topology.GetNeighbors(current).Where(cell => !rayVisited.Contains(cell) && (canUseWater || SurveyTerrain(cell) is { Water: false }))
                     .Select(cell => (Cell: cell, Alignment: StepAlignment(current, cell, bearing)))
@@ -277,8 +291,16 @@ public sealed partial class SettlementSimulation
             if (recent.LastOrDefault().Dot(bearing) > .75) repeat += 100;
             candidates.Add((current, bearing, unknown, repeat, StableRoll(city.Id + ":direction", sequence, sector)));
         }
-        return candidates.OrderBy(item => item.Repeat).ThenByDescending(item => item.Unknown).ThenBy(item => item.Tie)
+        return candidates.OrderByDescending(item => item.Unknown).ThenBy(item => item.Repeat).ThenBy(item => item.Tie)
             .ThenBy(item => SphericalSimulation.ZoneId(item.Cell), StringComparer.Ordinal).First().Cell;
+    }
+
+    private HashSet<string> WantedAnimals(CityState city)
+    {
+        var biology = State.Cities[city.Id].Biology;
+        if (biology is null) return [];
+        return biology.KnownAnimals.Where(id => (biology.Herds.GetValueOrDefault(id)?.Count ?? 0) < 2)
+            .ToHashSet(StringComparer.Ordinal);
     }
 
     private CellAddress? NextScoutCell(ScoutExpedition expedition)
@@ -286,21 +308,23 @@ public sealed partial class SettlementSimulation
         var known = State.Scouting!.KnownCells.GetValueOrDefault(expedition.CityId) ?? [];
         var visited = expedition.Path.ToHashSet();
         var biology = State.Cities[expedition.CityId].Biology;
+        var wantedAnimals = WantedAnimals(world.Cities[expedition.CityId]);
         var choices = topology.GetNeighbors(expedition.Current).Where(c => !visited.Contains(c) && SurveyTerrain(c) is { } site &&
                 (!site.Water || expedition.RaftReady && IsCoastalWater(c)))
             .Select(c =>
             {
                 var site = SurveyTerrain(c)!; var plants = BiologyRules is null ? [] : WildCrops(c).Select(item => item.Id).ToArray();
-                var animals = ScoutAnimals(c); var interest = Math.Min(.14, site.FoodRenewalPerDay * 450);
+                var actualAnimals = MobileAnimals(c); var animals = ScoutAnimals(c); var interest = Math.Min(.14, site.FoodRenewalPerDay * 450);
                 var reason = "неизведанная местность";
                 if (site.FreshWater && expedition.Water < expedition.CargoCapacity * .3) { interest += .42; reason = "источник пресной воды"; }
                 var unknownPlants = plants.Count(id => biology?.KnownPlants.Contains(id) != true && !expedition.Observations.Any(o => o.Plants?.Contains(id) == true));
                 if (unknownPlants > 0) { interest += Math.Min(.34, unknownPlants * .12); reason = "неизвестная растительность"; }
                 var unknownAnimals = animals.Count(id => biology?.KnownAnimals.Contains(id) != true && !expedition.Observations.Any(o => o.Animals?.Contains(id) == true));
-                if (animals.Length > 0) { interest += .12 + Math.Min(.36, unknownAnimals * .16); reason = unknownAnimals > 0 ? "следы неизвестных животных" : "стадо или промысловая живность"; }
+                var wanted = actualAnimals.Count(wantedAnimals.Contains);
+                if (animals.Length > 0) { interest += .12 + Math.Min(.36, unknownAnimals * .16) + Math.Min(.9, wanted * .48); reason = unknownAnimals > 0 ? "следы неизвестных животных" : wanted > 0 ? "животные для живого отлова" : "стадо или промысловая живность"; }
                 var alignment = StepAlignment(expedition.Current, c, expedition.Direction);
-                var novelty = known.Contains(SphericalSimulation.ZoneId(c)) ? 0 : .16;
-                return (Cell: c, Score: alignment + interest + novelty + StableRoll(expedition.Id + ":interest", world.Day, c.X * 997 + c.Y) * .015, Reason: reason);
+                var novelty = known.Contains(SphericalSimulation.ZoneId(c)) ? 0 : .62;
+                return (Cell: c, Score: alignment * .42 + interest + novelty + StableRoll(expedition.Id + ":interest", world.Day, c.X * 997 + c.Y) * .025, Reason: reason);
             }).OrderByDescending(item => item.Score).ThenBy(item => SphericalSimulation.ZoneId(item.Cell), StringComparer.Ordinal).ToArray();
         if (choices.Length == 0) return null;
         expedition.CurrentInterest = choices[0].Reason;
@@ -321,10 +345,10 @@ public sealed partial class SettlementSimulation
         SettlementExplorationRules rule, DailyTelemetry telemetry)
     {
         var plants = BiologyRules is null ? [] : WildCrops(cell).Select(c => c.Id).ToArray();
-        var animals = ScoutAnimals(cell);
+        var actualAnimals = MobileAnimals(cell); var animals = ScoutAnimals(cell);
         var observedClaim = world.Spatial.Territories.GetValueOrDefault(SphericalSimulation.ZoneId(cell))?.AssignedCityId;
         if (observedClaim == city.Id) observedClaim = null;
-        expedition.Observations.Add(new(cell, world.Day, observed.FreshWater, observed.FoodRenewalPerDay, plants, animals, observedClaim));
+        expedition.Observations.Add(new(cell, world.Day, observed.FreshWater, observed.FoodRenewalPerDay, plants, animals, observedClaim, actualAnimals));
         var biology = State.Cities[city.Id].Biology;
         foreach (var plant in plants.Where(id => biology?.KnownPlants.Contains(id) != true))
         {
@@ -332,7 +356,7 @@ public sealed partial class SettlementSimulation
             if (sample <= 0) break;
             expedition.SeedSamples[plant] = expedition.SeedSamples.GetValueOrDefault(plant) + sample;
         }
-        TryCaptureAnimal(city, expedition, cell, animals, rule);
+        TryCaptureAnimal(city, expedition, cell, actualAnimals, rule);
         var added = false;
         if (observed.FreshWater && CargoFree(expedition) > 0)
         {
@@ -347,19 +371,26 @@ public sealed partial class SettlementSimulation
         if (added) expedition.LastResupplyDay = world.Day;
     }
 
+    private string[] MobileAnimals(CellAddress cell) => (wildlifeIndex.GetValueOrDefault(cell)?.Select(item => item.Group.SpeciesId)
+        .Where(id => id is not null).Cast<string>() ?? []).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+
     private string[] ScoutAnimals(CellAddress cell)
     {
-        var actual = wildlifeIndex.GetValueOrDefault(cell)?.Select(item => item.Group.SpeciesId).Where(id => id is not null).Cast<string>() ?? [];
+        var actual = MobileAnimals(cell);
         return actual.Append(WildAnimal(cell)).Where(id => id is not null).Cast<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
     }
 
     private void TryCaptureAnimal(CityState city, ScoutExpedition expedition, CellAddress cell, IReadOnlyList<string> observed, SettlementExplorationRules rule)
     {
         if (BiologyRules is null || !wildlifeIndex.TryGetValue(cell, out var groups)) return;
-        foreach (var species in observed.Where(expedition.CaptureAttempts.Add))
+        foreach (var species in observed)
         {
             var animal = BiologyRules.Animals.FirstOrDefault(a => a.Id == species); if (animal is null || CargoFree(expedition) < animal.BodyTonnes) continue;
             var group = groups.Select(p => p.Group).FirstOrDefault(g => g.SpeciesId == species && g.Biomass >= animal.BodyTonnes); if (group is null) continue;
+            // One attempt per encountered mobile group, not one attempt per
+            // species for the whole journey. Revisiting the same herd in the
+            // same expedition still cannot roll repeatedly.
+            if (!expedition.CaptureAttempts.Add(species + ":" + group.Id)) continue;
             var speciesDifficulty = Math.Clamp(Math.Sqrt(.08 / animal.BodyTonnes) * 24 / animal.CaptureHours, .25, 2);
             var chance = Math.Min(.9, rule.BaseLiveCaptureChance * speciesDifficulty * (Knows(city, "taming") ? rule.TamingCaptureMultiplier : 1));
             if (StableRoll(expedition.Id + ":capture:" + species, world.Day, expedition.Path.Count) >= chance) continue;
@@ -454,19 +485,28 @@ public sealed partial class SettlementSimulation
             }
             foreach (var (species, count) in expedition.CapturedAnimals)
             {
-                if (!Knows(city, "taming")) { Add(State.Cities[city.Id].PracticeHours, "hunt", count * 4); continue; }
                 if (!biology.Herds.TryGetValue(species, out var herd)) biology.Herds[species] = herd = new();
                 for (var i = 0; i < count; i++) { if ((herd.Captured + i) % 2 == 0) herd.Females++; else herd.Males++; }
-                herd.Captured += count; herd.Health = Math.Max(.55, herd.Health);
+                herd.Captured += count; herd.Health = Math.Max(.8, herd.Health);
+                // A successful baseline live capture is allowed to precede the
+                // taming technology. Keeping the animal alive creates the hunt
+                // and species-specific practice from which taming can emerge.
+                Add(State.Cities[city.Id].PracticeHours, "hunt", count * 4);
+                Add(State.Cities[city.Id].PracticeHours, "animal:" + species, count * 4);
             }
         }
         var candidates = unknown.Where(o => o.FreshWater && (o.FoodRenewalPerDay > 0 || (o.Plants?.Count ?? 0) > 0))
             .OrderByDescending(o => o.FoodRenewalPerDay).ThenBy(o => SphericalSimulation.ZoneId(o.Cell), StringComparer.Ordinal).Take(5).ToArray();
+        var animalSites = expedition.Observations.Where(o => (o.CapturableAnimals?.Count ?? 0) > 0)
+            .GroupBy(o => SphericalSimulation.ZoneId(o.Cell), StringComparer.Ordinal).Select(group => group.OrderByDescending(o => o.ObservedDay).First())
+            .OrderByDescending(o => o.ObservedDay).ThenBy(o => SphericalSimulation.ZoneId(o.Cell), StringComparer.Ordinal).Take(12).ToArray();
         var outcome = candidates.Length > 0 ? "Найдены участки у пресной воды и новые природные сведения" :
             unknown.Length > 0 ? "Направление обследовано, пригодный участок у воды не найден" : "Не удалось выйти за пределы знакомой окрестности";
         var supply = State.Cities[city.Id].Supply!;
         supply.Reports.Add(new(expedition.Id, expedition.DepartureDay, world.Day, unknown.Length, candidates, outcome,
-            plants, animals, expedition.CapturedAnimals.ToDictionary(), expedition.Casualties, foreignClaims));
+            plants, animals, expedition.CapturedAnimals.ToDictionary(), expedition.Casualties, foreignClaims, animalSites,
+            expedition.SeedSamples.ToDictionary(), expedition.ForagedFood, expedition.RefilledWater,
+            world.Day - expedition.DepartureDay, Math.Max(0, expedition.Path.Count - 1)));
         while (supply.Reports.Count > Rules.Exploration!.MaximumReports) supply.Reports.RemoveAt(0);
         if (expedition.DecisionId is { } decisionId && State.Cities[city.Id].Council?.Proposals.FirstOrDefault(p => p.Id == decisionId) is { } proposal)
         { proposal.Phase = "observing"; proposal.FinishedDay = world.Day; }

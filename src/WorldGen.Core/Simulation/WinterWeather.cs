@@ -32,6 +32,20 @@ public sealed class WeatherSurfaceGrid
     public double[] ClimateTemperatureSum { get; set; } = [];
     public double[] ClimateRainSum { get; set; } = [];
     public double[] ClimateWindSum { get; set; } = [];
+    public double[] ClimateWindXSum { get; set; } = [];
+    public double[] ClimateWindYSum { get; set; } = [];
+    public double[] ClimateWindZSum { get; set; } = [];
+    // The most recently observed occurrence of each calendar month is kept
+    // separately from the all-years climatology so the UI can compare weather
+    // with climate without reconstructing years from journal events.
+    public int[] LatestClimateYear { get; set; } = [];
+    public int[] LatestClimateSampleDays { get; set; } = [];
+    public double[] LatestClimateTemperatureSum { get; set; } = [];
+    public double[] LatestClimateRainSum { get; set; } = [];
+    public double[] LatestClimateWindSum { get; set; } = [];
+    public double[] LatestClimateWindXSum { get; set; } = [];
+    public double[] LatestClimateWindYSum { get; set; } = [];
+    public double[] LatestClimateWindZSum { get; set; } = [];
 }
 
 public static class WinterWeather

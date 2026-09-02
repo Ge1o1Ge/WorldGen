@@ -45,7 +45,8 @@ public sealed class SphericalSimulation
 
     public static SphericalSimulation Create(ContentCatalog source, SphericalWorldDefinition definition,
         SphericalEconomyDefinition economy, CubeSphereTopology topology, SphericalTerrainGenerator terrain,
-        SphericalHydrology hydro, SphericalSettlementLayer settlements, SettlementRules? rules = null, JsonObject? snapshot = null)
+        SphericalHydrology hydro, SphericalSettlementLayer settlements, SettlementRules? rules = null, JsonObject? snapshot = null,
+        SurfaceWaterState? surfaceWater = null)
     {
         if (economy.Cities.Select(city => city.SettlementId).Distinct().Count() != economy.Cities.Count ||
             economy.Cities.SelectMany(city => city.SourceCities).Distinct().Count() != economy.Cities.Sum(city => city.SourceCities.Count))
@@ -96,15 +97,32 @@ public sealed class SphericalSimulation
         {
             if (samples.TryGetValue(cell, out var cached)) return cached;
             var value = terrain.GenerateCell(cell);
-            var waterCell = hydro.Topology.Locate(topology.ToUnitVector(cell));
+            var p = topology.ToUnitVector(cell);
+            var waterCell = hydro.Topology.Locate(p);
             var index = hydro.Index(waterCell);
             var neighbors = hydro.GetDrainageNeighbors(waterCell).Select(hydro.Index).ToArray();
             // For the exact grid this is IsWater(index). Retain the old containing
             // cell semantics when an explicitly coarse regression fixture is used.
-            var wet = value.Biome == SphericalBiome.Ocean || hydro.Surface[index] - hydro.Elevation[index] > SphericalHydrology.LakeDepthThreshold;
-            var nearWater = hydro.IsWater(index) || hydro.IsRiver(index) || neighbors.Any(i => hydro.IsWater(i) || hydro.IsRiver(i));
-            var stream = hydro.IsRiver(index) || neighbors.Any(hydro.IsRiver);
-            var freshWater = hydro.IsFreshWater(index) || neighbors.Any(hydro.IsFreshWater);
+            bool Open(int i) => surfaceWater?.IsOpenWater(surfaceWater.Address(i)) ??
+                hydro.IsWater(i);
+            bool Stream(int i) => surfaceWater?.IsRiver(surfaceWater.Address(i)) ?? hydro.IsRiver(i);
+            var wet = Open(index);
+            var nearWater = Open(index) || Stream(index) || neighbors.Any(i => Open(i) || Stream(i));
+            var stream = Stream(index) || neighbors.Any(Stream);
+            var freshWater = surfaceWater is null
+                ? hydro.IsFreshWater(index) || neighbors.Any(hydro.IsFreshWater)
+                : (Open(index) && !surfaceWater.IsOcean(waterCell)) || stream ||
+                    neighbors.Any(i => Open(i) && !surfaceWater.IsOcean(surfaceWater.Address(i)) || Stream(i));
+            // Broad coherent geological bands. Deposits are zonal fields rather
+            // than a per-cell lottery, and remain continuous enough to survey.
+            var phase = (definition.Seed % 10007) * .0007;
+            double Band(double a, double b, double c) => Math.Clamp(.5 +
+                Math.Sin(p.X * a + p.Y * b + phase) * .24 +
+                Math.Cos(p.Z * b - p.X * c - phase * .7) * .2 +
+                Math.Sin((p.X + p.Y - p.Z) * c + phase * 1.3) * .12, 0, 1);
+            var rock = Math.Clamp((value.ElevationMeters - hydro.SeaLevel + 180) / 750, 0, 1);
+            var stoneBand = Math.Clamp(rock * .65 + Band(5.2, 7.1, 3.7) * .55 - .18, 0, 1);
+            var ironBand = Math.Clamp(Band(8.3, 4.7, 10.1) * (.25 + rock * .75) - .48, 0, 1);
             var potentials = new Dictionary<string, double>(StringComparer.Ordinal)
             {
                 ["arable"] = wet ? 0 : value.Fertility * (1 - value.ForestCover * .55),
@@ -112,8 +130,8 @@ public sealed class SphericalSimulation
                 ["timber"] = wet ? 0 : value.ForestCover,
                 ["fish"] = nearWater ? 1 : 0,
                 ["clay"] = wet ? .15 : Math.Clamp(value.Moisture * .7, 0, 1),
-                ["stone"] = Math.Clamp((value.ElevationMeters - hydro.SeaLevel) / 550, 0, 1),
-                ["iron_ore"] = Math.Clamp((value.ElevationMeters - hydro.SeaLevel) / 650, 0, 1)
+                ["stone"] = wet ? 0 : stoneBand,
+                ["iron_ore"] = wet ? 0 : ironBand
             };
             // Scouts can leave the economic footprint. This cache is derived data,
             // not persistent world knowledge, and must not grow with every journey.
@@ -232,8 +250,21 @@ public sealed class SphericalSimulation
                     SoilQuality = value.Fertility,
                     ForestBiomass = value.ForestCover,
                     FishStock = s.Potentials["fish"],
-                    Deposits = new Dictionary<string, double> { ["clay"] = s.Potentials["clay"] > 0 ? 1 : 0, ["stone"] = s.Potentials["stone"] > 0 ? 1 : 0, ["iron_ore"] = s.Potentials["iron_ore"] > 0 ? 1 : 0 },
-                    ExtractedBatches = new()
+                    Deposits = new Dictionary<string, double>
+                    {
+                        ["clay"] = s.Potentials["clay"],
+                        ["stone"] = s.Potentials["stone"],
+                        ["iron_ore"] = s.Potentials["iron_ore"]
+                    },
+                    ExtractedBatches = new(),
+                    Soil = new SoilProfileState
+                    {
+                        Nutrients = value.Fertility,
+                        OrganicMatter = Math.Clamp(.2 + value.ForestCover * .65, .1, 1),
+                        Rockiness = Math.Clamp(s.Potentials["stone"] * .7, 0, .9),
+                        MoistureRetention = Math.Clamp(.2 + value.Moisture * .65, .1, 1),
+                        GrazingBiomass = Math.Clamp(.25 + value.Fertility * .75, .1, 1)
+                    }
                 }
             };
         }
@@ -328,11 +359,14 @@ public sealed class SphericalSimulation
             ScoutTerrain Survey(CellAddress cell)
             {
                 var s = Sample(cell); var value = s.Value;
+                var wet = surfaceWater?.IsOpenWater(cell) ?? s.Wet;
+                var freshWater = surfaceWater is null ? s.FreshWater :
+                    surfaceWater.IsRiver(cell) || surfaceWater.IsOpenWater(cell) && !surfaceWater.IsOcean(cell);
                 double Renewal(string id, double potential) => naturalRules[id].Capacity * potential *
                     naturalRules[id].RecoveryPerDay * (rules.Subsistence?.RecoveryScale(id) ?? 1);
-                var renewal = (s.Wet ? 0 : Renewal("forage", value.Fertility * (.4 + value.ForestCover * .6)) + Renewal("game", value.ForestCover)) +
+                var renewal = (wet ? 0 : Renewal("forage", value.Fertility * (.4 + value.ForestCover * .6)) + Renewal("game", value.ForestCover)) +
                     Renewal("fish", s.Potentials["fish"]);
-                return new(s.Wet, s.FreshWater, value.ElevationMeters, value.TemperatureC, value.Moisture, value.ForestCover, renewal);
+                return new(wet, freshWater, value.ElevationMeters, value.TemperatureC, value.Moisture, value.ForestCover, renewal);
             }
             Territory Materialize(CellAddress cell)
             {
@@ -349,6 +383,7 @@ public sealed class SphericalSimulation
                 return patch;
             }
             simulation.Development = new SettlementSimulation(world, content, rules, topology, settlements, addresses, economy.Stage == "foragers", Survey, terrain, Materialize);
+            if (surfaceWater is not null) simulation.Development.SetSurfaceWaterState(surfaceWater);
         }
         return simulation;
     }

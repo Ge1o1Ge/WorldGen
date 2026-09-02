@@ -37,3 +37,9 @@ test("world geometry ignores camera and resident/progress updates but rebuilds o
   assert.equal(groupedField(settlements[0].buildings[1]),false);
   assert.notEqual(cache.get(settlements,32),a);assert.equal(cache.builds,2);
 });
+test("orchards and annual fields form separate groups even when adjacent",()=>{
+  const settlements=[city([plot(5,5,"annual"),plot(6,5,"trees")])],plots=[{id:"annual",landUse:"field"},{id:"trees",landUse:"orchard"}];
+  const cache=new FieldGeometryCache(),groups=cache.get(settlements,32,plots);
+  assert.equal(groups.length,2);assert.deepEqual(groups.map(group=>group.landUse).sort(),["field","orchard"]);
+  assert.ok(groups.every(group=>group.members.length===1));
+});

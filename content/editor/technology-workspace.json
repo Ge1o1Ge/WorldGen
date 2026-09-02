@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": 801,
+  "revision": 837,
   "nodes": [
     {
       "id": "draft:eea37f1f-c619-4716-bc6b-b0bd6f0ec121",
@@ -397,6 +397,28 @@
       "symbol": null,
       "status": "adapted",
       "targetId": "primitive:animal_mill"
+    },
+    {
+      "id": "draft:218b9551-3070-450b-b21a-81e09f22e4dc",
+      "title": "Дом лесничего",
+      "description": "Дальняя постройка семьи специализирующейся на заготовке дров \nи лесовосстановлении \nвыступает как жилье, и небольшой универсальный склад \n\nможет принимать на ночлег ,увеличивая влияние поселения",
+      "conditions": "дефицит древесины \n",
+      "effects": "Ускоренное в 2 раза восстановление леса (за счет вложений труда в посадку)\nв приоритете старается сажать плодоносные культуры или быстрорастущие \nиз имеющихся семян ",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:forestry"
+    },
+    {
+      "id": "draft:5c3fa8ba-a889-46ab-87a7-aac461adb586",
+      "title": "Каменоломня",
+      "description": "Постройка для промышленной добычи камня \nможет генерировать различные металлы в небольшом количестве при наличии их зоне копа \n\nпредставляет собой карьерную разработку \nпоэтому каждые добытые 100 - 500 кубометров будут менять рельеф \n\n",
+      "conditions": "",
+      "effects": "Источник камня\nоткрывает путь к простой геологии",
+      "domain": "craft",
+      "symbol": null,
+      "status": "adapted",
+      "targetId": "primitive:quarrying"
     }
   ],
   "edges": [
@@ -1008,6 +1030,48 @@
       "to": "draft:5e85f42b-e09b-46f0-bd25-1c8aadad778f",
       "type": "required",
       "status": "adapted"
+    },
+    {
+      "id": "18103de9-7435-466d-9d5a-047c3af96d49",
+      "from": "primitive:woodworking",
+      "to": "draft:218b9551-3070-450b-b21a-81e09f22e4dc",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "18f88202-fd40-41ac-8413-ea3f9c06fde6",
+      "from": "primitive:horticulture",
+      "to": "draft:218b9551-3070-450b-b21a-81e09f22e4dc",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "b76ca440-23bd-436a-b178-72548f94bf31",
+      "from": "primitive:hand_tools",
+      "to": "draft:5c3fa8ba-a889-46ab-87a7-aac461adb586",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "cb39a5b2-ff42-4a13-8603-1c87f7d77c64",
+      "from": "catalog:oral_accounting",
+      "to": "draft:5c3fa8ba-a889-46ab-87a7-aac461adb586",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "09457676-1685-41a6-b998-0136a4fdad57",
+      "from": "primitive:building",
+      "to": "draft:5c3fa8ba-a889-46ab-87a7-aac461adb586",
+      "type": "required",
+      "status": "adapted"
+    },
+    {
+      "id": "9e8a3b08-092f-4070-9055-1bce06552b3c",
+      "from": "draft:5c3fa8ba-a889-46ab-87a7-aac461adb586",
+      "to": "primitive:stone_road",
+      "type": "required",
+      "status": "adapted"
     }
   ],
   "comments": [
@@ -1306,6 +1370,30 @@
       "createdAt": "2026-08-29T14:15:21.7792602+00:00",
       "status": "manual",
       "remainingText": null
+    },
+    {
+      "id": "37d3e78e-5087-47a4-a830-e040543d92c3",
+      "nodeId": "primitive:stone_road",
+      "text": "да, 100м такой дороги будут обходиться в 240т камня \nвероятно слишком рано я впихнул технологию \n\nдля нее нужна промышленная камнедобыча \nдля которой в свою очредеь железный иснрумент",
+      "createdAt": "2026-08-30T09:01:39.7715253+00:00",
+      "status": "adapted",
+      "remainingText": "Физический линейный проект тракта с расходом около 240 т камня на 100 м ещё не реализован; сейчас адаптированы только зависимость от карьерной добычи и технологическая цепочка железных инструментов."
+    },
+    {
+      "id": "remaining-primitive-forestry-20260830",
+      "nodeId": "primitive:forestry",
+      "text": "Остаток после первого внедрения: лесничий уже ухаживает за удалёнными лесными зонами и ускоряет восстановление, но выбор конкретных плодовых и быстрорастущих пород, ночлег путников и расширение влияния ещё не моделируются.",
+      "createdAt": "2026-08-30T12:00:00+03:00",
+      "status": "manual",
+      "remainingText": "Добавить запасы семян древесных пород, видовой состав посадок, проживание семьи лесничего, приём путников и измеримое влияние удалённой постройки."
+    },
+    {
+      "id": "remaining-primitive-quarrying-20260830",
+      "nodeId": "primitive:quarrying",
+      "text": "Остаток после первого внедрения: карьер добывает камень и попутную руду из зонального месторождения с ростом глубинной сложности, но ещё не меняет высоту клетки каждые 100–500 м³ и не порождает отдельные геологические знания.",
+      "createdAt": "2026-08-30T12:00:00+03:00",
+      "status": "manual",
+      "remainingText": "Связать накопленный объём выемки с локальным рельефом, водосбором и открытием простой геологии; добавить отвалы и качество камня."
     }
   ],
   "journal": [
@@ -3088,7 +3176,11 @@
       "edgeIds": [],
       "targetId": "primitive:taming",
       "summary": "Живой отлов стал исполняемой частью разведки: базовый шанс зависит от вида, приручение увеличивает его в десять раз, пойманное животное уменьшает дикую группу, занимает поклажу и пополняет стадо только после возвращения.",
-      "references": ["EXPLORATION.md", "src/WorldGen.Core/Simulation/SettlementExploration.cs", "content/editor/technology-annotations.json"],
+      "references": [
+        "EXPLORATION.md",
+        "src/WorldGen.Core/Simulation/SettlementExploration.cs",
+        "content/editor/technology-annotations.json"
+      ],
       "createdAt": "2026-08-29T18:00:00+03:00",
       "commentProgress": null,
       "edgeAdaptations": []
@@ -3100,13 +3192,19 @@
       "edgeIds": [],
       "targetId": "primitive:draught_animals",
       "summary": "Добавлен первый физический эффект тягловых животных: знание вместе с фактическим пригодным стадом увеличивает конечную вместимость разведывательной поклажи в 2,5 раза.",
-      "references": ["EXPLORATION.md", "src/WorldGen.Core/Simulation/SettlementExploration.cs", "content/editor/technology-annotations.json"],
+      "references": [
+        "EXPLORATION.md",
+        "src/WorldGen.Core/Simulation/SettlementExploration.cs",
+        "content/editor/technology-annotations.json"
+      ],
       "createdAt": "2026-08-29T18:00:01+03:00",
-      "commentProgress": [{
-        "commentId": "implementation-primitive-draught_animals-20260829",
-        "implemented": "Разведка проверяет наличие пригодного стада и получает множитель грузоподъёмности.",
-        "remaining": "Выделить конкретное животное и упряжь; считать корм, усталость, потери и хозяйственную экономию труда."
-      }],
+      "commentProgress": [
+        {
+          "commentId": "implementation-primitive-draught_animals-20260829",
+          "implemented": "Разведка проверяет наличие пригодного стада и получает множитель грузоподъёмности.",
+          "remaining": "Выделить конкретное животное и упряжь; считать корм, усталость, потери и хозяйственную экономию труда."
+        }
+      ],
       "edgeAdaptations": []
     },
     {
@@ -3116,13 +3214,19 @@
       "edgeIds": [],
       "targetId": "primitive:riding",
       "summary": "Добавлен первый физический эффект верховой езды: знание вместе с фактическим пригодным стадом увеличивает скорость разведывательной группы в 1,65 раза.",
-      "references": ["EXPLORATION.md", "src/WorldGen.Core/Simulation/SettlementExploration.cs", "content/editor/technology-annotations.json"],
+      "references": [
+        "EXPLORATION.md",
+        "src/WorldGen.Core/Simulation/SettlementExploration.cs",
+        "content/editor/technology-annotations.json"
+      ],
       "createdAt": "2026-08-29T18:00:02+03:00",
-      "commentProgress": [{
-        "commentId": "implementation-primitive-riding-20260829",
-        "implemented": "Разведка проверяет наличие пригодного стада и получает множитель скорости.",
-        "remaining": "Добавить различия видов и особей, корм, усталость, отдых и смену животных."
-      }],
+      "commentProgress": [
+        {
+          "commentId": "implementation-primitive-riding-20260829",
+          "implemented": "Разведка проверяет наличие пригодного стада и получает множитель скорости.",
+          "remaining": "Добавить различия видов и особей, корм, усталость, отдых и смену животных."
+        }
+      ],
       "edgeAdaptations": []
     },
     {
@@ -3132,14 +3236,76 @@
       "edgeIds": [],
       "targetId": "primitive:rafts",
       "summary": "Добавлен первый пространственный эффект плотов: разведка резервирует древесину, собирает плот при первом выходе на воду и проходит прибрежные водные клетки с отдельным множителем скорости.",
-      "references": ["EXPLORATION.md", "src/WorldGen.Core/Simulation/SettlementExploration.cs", "content/editor/technology-annotations.json"],
+      "references": [
+        "EXPLORATION.md",
+        "src/WorldGen.Core/Simulation/SettlementExploration.cs",
+        "content/editor/technology-annotations.json"
+      ],
       "createdAt": "2026-08-29T18:00:03+03:00",
-      "commentProgress": [{
-        "commentId": "implementation-primitive-rafts-20260829",
-        "implemented": "Разведка резервирует древесину, собирает плот при выходе на воду и проходит прибрежные водные клетки.",
-        "remaining": "Сделать плот долговечным объектом: корпус, отдельная вместимость, износ, ремонт, причал и повторное использование."
-      }],
+      "commentProgress": [
+        {
+          "commentId": "implementation-primitive-rafts-20260829",
+          "implemented": "Разведка резервирует древесину, собирает плот при выходе на воду и проходит прибрежные водные клетки.",
+          "remaining": "Сделать плот долговечным объектом: корпус, отдельная вместимость, износ, ремонт, причал и повторное использование."
+        }
+      ],
       "edgeAdaptations": []
+    },
+    {
+      "id": "integrate-forestry-20260830",
+      "nodeIds": [
+        "draft:218b9551-3070-450b-b21a-81e09f22e4dc"
+      ],
+      "commentIds": [],
+      "edgeIds": [
+        "18103de9-7435-466d-9d5a-047c3af96d49",
+        "18f88202-fd40-41ac-8413-ea3f9c06fde6"
+      ],
+      "targetId": "primitive:forestry",
+      "summary": "Лесничество встроено после обработки древесины и садоводства. Совет может поставить удалённый дом лесничего при дефиците древесины; семья тратит труд на несколько истощённых лесных зон, а управляемый лес восстанавливается до двух раз быстрее. Постройка участвует в хранении, износе и учёте использования.",
+      "references": [
+        "src/WorldGen.Core/Simulation/SettlementManagedLand.cs",
+        "src/WorldGen.Core/Simulation/SettlementSimulation.cs",
+        "content/worlds/settlement-rules.json",
+        "content/worlds/primordial-rules.json",
+        "BIOSPHERE.md"
+      ],
+      "createdAt": "2026-08-30T12:00:00+03:00",
+      "commentProgress": null,
+      "edgeAdaptations": null
+    },
+    {
+      "id": "integrate-quarrying-20260830",
+      "nodeIds": [
+        "draft:5c3fa8ba-a889-46ab-87a7-aac461adb586"
+      ],
+      "commentIds": [
+        "37d3e78e-5087-47a4-a830-e040543d92c3"
+      ],
+      "edgeIds": [
+        "b76ca440-23bd-436a-b178-72548f94bf31",
+        "cb39a5b2-ff42-4a13-8603-1c87f7d77c64",
+        "09457676-1685-41a6-b998-0136a4fdad57",
+        "9e8a3b08-092f-4070-9055-1bce06552b3c"
+      ],
+      "targetId": "primitive:quarrying",
+      "summary": "Карьерная добыча встроена после кованых инструментов, строительства и устного учёта. Карьер выбирает зону по качеству залежей, промышленно добывает камень и может дать попутную железную руду; сложность растёт экспоненциально с глубиной. Каменный тракт теперь зависит от карьера, а карта получила отдельные срезы камня и железной руды.",
+      "references": [
+        "src/WorldGen.Core/Simulation/SphericalSimulation.cs",
+        "src/WorldGen.Core/Simulation/SettlementManagedLand.cs",
+        "content/worlds/primordial-rules.json",
+        "visualizer/sphere.js",
+        "RESOURCES_AND_GEOLOGY.md"
+      ],
+      "createdAt": "2026-08-30T12:00:00+03:00",
+      "commentProgress": [
+        {
+          "commentId": "37d3e78e-5087-47a4-a830-e040543d92c3",
+          "implemented": "Карьер требует кованых инструментов и стал обязательной предпосылкой каменного тракта.",
+          "remaining": "Физический линейный проект тракта с реальным расходом камня ещё не реализован."
+        }
+      ],
+      "edgeAdaptations": null
     }
   ],
   "positions": {
@@ -3344,8 +3510,8 @@
       "y": 1536
     },
     "catalog:oral_accounting": {
-      "x": -24,
-      "y": 1752
+      "x": 1152,
+      "y": 1032
     },
     "catalog:seed_selection": {
       "x": 1128,
@@ -3396,8 +3562,8 @@
       "y": 1464
     },
     "catalog:river_navigation": {
-      "x": 360,
-      "y": 1752
+      "x": 1512,
+      "y": 1032
     },
     "catalog:herbal_medicine": {
       "x": 360,
@@ -3608,8 +3774,8 @@
       "y": 1515.8167591502388
     },
     "primitive:stone_road": {
-      "x": 384,
-      "y": 504
+      "x": 2712,
+      "y": 2520
     },
     "logic:any:animal_husbandry": {
       "x": 1632,
@@ -3692,7 +3858,7 @@
       "y": 864
     },
     "primitive:millstone": {
-      "x": 360,
+      "x": 744,
       "y": 1320
     },
     "primitive:windmill": {
@@ -3710,6 +3876,22 @@
     "logic:any:textile_weaving": {
       "x": 1992,
       "y": 2256
+    },
+    "draft:218b9551-3070-450b-b21a-81e09f22e4dc": {
+      "x": 1512,
+      "y": 960
+    },
+    "draft:5c3fa8ba-a889-46ab-87a7-aac461adb586": {
+      "x": 2328,
+      "y": 2520
+    },
+    "primitive:forestry": {
+      "x": 1512,
+      "y": 960
+    },
+    "primitive:quarrying": {
+      "x": 2328,
+      "y": 2520
     }
   }
 }

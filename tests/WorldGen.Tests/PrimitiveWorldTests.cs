@@ -73,7 +73,10 @@ public sealed class PrimitiveWorldTests(ITestOutputHelper output)
         Assert.Equal(d.State.Atmosphere.LastDay, grid.LastDay);
         Assert.Equal(8, grid.ClimateResolution);
         Assert.Equal(3, grid.ClimateSampleDays.Sum());
+        Assert.Equal(3, grid.LatestClimateSampleDays.Sum());
         Assert.Equal(12 * 6 * 8 * 8, grid.ClimateTemperatureSum.Length);
+        Assert.Equal(grid.ClimateTemperatureSum.Length, grid.LatestClimateTemperatureSum.Length);
+        Assert.Equal(grid.ClimateTemperatureSum.Length, grid.ClimateWindXSum.Length);
         var restored = await Create(WorldSnapshot.Create(original.World));
         Assert.Equal(before, WorldSnapshot.Hash(restored.World));
         Assert.Equal(JsonSerializer.Serialize(first), JsonSerializer.Serialize(restored.Development!.WeatherMap()));

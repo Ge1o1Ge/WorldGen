@@ -52,14 +52,14 @@ public sealed partial class SettlementSimulation
     {
         if (Rules.Primitive is not { } r || State.Atmosphere is not { } sky) return;
         SphericalWeather.Advance(sky, r, world.Spatial.Grid.Seed, world.Day,
-            p => planetTerrain!.SampleSurface(p).Biome == SphericalBiome.Ocean);
+            p => surfaceWater?.IsOcean(topology.Locate(p)) ?? planetTerrain!.SampleSurface(p).Biome == SphericalBiome.Ocean);
         BuildWeatherSamples();
         foreach (var (cell, t) in terrain)
         {
             var ground = sky.Ground[t.Id];
             SphericalWeather.WetGround(ground, dailyWeather[cell]);
-            if (r.Winter is { } winter && t.Terrain == "water")
-                ground.IceMeters = WinterWeather.IceAfterDay(ground.IceMeters, dailyWeather[cell], winter, t.Water.River);
+            if (r.Winter is { } winter && OpenWater(cell))
+                ground.IceMeters = WinterWeather.IceAfterDay(ground.IceMeters, dailyWeather[cell], winter, River(cell));
         }
         AdvanceWeatherSurface();
         BuildWeatherSamples(groundOnly: true);
@@ -71,7 +71,7 @@ public sealed partial class SettlementSimulation
             var weather = dailyWeather[cell]; var ground = sky.Ground[t.Id];
             var fuel = Stock(t, "timber"); var random = SphericalWeather.Random(world.Spatial.Grid.Seed, world.Day, index++);
             var fire = ground.Fire;
-            if (fire == 0 && t.Terrain != "water" && fuel > 2 && ground.SoilWater < .3 && weather.Storm > .25 &&
+            if (fire == 0 && !OpenWater(cell) && fuel > 2 && ground.SoilWater < .3 && weather.Storm > .25 &&
                 random < r.LightningIgnitionChance * weather.Storm)
             {
                 fire = .3; sky.Ignitions++;
@@ -87,7 +87,7 @@ public sealed partial class SettlementSimulation
             // Synchronous next-day front: a day's fire cannot recurse across the entire connected forest.
             if (fire < .2) continue;
             foreach (var neighbor in topology.GetNeighbors(cell))
-                if (terrain.TryGetValue(neighbor, out var next) && next.Terrain != "water" && Stock(next, "timber") > 2 &&
+                if (terrain.TryGetValue(neighbor, out var next) && !OpenWater(neighbor) && Stock(next, "timber") > 2 &&
                     sky.Ground[next.Id].SoilWater < .4 && dailyWeather[neighbor].RainMm < 3)
                 {
                     var p = topology.ToUnitVector(cell); var q = topology.ToUnitVector(neighbor);
@@ -121,7 +121,7 @@ public sealed partial class SettlementSimulation
     private bool FieldDormant(CellAddress cell) => dailyWeather.TryGetValue(cell, out var w) && (w.TemperatureC < 5 || w.Snow > 10);
     private double WeatherWalking(CellAddress cell) => dailyWeather.TryGetValue(cell, out var w) ? WinterWeather.WalkingCost(w) : 1;
     public bool IcePassable(CellAddress cell) => Rules.Primitive?.Winter is { } r && terrain.TryGetValue(cell, out var t) &&
-        t.Terrain == "water" && dailyWeather.TryGetValue(cell, out var w) && State.Atmosphere!.Ground.TryGetValue(t.Id, out var g) &&
+        OpenWater(cell) && dailyWeather.TryGetValue(cell, out var w) && State.Atmosphere!.Ground.TryGetValue(t.Id, out var g) &&
         WinterWeather.Passable(g.IceMeters, w.TemperatureC, t.Biome == "ocean", t.Water.River, r);
     private double WeatherRecharge(CellAddress cell) => dailyWeather.TryGetValue(cell, out var w) ? .2 + w.SoilWater * 1.2 : 1;
     private double KitCoverage(CityState city) => Math.Clamp(city.Stocks.GetValueOrDefault("stone_kit") / Math.Max(1, Population(city) * .08), 0, 1);
@@ -159,6 +159,9 @@ public sealed partial class SettlementSimulation
             "hides" => population * .0003,
             "cloth" => Knows(city, "weaving") ? population * .0005 : 0,
             "stone" => .04,
+            "iron_ore" => Knows(city, "bloomery_smelting") ? Math.Max(.06, population * .0008) : 0,
+            "iron" => Knows(city, "bloomery_smelting") ? population * .0015 : 0,
+            "tools" => Knows(city, "hand_tools") ? population * .015 : 0,
             _ => 0
         };
     }

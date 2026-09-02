@@ -121,6 +121,48 @@ public sealed partial class SettlementSimulationTests
     }
 
     [Fact]
+    public async Task CouncilUsesReturnedMobileAnimalSiteWhenABreedingPairIsMissing()
+    {
+        var sim = await CreateScouting(); var development = sim.Development!;
+        var city = sim.World.Cities.Values.OrderBy(item => item.Id, StringComparer.Ordinal).First();
+        var life = development.State.Cities[city.Id]; life.Biology ??= new();
+        const string species = "rabbit"; life.Biology.KnownAnimals.Add(species);
+        var topology = new CubeSphereTopology(sim.World.Spatial.Grid.Height); var home = sim.Addresses[sim.World.Spatial.Nodes[city.SpatialNodeId].AnchorTerritoryId!];
+        var target = topology.GetNeighbors(home).First(cell => !sim.World.Spatial.Territories.TryGetValue(SphericalSimulation.ZoneId(cell), out var territory) || territory.Terrain == "land");
+        var observation = new ScoutObservation(target, sim.World.Day, false, 0, Animals: [species], CapturableAnimals: [species]);
+        life.Supply!.Reports.Add(new("returned", 0, sim.World.Day, 1, [], "Найдено стадо", Animals: [species], AnimalSites: [observation]));
+        var direction = (CellAddress)typeof(SettlementSimulation).GetMethod("ScoutDirection",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(development, [city, 1, false])!;
+        Assert.Equal(target, direction);
+    }
+
+    [Fact]
+    public async Task BaselineLiveCaptureReturnsAsACaptiveAnimalBeforeTamingIsKnown()
+    {
+        var sim = await CreateScouting(pressure: false); sim.Advance(1); var development = sim.Development!;
+        var pair = development.State.Cities.First(item => !item.Value.Discoveries.Contains("taming"));
+        var city = sim.World.Cities[pair.Key]; var life = pair.Value; life.Biology ??= new(); life.Biology.Herds.Clear();
+        var home = sim.Addresses[sim.World.Spatial.Nodes[city.SpatialNodeId].AnchorTerritoryId!];
+        var expedition = new ScoutExpedition
+        {
+            Id = "baseline-capture", CityId = city.Id, Home = home, Current = home,
+            Direction = new UnitVector3(1, 0, 0), People = 2, InitialPeople = 2,
+            DepartureDay = sim.World.Day - 3, ProvisionDays = 4, CargoCapacity = 1,
+            Path = [home], LastLeg = [home], CapturedAnimals = new() { ["rabbit"] = 1 }
+        };
+
+        typeof(SettlementSimulation).GetMethod("CompleteSurvey",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .Invoke(development, [city, expedition, new DailyTelemetry { Day = sim.World.Day }]);
+
+        var herd = life.Biology.Herds["rabbit"];
+        Assert.Equal(1, herd.Count); Assert.Equal(1, herd.Captured); Assert.True(herd.Health >= .8);
+        Assert.DoesNotContain("taming", life.Discoveries);
+        Assert.True(life.PracticeHours["hunt"] >= 4); Assert.True(life.PracticeHours["animal:rabbit"] >= 4);
+        Assert.Equal(1, Assert.Single(life.Supply!.Reports).CapturedAnimals!["rabbit"]);
+    }
+
+    [Fact]
     public async Task CityAndExpeditionInventoriesBalanceAndWorkersAreNotCountedTwice()
     {
         var sim = await CreateScouting(); var state = sim.Development!.State;

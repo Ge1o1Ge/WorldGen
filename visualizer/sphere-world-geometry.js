@@ -1,4 +1,5 @@
 import { facePoint, contourSegments, joinSegments, symbolSpacing, symbolAnchor } from "./sphere-cartography.js";
+import {waterShoreByte} from './sphere-water.js';
 
 // Camera-independent data cache: only source revision and explicit LOD are keys.
 export class WorldGeometryCache {
@@ -55,14 +56,15 @@ export function buildWorldTile({face,tx,ty,size,tileSize=32,step=1,sample,cityCo
   const owners=Array.from({length:kinds.includes("boundary")?cityCount:0},()=>new Float32Array(columns*rows));let min=Infinity,max=-Infinity;
   for(let y=0;y<rows;y++)for(let x=0;x<columns;x++) {
     const s=sample({face,x:originX+x*step,y:originY+y*step},owners.length>0),i=y*columns+x;
-    elevation[i]=s.elevation;forest[i]=s.forest;depth[i]=Math.max(seaLevel-s.elevation,water?(s.lakeDepth??0)-1:-1);
+    elevation[i]=s.elevation;forest[i]=s.forest;depth[i]=water?(s.lakeShore??(s.lakeDepth??0)-1):-1;
     min=Math.min(min,s.elevation);max=Math.max(max,s.elevation);
     owners.forEach((values,owner)=>values[i]=s.claims.get(owner)??0);
   }
   const paths=[];
   function add(field,threshold,kind) {
     for(const line of joinSegments(contourSegments(field,columns,rows,threshold,step))) {
-      const rounded=roundWorldPath(line.map(([x,y])=>[x+originX,y+originY]));
+      const world=line.map(([x,y])=>[x+originX,y+originY]);
+      const rounded=kind==="coast"?world:roundWorldPath(world);
       for(const clipped of clipWorldPath(rounded,box)) {
         const points=clipped.map(([x,y])=>facePoint(face,x,y,size));
         const label=kind==="contour"&&clipped.length>=40?points[Math.floor(points.length/2)]:null;
@@ -71,7 +73,22 @@ export function buildWorldTile({face,tx,ty,size,tileSize=32,step=1,sample,cityCo
     }
   }
   if(kinds.includes("contour"))for(let value=Math.ceil(min/10)*10;value<=max;value+=10)add(elevation,value,"contour");
-  if(kinds.includes("coast"))add(depth,0,"coast");
+  if(kinds.includes("coast")){
+    // The fill texture is sampled at microcell centres (integer coordinates).
+    // Trace the identical quantised field here; sampling at half coordinates
+    // and rounding it again visibly moved sharp bays and narrow lakes.
+    const coastOriginX=tx*tileSize-2,coastOriginY=ty*tileSize-2;
+    const coastColumns=Math.round((box.x1-x0)/step)+5,coastRows=Math.round((box.y1-y0)/step)+5;
+    const coast=new Float32Array(coastColumns*coastRows);
+    for(let y=0;y<coastRows;y++)for(let x=0;x<coastColumns;x++){
+      const s=sample({face,x:coastOriginX+x*step,y:coastOriginY+y*step});
+      coast[y*coastColumns+x]=water?waterShoreByte(s.lakeShore??(s.lakeDepth??0)-1)-128:-128;
+    }
+    for(const line of joinSegments(contourSegments(coast,coastColumns,coastRows,0,step))){
+      const world=line.map(([x,y])=>[x+coastOriginX,y+coastOriginY]);
+      for(const clipped of clipWorldPath(world,box))paths.push({kind:"coast",value:0,points:clipped.map(([x,y])=>facePoint(face,x,y,size)),label:null});
+    }
+  }
   if(kinds.includes("forest"))add(forest,.42,"forest");
   for(const values of owners)add(values,.5,"boundary");return paths;
 }
@@ -84,7 +101,7 @@ export function worldTileSymbols({face,tx,ty,size,tileSize=32,zoom,seed,sample,s
     const occupied=settlements.some(city=>[...city.buildings,...city.usedLands.filter(land=>land.usage>0)].some(asset=>
       asset.face===face&&Math.hypot(asset.x-anchor.x,asset.y-anchor.y)<Math.max(.85,spacing*.65)));
     if(occupied)continue;
-    const s=sample(anchor);if(s.elevation<=seaLevel||s.lakeDepth>1)continue;
+    const s=sample(anchor);if(s.lakeDepth>1)continue;
     let kind=s.biome===5?"wetland":s.forest>.42?(anchor.variant<.45?"conifer":"deciduous"):
       s.biome===6?"rock":anchor.variant>.85&&s.biome===3?"grass":null;
     const point=facePoint(face,anchor.x,anchor.y,size);
@@ -94,7 +111,9 @@ export function worldTileSymbols({face,tx,ty,size,tileSize=32,zoom,seed,sample,s
   return symbols;
 }
 export function landMaskAlpha(elevation,lakeDepth,seaLevel,showWater=true) {
-  return elevation<=seaLevel||(showWater&&lakeDepth>1)?0:255;
+  // Elevation below datum is terrain, not water. The signed dynamic water
+  // field is the sole wet/dry authority after world generation.
+  return showWater&&lakeDepth>1?0:255;
 }
 
 export function roundSpherePath(points) {

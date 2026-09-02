@@ -151,4 +151,4 @@ export function symbolAnchor(face, gridX, gridY, spacing, seed) {
     y:(gridY+.5+(noise(43)-.5)*.35)*spacing-.5,variant:noise(89)};
 }
 
-export function contourInterval(zoom) { return zoom<2 ? 100 : zoom<5 ? 50 : zoom<14 ? 20 : 10; }
+export function contourInterval(zoom) { return zoom<16 ? 100 : zoom<32 ? 20 : 10; }

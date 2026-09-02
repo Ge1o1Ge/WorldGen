@@ -36,6 +36,16 @@ test("saddle contour is resolved without crossing, loops remain closed",()=>{
   assert.deepEqual(loop[0],loop.at(-1));
   assert.equal(loop.length,5);
 });
+
+test("shore saddle turns around the higher corners and keeps its centre on the lower diagonal",()=>{
+  const edge=([x,y])=>y===0?"top":x===1?"right":y===1?"bottom":"left";
+  const pairs=values=>contourSegments(values,2,2,0)
+    .map(segment=>segment.map(edge).sort().join("-")).sort();
+  const deepWet=contourSegments([4,-1,-1,4],2,2,0);
+  assert.equal(deepWet.length,2);
+  assert.deepEqual(pairs([4,-1,-1,4]),["bottom-left","right-top"]);
+  assert.deepEqual(pairs([1,-4,-4,1]),["bottom-right","left-top"]);
+});
 test("vegetation anchors are independent of camera pan and remain fixed within zoom band",()=>{
   assert.equal(symbolSpacing(9),symbolSpacing(12));
   assert.deepEqual(symbolAnchor("PositiveZ",2,3,symbolSpacing(9),123),symbolAnchor("PositiveZ",2,3,symbolSpacing(12),123));

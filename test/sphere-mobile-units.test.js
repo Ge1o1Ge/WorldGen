@@ -43,8 +43,8 @@ function layerHarness(){
 test("an identical packet does not restart an animation already in progress",()=>{
   const {layer,setNow}=layerHarness();
   const scout={id:"s",departureDay:10,phase:"outbound",routeIndex:1,path:[cell(0),cell(1)],face:"PositiveX",x:1,y:4};
-  layer.update([scout],11,{animate:true});const started=layer.units.get("s").started;
-  setNow(40);layer.update([{...scout,food:.2}],11,{animate:true});
+  layer.update([scout],[],11,{animate:true});const started=layer.units.get("s").started;
+  setNow(40);layer.update([{...scout,food:.2}],[],11,{animate:true});
   assert.equal(layer.units.get("s").started,started);
   assert.equal(layer.units.get("s").scout.food,.2);
 });
@@ -52,7 +52,15 @@ test("an identical packet does not restart an animation already in progress",()=
 test("a completed returned expedition is not replayed by later server packets",()=>{
   const {layer,setNow}=layerHarness();const home=cell(0),turn=cell(2);
   const returned={id:"s",departureDay:10,phase:"returned",routeIndex:0,path:[home,cell(1),turn],face:home.face,x:home.x,y:home.y};
-  layer.update([returned],20,{animate:true});assert.equal(layer.units.size,1);
+  layer.update([returned],[],20,{animate:true});assert.equal(layer.units.size,1);
   setNow(101);layer.render();assert.equal(layer.units.size,0);assert.equal(layer.completed.size,1);
-  layer.update([returned],21,{animate:true});assert.equal(layer.units.size,0);assert.equal(layer.completed.size,1);
+  layer.update([returned],[],21,{animate:true});assert.equal(layer.units.size,0);assert.equal(layer.completed.size,1);
+});
+
+test("wildlife positions interpolate on the lightweight live layer",()=>{
+  const {layer,setNow}=layerHarness(),first={id:"herd",face:"PositiveX",x:1,y:4,radiusCells:2,alert:0};
+  layer.update([], [first], 20,{animate:false});const start=layer.wildlife.get("herd").point;
+  setNow(10);layer.update([], [{...first,x:4}],21,{animate:true});
+  setNow(60);layer.render();const middle=layer.wildlife.get("herd").point;
+  assert.ok(middle.y>start.y&&middle.y<.04);
 });
